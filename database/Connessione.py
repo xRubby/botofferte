@@ -1,17 +1,14 @@
 import sqlite3
 
-# Connessione al database
 def get_db_connection():
-    conn = sqlite3.connect('amazon_offers.db')  # Specifica il tuo database
+    conn = sqlite3.connect('amazon_offers.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-# Funzione per creare le tabelle
 def create_tables():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Creazione della tabella Licenze
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Licenze (
         codice_licenza TEXT PRIMARY KEY,
@@ -19,7 +16,6 @@ def create_tables():
     )
     ''')
 
-    # Creazione della tabella Canali
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Canali (
         id TEXT PRIMARY KEY,
@@ -29,7 +25,6 @@ def create_tables():
     )
     ''')
 
-    # Creazione della tabella Utenti
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Utenti (
         telegram_id INTEGER PRIMARY KEY,
@@ -39,7 +34,6 @@ def create_tables():
     )
     ''')
 
-    # Creazione della tabella di associazione per la relazione molti a molti
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Utenti_Canali (
         telegram_id INTEGER,
@@ -50,7 +44,6 @@ def create_tables():
     )
     ''')
 
-    # Creazione della tabella con i link appartenenti ad ogni canale
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,6 +54,5 @@ def create_tables():
     )
     ''')
 
-    # Commit e chiusura della connessione
     conn.commit()
     conn.close()
