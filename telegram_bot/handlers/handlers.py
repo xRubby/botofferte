@@ -38,9 +38,31 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await query.answer()
 
     user_id = update.effective_user.id 
-    context.user_data[user_id] = {}
+
+    if user_id not in context.user_data:
+        context.user_data[user_id] = {}
+
     if 'message_id' not in context.user_data[user_id]:
         context.user_data[user_id] = {'message_id': query.message.message_id} 
+    
+    if 'awaiting_input' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_input'] = False
+
+    if 'awaiting_license' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_license'] = False
+
+    if 'adding_channel' in context.user_data[user_id]:
+        context.user_data[user_id]['adding_channel'] = False
+    
+    if 'awaiting_link' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_link'] = False
+    
+    if 'awaiting_affiliate_id' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_affiliate_id'] = False
+
+    if 'awaiting_newmessage_layout' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_newmessage_layout'] = False
+        
 
     data_parts = query.data.split("_")
     
@@ -102,7 +124,8 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.delete()
         from telegram_bot.functions.send_message import search_and_send_offer
         await search_and_send_offer(update, context, keyword)
-        context.user_data[user_id]['awaiting_input'] = False 
+        context.user_data[user_id]['awaiting_input'] = False
+        
 
 
     elif context.user_data.get(user_id, {}).get('awaiting_license'):
