@@ -6,6 +6,7 @@ from APIs.bitly_api import shorten_url
 import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
+from utils.expand_bitly_link import expand_bitly_url
 
 
 load_dotenv()
@@ -70,6 +71,12 @@ def search_amazon_offers(keyword_or_url):
         "Amazon.it": "Amazon",
         "Amazon.com": "Amazon",
     }
+
+    pattern = r'https?://[^\s/$.?#].[^\s]*'
+    if re.match(pattern, keyword_or_url):
+        if "amazon" not in keyword_or_url:
+            keyword_or_url = expand_bitly_url(keyword_or_url)
+        
 
     asin = extract_asin_from_url(keyword_or_url)
     parsed_url = urlparse(keyword_or_url)
