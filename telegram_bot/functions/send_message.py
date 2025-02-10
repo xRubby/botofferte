@@ -191,7 +191,7 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
     message_id = context.user_data.get(user_id, {}).get('message_id')
     
     keyboard_back = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channel_listlinks_{channel_id}")]
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"edit_channel_{channel_id}")]
     ]
     reply_markup_back = InlineKeyboardMarkup(keyboard_back)
         
