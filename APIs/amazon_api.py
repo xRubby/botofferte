@@ -161,8 +161,8 @@ def search_amazon_offers(keyword_or_url):
 
             offers.append({
                 'name': product_name,
-                'old_price': "{:.2f}".format(old_price),
-                'new_price': "{:.2f}".format(new_price),
+                'old_price': "{:.2f}".format(old_price).replace('.', ','),
+                'new_price': "{:.2f}".format(new_price).replace('.', ','),
                 'discount_percentage': discount_percentage,
                 'image_url': image_url,
                 'url': short_url,
