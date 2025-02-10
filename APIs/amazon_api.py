@@ -7,6 +7,7 @@ import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 from utils.expand_link import expand_url
+import locale
 
 
 load_dotenv()
@@ -35,27 +36,17 @@ def extract_asin_from_url(url):
 
 
 
-def formatta_data(data,preorder):
-    if preorder:
-        data_temp = datetime.strptime(data, "%Y-%m-%dT%H:%M:%SZ")
-
-        giorno = data_temp.strftime("%d")
-        anno = data_temp.strftime("%Y")
-
-        mese = data_temp.strftime("%B").lower()
-
-        data_formattata = f"{giorno} {mese} {anno}"
-        return data_formattata
-
-def verifica_preordine(data):
-
+def formatta_data(data):
+    locale.setlocale(locale.LC_TIME, 'it_IT.UTF-8')
     data_temp = datetime.strptime(data, "%Y-%m-%dT%H:%M:%SZ")
-    oggi = datetime.today()
 
-    if data_temp > oggi:
-        return "Preordine"
-    else:
-        return ""
+    giorno = data_temp.strftime("%d")
+    anno = data_temp.strftime("%Y")
+
+    mese = data_temp.strftime("%B").lower()
+
+    data_formattata = f"{giorno} {mese} {anno}"
+    return data_formattata
 
 def search_amazon_offers(keyword_or_url):
 
@@ -142,11 +133,14 @@ def search_amazon_offers(keyword_or_url):
 
             currency_symbol=currency_symbols.get(currency,currency)
 
-            data=item.item_info.product_info.release_date.display_value
-
             
-            preorder=verifica_preordine(data)
-            data_preordine=formatta_data(data,preorder)
+            try:
+                data=item.item_info.product_info.release_date.display_value
+                preorder="Preordine:"
+                data_preordine=formatta_data(data)
+            except Exception as e:
+                preorder=""
+                data_preordine=None
 
             if item.offers.listings[0].condition.value=="Used":
                 warehouse="Warehouse"
