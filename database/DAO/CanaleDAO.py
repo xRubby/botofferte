@@ -1,5 +1,37 @@
-from database.Connessione import get_db_connection
+from database.Connessione import Connessione
 from database.Entity.Canale import Canale
+
+
+
+class CanaleDAO:
+    def __init__(self, db_path):
+        self.conn = Connessione().get_connection()
+        self.cursor = self.conn.cursor()
+
+    def insert(self, canale):
+        self.cursor.execute("INSERT INTO canali (canale_id, nome_canale, id_affiliato, codice_licenza) VALUES (?, ?, ?, ?)", 
+                            (canale.getCanaleId(), canale.getNomeCanale(), canale.getIdAffiliato(), canale.getCodiceLicenza()))
+        self.conn.commit()
+
+    def update(self, canale):
+        self.cursor.execute("UPDATE canali SET nome_canale = ?, id_affiliato = ?, codice_licenza = ? WHERE canale_id = ?", 
+                            (canale.getNomeCanale(), canale.getIdAffiliato(), canale.getCodiceLicenza(), canale.getCanaleId()))
+        self.conn.commit()
+
+    def delete(self, canale_id):
+        self.cursor.execute("DELETE FROM canali WHERE canale_id = ?", (canale_id,))
+        self.conn.commit()
+
+    def get(self, canale_id):
+        self.cursor.execute("SELECT * FROM canali WHERE canale_id = ?", (canale_id,))
+        return self.cursor.fetchone()
+
+    def get_all(self):
+        self.cursor.execute("SELECT * FROM canali")
+        return self.cursor.fetchall()
+    
+    def close(self):
+        self.conn.close()
 
 
 def get_user_channels(user_id):

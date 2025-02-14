@@ -21,16 +21,24 @@ from telegram_bot.keyboards.channel_offers.channel_offers_layout import *
 from telegram_bot.keyboards.settings.settings_menu import *
 from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
 
+from database.Entity.Utente import Utente
 
-from database.DAO.LicenzeDAO import getLicenseDetails, updateUserLicense
-from database.DAO.CanaliDAO import add_channel_to_db, set_affiliate_id
-from database.DAO.LinksDAO import add_link_to_channel
+from database.DAO.UtenteDAO import UtenteDAO
+from database.DAO.LicenzaDAO import getLicenseDetails, updateUserLicense
+from database.DAO.CanaleDAO import add_channel_to_db, set_affiliate_id
+from database.DAO.LinkDAO import add_link_to_channel
 
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     await create_main_menu(update, context)
+
+    user = update.effective_user
+
+    UtenteDAO().insert(Utente(user.id, user.first_name, 0))
+
+
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

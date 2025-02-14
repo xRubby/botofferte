@@ -1,7 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaliDAO import *
+from database.DAO.CanaleDAO import *
 
 from telegram_bot.messages.messages_it import getTemplateMessage
 

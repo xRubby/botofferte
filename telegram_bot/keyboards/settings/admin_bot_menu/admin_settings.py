@@ -4,8 +4,10 @@ from telegram_bot.messages.messages_it import get_admin_message, get_licenza_gen
 
 from utils.generate_license import generate_license
 
+from database.Entity.Licenza import Licenza
 
-from database.DAO.LicenzeDAO import addLicense,getLicenses,deleteLicense,getLicenseDetails
+
+from database.DAO.LicenzaDAO import LicenzaDAO
 
 
 async def admin_menu(query): 
@@ -20,7 +22,7 @@ async def admin_menu(query):
 async def generate_new_license(query): 
         new_license = generate_license()
 
-        addLicense(new_license)
+        LicenzaDAO().insert(Licenza(new_license, "2050-12-31", True))
 
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]
@@ -31,12 +33,12 @@ async def generate_new_license(query):
 
 
 async def view_licenses(query):
-    licenses = getLicenses()
+    licenze = LicenzaDAO().get_all()
 
-    if licenses:
+    if licenze:
         keyboard = [
-            [InlineKeyboardButton(license['codice_licenza'], callback_data=f'views_{license["codice_licenza"]}')]
-            for license in licenses
+            [InlineKeyboardButton(licenza.getCodiceLicenza(), callback_data=f'views_{licenza.getCodiceLicenza()}')]
+            for licenza in licenze
         ]
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')])
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -49,10 +51,10 @@ async def view_licenses(query):
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
 
 async def view_license_details(query, license_code):
-    license_details = getLicenseDetails(license_code)
+    licenza = LicenzaDAO().get(license_code)
 
-    if license_details:
-        text = f"Licenza: {license_details['codice_licenza']}\nStato: {license_details['stato']}"
+    if licenza:
+        text = f"Licenza: {licenza.getCodiceLicenza()}\nStato: {'Attiva' if licenza.getStato() else 'Non attiva'}\nData scadenza: {licenza.getScadenza()}"
         
         keyboard = [
             [InlineKeyboardButton("Cancella Licenza", callback_data=f'confirmdelete_{license_code}')],
@@ -70,7 +72,7 @@ async def view_license_details(query, license_code):
 
 
 async def delete_license_confirm(query, license_code):
-    deleteLicense(license_code)
+    LicenzaDAO().delete(license_code)
     
     text = f"Licenza '{license_code}' cancellata con successo!"
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='view_licenses')]]

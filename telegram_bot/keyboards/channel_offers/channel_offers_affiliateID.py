@@ -1,7 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaliDAO import get_affiliate_id
+from database.DAO.CanaleDAO import get_affiliate_id
 
 async def insert_affiliate_id(query, context, user_id, channel_id):
     message_id = query.message.id

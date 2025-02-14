@@ -1,15 +1,17 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from database.DAO.UtentiDAO import isAdmin
+from database.DAO.UtenteDAO import UtenteDAO
+
+from database.Entity.Utente import Utente
 
 from telegram_bot.messages.messages_it import get_impostazioni
 
 async def settings_menu(user_id, query): 
         keyboard = []
 
-        print(isAdmin(user_id))
+        utente = UtenteDAO().get(user_id)
 
-        if isAdmin(user_id):
+        if utente.getIsAdmin():
             keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])
 
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')])

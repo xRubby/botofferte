@@ -136,7 +136,7 @@ def search_amazon_offers(keyword_or_url):
             
             try:
                 data=item.item_info.product_info.release_date.display_value
-                preorder="Preordine:"
+                preorder="Preordine"
                 data_preordine=formatta_data(data)
             except Exception as e:
                 preorder=""

@@ -1,7 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaliDAO import *
+from database.DAO.CanaleDAO import *
 
 async def edit_channel(query, channel_id):
 

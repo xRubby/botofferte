@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 import logging
 
 
-from database.DAO.CanaliDAO import *
+from database.DAO.CanaleDAO import *
 
 
 load_dotenv()

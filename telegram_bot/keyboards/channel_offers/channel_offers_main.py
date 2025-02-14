@@ -1,8 +1,8 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import *
 
-from database.DAO.LicenzeDAO import check_license
-from database.DAO.CanaliDAO import get_user_channels, remove_channel_from_user
+from database.DAO.LicenzaDAO import check_license
+from database.DAO.CanaleDAO import get_user_channels, remove_channel_from_user
 
 from telegram_bot.messages.messages_it import get_licenza_non_attiva
 

@@ -3,8 +3,8 @@ from telegram.ext import *
 
 from telegram_bot.functions.send_message import publish_offer
 
-from database.DAO.LinksDAO import *
-from database.DAO.CanaliDAO import *
+from database.DAO.LinkDAO import *
+from database.DAO.CanaleDAO import *
 
 
 async def show_links(query, context, channel_id, current_link_index=0):

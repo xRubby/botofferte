@@ -1,11 +1,11 @@
 from multiprocessing import Process
 from telegram_bot.bot import start_telegram_bot
 #from bot.discord_bot import start_discord_bot
-from database.Connessione import create_tables
+from database.Connessione import Connessione
 
 def main():
 
-    create_tables()
+    Connessione().create_tables()
 
     print("Avvio dei bot Telegram e Discord...")
 
