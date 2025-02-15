@@ -1,5 +1,5 @@
-from database.Connessione import Connessione
-from database.Entity.Prodotto import Prodotto
+from database import Connessione
+from database.Entity import Prodotto
 
 class ProdottoDAO:
     def __init__(self):

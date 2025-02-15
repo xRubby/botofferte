@@ -1,5 +1,5 @@
-from database.Connessione import Connessione
-from database.Entity.Licenza import Licenza
+from database import Connessione
+from database.Entity import Licenza
 
 class LicenzaDAO:
     def __init__(self):

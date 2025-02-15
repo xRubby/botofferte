@@ -1,5 +1,5 @@
-from database.Connessione import Connessione
-from database.Entity.Utente import Utente
+from database import Connessione
+from database.Entity import Utente
 
 
 class UtenteDAO:

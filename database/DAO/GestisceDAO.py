@@ -1,5 +1,5 @@
-from database.Connessione import Connessione
-from database.Entity.Gestisce import Gestisce
+from database import Connessione
+from database.Entity import Gestisce
 
 
 

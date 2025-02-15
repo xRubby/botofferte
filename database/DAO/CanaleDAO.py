@@ -1,5 +1,5 @@
-from database.Connessione import Connessione
-from database.Entity.Canale import Canale
+from database import Connessione
+from database.Entity import Canale
 
 
 
