@@ -6,7 +6,11 @@ class Connessione:
     
     def get_connection(self):
         conn = sqlite3.connect(self.db_name)
+        
         conn.row_factory = sqlite3.Row
+
+        conn.execute("PRAGMA foreign_keys = ON;")
+
         return conn
     
     def create_tables(self):
@@ -32,6 +36,7 @@ class Connessione:
             telegram_id INTEGER NOT NULL,
             canale_id TEXT NOT NULL,
             id_affiliato TEXT,
+            isCreator INTEGER DEFAULT 0,
             FOREIGN KEY (telegram_id) REFERENCES Utenti(telegram_id),
             FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE,
             PRIMARY KEY (telegram_id, canale_id)

@@ -15,6 +15,7 @@ async def edit_channel(query, channel_id):
         [InlineKeyboardButton("➕ Inserisci link", callback_data=f'channel_link_{channel_id}')],
         [InlineKeyboardButton("🔗 Lista link", callback_data=f'channel_listlinks_{channel_id}'), InlineKeyboardButton("Affiliazione", callback_data=f'channel_affiliateid_{channel_id}')],
         [InlineKeyboardButton("Layout", callback_data=f'channel_layout_{channel_id}'), InlineKeyboardButton("Impostazioni", callback_data=f'channel_settings_{channel_id}')],
+        [InlineKeyboardButton("Pannello Admin (WIP)", callback_data=f'placeholder')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data='offerte_canale')]
     ]
 

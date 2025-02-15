@@ -14,15 +14,10 @@ class CanaleDAO:
     def __exit__(self, exc_type, exc_value, traceback):
         self.conn.close()
 
-    def insert(self, canale_id, nome_canale, id_affiliato, codice_licenza, telegram_id):
+    def insert(self, canale_id, nome_canale, id_affiliato, codice_licenza):
         self.cursor.execute(
             "INSERT INTO canali (canale_id, nome_canale, id_affiliato, codice_licenza) VALUES (?, ?, ?, ?)", 
             (canale_id, nome_canale, id_affiliato, codice_licenza)
-        )
-    
-        self.cursor.execute(
-            "INSERT INTO Gestisce (telegram_id, canale_id) VALUES (?, ?)", 
-            (telegram_id, canale_id)
         )
 
         self.conn.commit()

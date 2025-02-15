@@ -23,8 +23,8 @@ class Canale:
     def getIdAffiliato(self):
         return self.id_affiliato
 
-    def setCodiceLicenza(self, new_codice):
-        self.codice_licenza = new_codice
+    def setCodiceLicenza(self, new_codice_licenza):
+        self.codice_licenza = new_codice_licenza
 
     def getCodiceLicenza(self):
         return self.codice_licenza

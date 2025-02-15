@@ -26,6 +26,7 @@ from database.Entity.Utente import Utente
 from database.DAO.UtenteDAO import UtenteDAO
 from database.DAO.LicenzaDAO import LicenzaDAO
 from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.LinkDAO import add_link_to_channel
 
 
@@ -155,7 +156,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with LicenzaDAO() as licenza_dao:
             license_details = licenza_dao.get(license_code)
             if license_details:
-                with CanaleDAO() as canale_dao:
+                with CanaleDAO() as canale_dao, GestisceDAO() as gestisce_dao:
                     if(not canale_dao.is_license_used(license_code)):
 
                         channel_data = context.user_data[user_id].get('channel_data')
@@ -163,7 +164,8 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             channel_id = channel_data['id']
                             channel_name = channel_data['name']
 
-                            canale_dao.insert(channel_id, channel_name, "", license_code, user_id)
+                            canale_dao.insert(channel_id, channel_name, "", license_code)
+                            gestisce_dao.insert(user_id, channel_id, "", 1)
 
                             await context.bot.edit_message_text(
                                 chat_id=update.effective_chat.id,
