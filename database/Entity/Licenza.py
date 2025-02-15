@@ -4,20 +4,20 @@ class Licenza:
         self.scadenza = scadenza
         self.stato = stato
 
-    def setCodiceLicenza(self, new_codice):
+    def setCodiceLicenza(self, new_codice) -> None:
         self.codice_licenza = new_codice
 
-    def getCodiceLicenza(self):
+    def getCodiceLicenza(self) -> str:
         return self.codice_licenza
 
-    def setScadenza(self, new_scadenza):
+    def setScadenza(self, new_scadenza) -> None:
         self.scadenza = new_scadenza
 
-    def getScadenza(self):
+    def getScadenza(self) -> str:
         return self.scadenza
 
-    def setStato(self, new_stato):
+    def setStato(self, new_stato) -> None:
         self.stato = new_stato
 
-    def getStato(self):
+    def getStato(self) -> bool:
         return self.stato

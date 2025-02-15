@@ -7,27 +7,27 @@ class UtenteDAO:
         self.conn = Connessione().get_connection()
         self.cursor = self.conn.cursor()
 
-    def __enter__(self):
+    def __enter__(self) -> 'UtenteDAO':
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, utente: Utente):
+    def insert(self, utente: Utente) -> None:
         self.cursor.execute("INSERT INTO utenti (telegram_id, nome, isAdmin) VALUES (?, ?, ?)", 
                             (utente.getTelegramId(), utente.getNome(), utente.getIsAdmin()))
         self.conn.commit()
 
-    def update(self, utente: Utente):
+    def update(self, utente: Utente) -> None:
         self.cursor.execute("UPDATE utenti SET nome = ?, isAdmin = ? WHERE telegram_id = ?", 
                             (utente.getNome(), utente.getIsAdmin(), utente.getTelegramId()))
         self.conn.commit()
 
-    def delete(self, telegram_id):
+    def delete(self, telegram_id) -> None:
         self.cursor.execute("DELETE FROM utenti WHERE telegram_id = ?", (telegram_id,))
         self.conn.commit()
 
-    def get(self, telegram_id):
+    def get(self, telegram_id) -> Utente:
         self.cursor.execute("SELECT * FROM utenti WHERE telegram_id = ?", (telegram_id,))
 
         row = self.cursor.fetchone()
@@ -36,11 +36,11 @@ class UtenteDAO:
             return Utente(*row)
         return None
 
-    def get_all(self):
+    def get_all(self) -> list:
         self.cursor.execute("SELECT * FROM utenti")
 
         rows = self.cursor.fetchall()
         return [Utente(*row) for row in rows] 
     
-    def close(self):
+    def close(self) -> None:
         self.conn.close()

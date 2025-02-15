@@ -4,20 +4,20 @@ class Layout:
         self.nome_layout = nome_layout
         self.messaggio = messaggio
 
-    def get_layout_id(self):
+    def get_layout_id(self) -> int:
         return self.layout_id
 
-    def set_layout_id(self, new_layout_id: int):
+    def set_layout_id(self, new_layout_id: int) -> None:
         self.layout_id = new_layout_id
 
-    def get_nome_layout(self):
+    def get_nome_layout(self) -> str:
         return self.nome_layout
 
-    def set_nome_layout(self, new_nome_layout: str):
+    def set_nome_layout(self, new_nome_layout: str) -> None:
         self.nome_layout = new_nome_layout
 
-    def get_messaggio(self):
+    def get_messaggio(self) -> str:
         return self.messaggio
 
-    def set_messaggio(self, new_messaggio: str):
+    def set_messaggio(self, new_messaggio: str) -> None:
         self.messaggio = new_messaggio

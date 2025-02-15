@@ -6,28 +6,28 @@ class PossiedeDAO:
         self.conn = Connessione().get_connection()
         self.cursor = self.conn.cursor()
 
-    def __enter__(self):
+    def __enter__(self) -> 'PossiedeDAO':
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, possiede: Possiede):
+    def insert(self, possiede: Possiede) -> None:
         self.cursor.execute("INSERT INTO Possiede (canale_id, layout_id, in_uso) VALUES (?, ?, ?)",
                             (possiede.get_canale_id(), possiede.get_layout_id(), possiede.get_in_uso()))
         self.conn.commit()
 
-    def update(self, possiede: Possiede):
+    def update(self, possiede: Possiede) -> None:
         self.cursor.execute("UPDATE Possiede SET in_uso = ? WHERE canale_id = ? AND layout_id = ?",
                             (possiede.get_in_uso(), possiede.get_canale_id(), possiede.get_layout_id()))
         self.conn.commit()
 
-    def delete(self, canale_id, layout_id):
+    def delete(self, canale_id, layout_id) -> None:
         self.cursor.execute("DELETE FROM Possiede WHERE canale_id = ? AND layout_id = ?", 
                             (canale_id, layout_id))
         self.conn.commit()
 
-    def get(self, canale_id, layout_id):
+    def get(self, canale_id, layout_id) -> Possiede:
         self.cursor.execute("SELECT * FROM Possiede WHERE canale_id = ? AND layout_id = ?", 
                             (canale_id, layout_id))
         row = self.cursor.fetchone()
@@ -35,10 +35,10 @@ class PossiedeDAO:
             return Possiede(*row)
         return None
 
-    def get_all(self):
+    def get_all(self) -> list:
         self.cursor.execute("SELECT * FROM Possiede")
         rows = self.cursor.fetchall()
         return [Possiede(*row) for row in rows]
 
-    def close(self):
+    def close(self) -> None:
         self.conn.close()
