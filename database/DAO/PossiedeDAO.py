@@ -12,14 +12,14 @@ class PossiedeDAO:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, possiede: Possiede) -> None:
+    def insert(self, canale_id: int, layout_id: int, in_uso: bool = 0) -> None:
         self.cursor.execute("INSERT INTO Possiede (canale_id, layout_id, in_uso) VALUES (?, ?, ?)",
-                            (possiede.get_canale_id(), possiede.get_layout_id(), possiede.get_in_uso()))
+                            (canale_id, layout_id, in_uso))
         self.conn.commit()
 
-    def update(self, possiede: Possiede) -> None:
+    def update(self, canale_id: int, layout_id: int, in_uso: bool) -> None:
         self.cursor.execute("UPDATE Possiede SET in_uso = ? WHERE canale_id = ? AND layout_id = ?",
-                            (possiede.get_in_uso(), possiede.get_canale_id(), possiede.get_layout_id()))
+                            (in_uso, canale_id, layout_id))
         self.conn.commit()
 
     def delete(self, canale_id, layout_id) -> None:

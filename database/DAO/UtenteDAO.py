@@ -13,14 +13,14 @@ class UtenteDAO:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, utente: Utente) -> None:
+    def insert(self, telegram_id: int, nome: str, isAdmin: bool = 0) -> None:
         self.cursor.execute("INSERT INTO utenti (telegram_id, nome, isAdmin) VALUES (?, ?, ?)", 
-                            (utente.getTelegramId(), utente.getNome(), utente.getIsAdmin()))
+                            (telegram_id, nome, isAdmin))
         self.conn.commit()
 
-    def update(self, utente: Utente) -> None:
+    def update(self, telegram_id: int, nome: str, isAdmin: bool) -> None:
         self.cursor.execute("UPDATE utenti SET nome = ?, isAdmin = ? WHERE telegram_id = ?", 
-                            (utente.getNome(), utente.getIsAdmin(), utente.getTelegramId()))
+                            (nome, isAdmin, telegram_id))
         self.conn.commit()
 
     def delete(self, telegram_id) -> None:

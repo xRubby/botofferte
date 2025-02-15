@@ -12,14 +12,14 @@ class LicenzaDAO:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, licenza: Licenza) -> None:
+    def insert(self, codice_licenza: str, scadenza: str, stato: bool = 1) -> None:
         self.cursor.execute("INSERT INTO licenze (codice_licenza, scadenza, stato) VALUES (?, ?, ?)", 
-                            (licenza.getCodiceLicenza(), licenza.getScadenza(), licenza.getStato()))
+                            (codice_licenza, scadenza, stato))
         self.conn.commit()
 
-    def update(self, licenza: Licenza) -> None:
+    def update(self, codice_licenza: str, scadenza: str, stato: bool) -> None:
         self.cursor.execute("UPDATE licenze SET scadenza = ?, stato = ? WHERE codice_licenza = ?", 
-                            (licenza.getScadenza(), licenza.getStato(), licenza.getCodiceLicenza()))
+                            (scadenza, stato, codice_licenza))
         self.conn.commit()
 
     def delete(self, codice_licenza) -> None:

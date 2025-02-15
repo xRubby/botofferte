@@ -21,13 +21,9 @@ from telegram_bot.keyboards.channel_offers.channel_offers_layout import *
 from telegram_bot.keyboards.settings.settings_menu import *
 from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
 
-from database.Entity.Utente import Utente
+from database.Entity import Utente
 
-from database.DAO.UtenteDAO import UtenteDAO
-from database.DAO.LicenzaDAO import LicenzaDAO
-from database.DAO.CanaleDAO import CanaleDAO
-from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.LinkDAO import LinkDAO
+from database.DAO import UtenteDAO, CanaleDAO, LicenzaDAO, GestisceDAO, LinkDAO
 
 
 
