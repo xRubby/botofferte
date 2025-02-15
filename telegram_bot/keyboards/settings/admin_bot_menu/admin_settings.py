@@ -21,8 +21,9 @@ async def admin_menu(query):
 
 async def generate_new_license(query): 
         new_license = generate_license()
+        licenza_dao = LicenzaDAO()
 
-        LicenzaDAO().insert(Licenza(new_license, "2050-12-31", True))
+        licenza_dao.insert(Licenza(new_license, "2050-12-31", True))
 
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]
@@ -30,10 +31,15 @@ async def generate_new_license(query):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(text=get_licenza_generata(new_license),parse_mode="HTML", reply_markup=reply_markup)
 
+        licenza_dao.close()
+
 
 
 async def view_licenses(query):
-    licenze = LicenzaDAO().get_all()
+
+    licenza_dao = LicenzaDAO()
+
+    licenze = licenza_dao.get_all()
 
     if licenze:
         keyboard = [
@@ -50,8 +56,14 @@ async def view_licenses(query):
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
 
+    licenza_dao.close()
+
 async def view_license_details(query, license_code):
-    licenza = LicenzaDAO().get(license_code)
+
+    licenza_dao = LicenzaDAO()
+
+
+    licenza = licenza_dao.get(license_code)
 
     if licenza:
         text = f"Licenza: {licenza.getCodiceLicenza()}\nStato: {'Attiva' if licenza.getStato() else 'Non attiva'}\nData scadenza: {licenza.getScadenza()}"
@@ -68,15 +80,20 @@ async def view_license_details(query, license_code):
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
 
-
+    licenza_dao.close()
 
 
 async def delete_license_confirm(query, license_code):
-    LicenzaDAO().delete(license_code)
+
+    licenza_dao = LicenzaDAO()
+
+    licenza_dao.delete(license_code)
     
     text = f"Licenza '{license_code}' cancellata con successo!"
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='view_licenses')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
+
+    licenza_dao.close()
 
