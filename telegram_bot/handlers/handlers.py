@@ -27,7 +27,7 @@ from database.DAO.UtenteDAO import UtenteDAO
 from database.DAO.LicenzaDAO import LicenzaDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.LinkDAO import add_link_to_channel
+from database.DAO.LinkDAO import LinkDAO
 
 
 

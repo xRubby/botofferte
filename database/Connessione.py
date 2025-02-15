@@ -71,11 +71,12 @@ class Connessione:
         );
 
         CREATE TABLE IF NOT EXISTS Pubblica (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER,
             id_canale TEXT NOT NULL,
-            asin_prodotti TEXT NOT NULL,
+            asin_prodotti TEXT NOT NULL, 
             FOREIGN KEY (id_canale) REFERENCES Canali(canale_id) ON DELETE CASCADE,
-            FOREIGN KEY (asin_prodotti) REFERENCES Prodotti(asin)
+            FOREIGN KEY (asin_prodotti) REFERENCES Prodotti(asin) ON DELETE CASCADE,
+            PRIMARY KEY(id,id_canale,asin_prodotti)
         );
 
         CREATE TABLE IF NOT EXISTS Prodotti (
