@@ -1,5 +1,5 @@
-from database import Connessione
-from database.Entity import Possiede
+from database.Connessione import Connessione
+from database.Entity.Possiede import Possiede
 
 class PossiedeDAO:
     def __init__(self):

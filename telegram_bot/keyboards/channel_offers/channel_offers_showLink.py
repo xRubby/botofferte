@@ -3,14 +3,14 @@ from telegram.ext import *
 
 from telegram_bot.functions.send_message import publish_offer
 
-from database.DAO.LinkDAO import LinkDAO
-from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO import CanaleDAO, PubblicaDAO
 
 
 async def show_links(query, context, channel_id, current_link_index=0):
-    links = None
 
-    
+    with PubblicaDAO() as pubblica_dao:
+        links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
+
     if not links:
         await query.edit_message_text(
             text="Non ci sono link nel database.",
@@ -37,33 +37,37 @@ async def show_links(query, context, channel_id, current_link_index=0):
     await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode='HTML')
 
 async def publish_message(query, update, context, channel_id, link_id):
-    link = None
 
-    try:
-        await publish_offer(update, context, channel_id, link.getMessaggio())
+    with PubblicaDAO() as pubblica_dao:
+        link = pubblica_dao.get(link_id)
 
-        await query.edit_message_text(
-            text=f"Messaggio pubblicato nel canale!",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{channel_id}')
-            ]])
-            
-        )
-        #remove_link_from_channel(link_id)
-    except Exception as e:
-        await query.edit_message_text(
-            text="Errore durante la pubblicazione del messaggio. Il bot non ha i requisiti di amministratore all'interno del canale",
-            parse_mode='HTML',
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{channel_id}')
-            ]])
-        )
+        try:
+            await publish_offer(update, context, channel_id, link.getMessaggio())
+
+            await query.edit_message_text(
+                text=f"Messaggio pubblicato nel canale!",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{channel_id}')
+                ]])
+                
+            )
+            pubblica_dao.update_is_pubblicato(link.getId(), link.getIdCanale(), link.getAsinProdotti(), 1)
+        except Exception as e:
+            await query.edit_message_text(
+                text="Errore durante la pubblicazione del messaggio. Il bot non ha i requisiti di amministratore all'interno del canale",
+                parse_mode='HTML',
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{channel_id}')
+                ]])
+            )
 
     
     
 
 async def navigate_links(query, context, channel_id, direction, current_link_index):
-    links = None
+    
+    with PubblicaDAO() as pubblica_dao:
+        links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
 
     if(len(links) >=2):
         if direction == "prev":
@@ -75,21 +79,23 @@ async def navigate_links(query, context, channel_id, direction, current_link_ind
     else: None
 
 async def remove_product(query, context, id_channel, link_id):
-    link = None
+    
+    with PubblicaDAO() as pubblica_dao:
+        link = pubblica_dao.get(link_id)
 
-    if link:
-        #remove_link_from_channel(link.getId())
+        if link:
+            pubblica_dao.delete(link.getId(), link.getIdCanale(), link.getAsinProdotti())
 
-        await query.edit_message_text(
-            text=f"Link rimosso dalla lista.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{id_channel}')
-            ]])
-        )
-    else:
-        await query.edit_message_text(
-            text="Errore: il link che stai cercando di rimuovere non esiste.",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{id_channel}')
-            ]])
-        )
+            await query.edit_message_text(
+                text=f"Link rimosso dalla lista.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{id_channel}')
+                ]])
+            )
+        else:
+            await query.edit_message_text(
+                text="Errore: il link che stai cercando di rimuovere non esiste.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channel_listlinks_{id_channel}')
+                ]])
+            )

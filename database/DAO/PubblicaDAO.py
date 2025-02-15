@@ -1,5 +1,5 @@
-from database import Connessione
-from database.Entity import Pubblica
+from database.Connessione import Connessione
+from database.Entity.Pubblica import Pubblica
 
 class PubblicaDAO:
     def __init__(self):

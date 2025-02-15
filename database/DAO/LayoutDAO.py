@@ -1,5 +1,5 @@
-from database import Connessione
-from database.Entity import Layout
+from database.Connessione import Connessione
+from database.Entity.Layout import Layout
 
 class LayoutDAO:
     def __init__(self):

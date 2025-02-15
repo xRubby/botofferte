@@ -10,11 +10,6 @@ import logging
 
 from database.DAO.CanaleDAO import *
 
-
-load_dotenv()
-
-CHAT_ID = os.getenv('CHAT_ID')
-
 def clean_text(text):
     lines = text.split("\n")
     
@@ -85,21 +80,19 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
                 try:
                     context_dict = {
-                        "titolo": offer['name'],
-                        "prezzo_nuovo": offer['new_price'],
-                        "prezzo_vecchio": offer['old_price'],
-                        "sconto": offer['discount_percentage'],
-                        "link": offer['url'],
-                        "linkfull": offer['full_url'],
-                        "valuta": offer['currency'],
-                        "spedito": offer['spedito'],
-                        "prime": offer['prime'],
-                        "preorder": offer['preorder'],
-                        "preorderdate": offer['preorderdate'],
-                        "warehouse": offer['warehouse'],
-                        "condition": offer['condition'],
-                        "conditioncomm": offer['conditioncomm'],
-                        "minimo": offer['minimo']
+                        "titolo": offer['titolo'],
+                        "prezzo_nuovo": offer['prezzo'],
+                        "prezzo_vecchio": offer['old_prezzo'],
+                        "sconto": offer['sconto'],
+                        "link": offer['link'],
+                        "valuta": offer['valuta'],
+                        "spedito": offer['venditore'],
+                        "prime": offer['isPrime'],
+                        "preorder": offer['preordine'],
+                        "preorderdate": offer['data_preordine'],
+                        "warehouse": offer['isWarehouse'],
+                        "condition": offer['condizione'],
+                        "conditioncomm": offer['condizione_descrizione']
                     }
 
                     messaggio = (
@@ -116,7 +109,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                     message = processa_messaggio(messaggio, context_dict)
 
                     keyboard = [
-                        [InlineKeyboardButton("🛒 Acquista su Amazon!", url=offer['url'])],
+                        [InlineKeyboardButton("🛒 Acquista su Amazon!", url=offer['link'])],
                         [InlineKeyboardButton("⬅️ Indietro", callback_data="back_to_main")]
                     ]
                     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -128,7 +121,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             text=message,
                             parse_mode='HTML',
                             reply_markup=reply_markup,
-                            link_preview_options=LinkPreviewOptions(url=offer['image_url'])
+                            link_preview_options=LinkPreviewOptions(url=offer['img_url'])
                         )
                     except Exception as e:
                         logging.error(f"Errore durante la modifica del messaggio: {e}")

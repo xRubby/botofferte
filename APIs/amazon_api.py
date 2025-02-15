@@ -1,14 +1,14 @@
 import os
 import logging
+import re
+
 from amazon_paapi import AmazonApi
 from dotenv import load_dotenv
-from APIs.bitly_api import shorten_url
-import re
-from urllib.parse import urlparse, parse_qs
-from datetime import datetime
-from utils.expand_link import expand_url
-import locale
 
+from APIs.bitly_api import shorten_url
+
+from utils.expand_link import expand_url
+from utils.amazon_utils import *
 
 load_dotenv()
 
@@ -18,35 +18,17 @@ ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 REGION = os.getenv('REGION')
 
 
-def extract_asin_from_url(url):
-    parsed_url = urlparse(url)
-    
-    if '/dp/' in parsed_url.path:
-        asin = parsed_url.path.split('/dp/')[1].split('/')[0]
-    elif '/gp/product/' in parsed_url.path:
-        asin = parsed_url.path.split('/gp/product/')[1].split('/')[0]
-    else:
-        asin_match = re.search(r'/([A-Z0-9]{10})', parsed_url.path)
-        if asin_match:
-            asin = asin_match.group(1)
-        else:
-            return None
+def format_price(price):
+    return "{:.2f}".format(price).replace('.', ',')
 
-    return asin
+def get_condition(item):
+    if item.offers.listings[0].condition.value == "Used":
+        return item.offers.listings[0].condition.value, item.offers.listings[0].condition.condition_note.value
+    return "", ""
 
+def get_prime_status(item):
+    return True if item.offers.listings[0].delivery_info.is_prime_eligible else False
 
-
-def formatta_data(data):
-    locale.setlocale(locale.LC_TIME, 'it_IT.UTF-8')
-    data_temp = datetime.strptime(data, "%Y-%m-%dT%H:%M:%SZ")
-
-    giorno = data_temp.strftime("%d")
-    anno = data_temp.strftime("%Y")
-
-    mese = data_temp.strftime("%B").lower()
-
-    data_formattata = f"{giorno} {mese} {anno}"
-    return data_formattata
 
 def search_amazon_offers(keyword_or_url):
 
@@ -63,20 +45,11 @@ def search_amazon_offers(keyword_or_url):
         "Amazon.com": "Amazon",
     }
 
-    pattern = r'https?://[^\s/$.?#].[^\s]*'
-    if re.match(pattern, keyword_or_url):
-        keyword_or_url = expand_url(keyword_or_url)
-        
-
+    keyword_or_url = expand_url(keyword_or_url)
     asin = extract_asin_from_url(keyword_or_url)
-    parsed_url = urlparse(keyword_or_url)
-    query_params = parse_qs(parsed_url.query)
-    warehouse_seller_id = query_params.get('m', [None])[0]
-    
-    if asin:
-        keyword = asin
-    else:
-        keyword = keyword_or_url
+    warehouse_seller_id = search_warehouse_seller_id_from_link(keyword_or_url)
+
+    keyword = asin if asin else keyword_or_url
 
     try:
         amazon_client = AmazonApi(
@@ -87,100 +60,70 @@ def search_amazon_offers(keyword_or_url):
         )
 
         is_warehouse = warehouse_seller_id == "A1HO9729ND375Y"
-        if(is_warehouse):
-            cond="Used"
-        else:
-            cond="New"
-        
+        cond = "Used" if is_warehouse else "New"
+
         response = amazon_client.search_items(
             keywords=keyword,
             search_index="All",
             item_count=1,
             condition=cond
-                
         )
 
         offers = []
         for item in response.items:
+            asin = item.asin
             product_name = item.item_info.title.display_value
-            image_url = item.images.primary.large.url if item.images and item.images.primary.large else ''
             new_price = item.offers.listings[0].price.amount
             old_price = item.offers.listings[0].saving_basis.amount if item.offers.listings[0].saving_basis else new_price
+            currency = item.offers.listings[0].price.currency
             discount_percentage = int((old_price - new_price) / old_price * 100) if old_price > new_price else 0
-            asin = item.asin
-            currency= item.offers.listings[0].price.currency
+            
+            venditore = item.offers.listings[0].merchant_info.name
+            spedito_amazon = item.offers.listings[0].delivery_info.is_amazon_fulfilled
+            venduto = seller_name_mapping.get(venditore, venditore)
 
-            venditore=item.offers.listings[0].merchant_info.name
-            spedito_amazon=item.offers.listings[0].delivery_info.is_amazon_fulfilled
+            product_url = f"https://www.amazon.it/dp/{asin}?m={warehouse_seller_id}" if is_warehouse else f"https://www.amazon.it/dp/{asin}"
 
-            venduto=seller_name_mapping.get(venditore,venditore)
+            image_url = item.images.primary.large.url if item.images and item.images.primary.large else ''
 
+            brand = item.item_info.by_line_info.brand.label
 
+            try:
+                data = item.item_info.product_info.release_date.display_value
+                preorder = True
+                data_preordine = formatta_data(data)
+            except Exception:
+                preorder = False
+                data_preordine = None
 
-            if(venduto=="Amazon" and spedito_amazon):
-                spedito="Venduto e spedito da Amazon"
-            elif(spedito_amazon):
-                spedito=f"Venduto da {venditore} e spedito da Amazon"
-            else:
-                spedito=f"Venduto e spedito da {venditore}"
-
-
-
-            if item.offers.listings[0].delivery_info.is_prime_eligible:
-                prime="Amazon Prime"
-            else:
-                prime=""
-
-            currency_symbol=currency_symbols.get(currency,currency)
+            prime = get_prime_status(item)
 
             
-            try:
-                data=item.item_info.product_info.release_date.display_value
-                preorder="Preordine"
-                data_preordine=formatta_data(data)
-            except Exception as e:
-                preorder=""
-                data_preordine=None
 
-            if item.offers.listings[0].condition.value=="Used":
-                warehouse="Warehouse"
-                cond=item.offers.listings[0].condition.value
-                cond_comm=item.offers.listings[0].condition.condition_note.value
-            else:
-                warehouse=""
-                cond=""
-                cond_comm=""
-
-
-
-            if is_warehouse:
-                product_url = f"https://www.amazon.it/dp/{asin}?m={warehouse_seller_id}&tag={ASSOCIATE_TAG}"
-            else:
-                product_url = f"https://www.amazon.it/dp/{asin}?tag={ASSOCIATE_TAG}"
-            short_url = shorten_url(product_url)
+            cond, cond_comm = get_condition(item)
 
             offers.append({
-                'name': product_name,
-                'old_price': "{:.2f}".format(old_price).replace('.', ','),
-                'new_price': "{:.2f}".format(new_price).replace('.', ','),
-                'discount_percentage': discount_percentage,
-                'image_url': image_url,
-                'url': short_url,
-                'full_url': product_url,
-                'currency': currency_symbol,
-                'spedito': spedito,
-                'prime': prime,
-                'preorder': preorder,
-                'preorderdate': data_preordine,
-                'warehouse': warehouse,
-                'condition': cond,
-                'conditioncomm': cond_comm,
-                'minimo': ""
+                'ASIN': asin,
+                'titolo': product_name,
+                'prezzo': format_price(new_price),
+                'old_prezzo': format_price(old_price),
+                'valuta': currency_symbols.get(currency,currency),
+                'sconto': discount_percentage,
+                'venditore': venduto,
+                'spedito_Amazon': spedito_amazon,
+                'link': product_url,
+                'img_url': image_url,
+                'brand': brand,
+                'preordine': preorder,
+                'data_preordine': data_preordine,
+                'isPrime': prime,
+                'isWarehouse': is_warehouse,
+                'condizione': cond,
+                'condizione_descrizione': cond_comm
             })
         
         return offers
-    
+
     except Exception as e:
         logging.error(f"Errore nel recupero delle offerte: {e}")
         raise Exception("Errore nel recupero delle offerte")
-        return []

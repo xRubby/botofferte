@@ -23,7 +23,7 @@ async def generate_new_license(query):
         new_license = generate_license()
 
         with LicenzaDAO() as licenza_dao:
-            licenza_dao.insert(Licenza(new_license, "2050-12-31", True))
+            licenza_dao.insert(new_license, "2050-01-01")
 
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]

@@ -1,5 +1,5 @@
-from database import Connessione
-from database.Entity import Prodotto
+from database.Connessione import Connessione
+from database.Entity.Prodotto import Prodotto
 
 class ProdottoDAO:
     def __init__(self):
@@ -12,19 +12,19 @@ class ProdottoDAO:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.conn.close()
 
-    def insert(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, sconto_percentuale: float, venditore: str, spedito_da: str, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
-        self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                            (asin, titolo, prezzo, old_prezzo, valuta, sconto, sconto_percentuale, venditore, spedito_da,
+    def insert(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
+        self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                            (asin, titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione))
         self.conn.commit()
 
-    def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, sconto_percentuale: float, venditore: str, spedito_da: str, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
+    def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
         self.cursor.execute('''UPDATE prodotti SET titolo = ?, prezzo = ?, old_prezzo = ?, valuta = ?, 
-                            sconto = ?, sconto_percentuale = ?, venditore = ?, spedito_da = ?, 
+                            sconto = ?, venditore = ?, spedito_da = ?, 
                             link = ?, img_url = ?, brand = ?, preorder = ?, data_preordine = ?, 
                             isPrime = ?, isWarehouse = ?, condizione = ?, condizione_descrizione = ? 
                             WHERE asin = ?''', 
-                            (titolo, prezzo, old_prezzo, valuta, sconto, sconto_percentuale, venditore, spedito_da,
+                            (titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione, asin))
         self.conn.commit()
 

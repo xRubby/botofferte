@@ -21,9 +21,9 @@ from telegram_bot.keyboards.channel_offers.channel_offers_layout import *
 from telegram_bot.keyboards.settings.settings_menu import *
 from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
 
-from database.Entity import Utente
-
-from database.DAO import UtenteDAO, CanaleDAO, LicenzaDAO, GestisceDAO, LinkDAO
+from database.DAO.UtenteDAO import UtenteDAO
+from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO.GestisceDAO import GestisceDAO
 
 
 
@@ -33,7 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     with UtenteDAO() as utente_dao:
         if not utente_dao.get(user.id):
-            utente_dao.insert(Utente(user.id, user.first_name, 0))
+            utente_dao.insert(user.id, user.first_name)
 
     await create_main_menu(update, context)
 
