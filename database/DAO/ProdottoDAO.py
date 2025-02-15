@@ -18,6 +18,14 @@ class ProdottoDAO:
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione))
         self.conn.commit()
 
+    def insert_Prodotto(self, prodotto: Prodotto):
+        self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                        (prodotto.getAsin(), prodotto.getTitolo(), prodotto.getPrezzo(), prodotto.getOldPrezzo(), prodotto.getValuta(), 
+                         prodotto.getSconto(), prodotto.getVenditore(), prodotto.getSpeditoAmazon(), prodotto.getLink(), prodotto.getImgUrl(), 
+                         prodotto.getBrand(), prodotto.getPreorder(), prodotto.getDataPreordine(), prodotto.getIsPrime(), prodotto.getIsWarehouse(), 
+                         prodotto.getCondizione(), prodotto.getCondizioneDescrizione()))
+        self.conn.commit()
+
     def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
         self.cursor.execute('''UPDATE prodotti SET titolo = ?, prezzo = ?, old_prezzo = ?, valuta = ?, 
                             sconto = ?, venditore = ?, spedito_da = ?, 
@@ -32,8 +40,12 @@ class ProdottoDAO:
         self.cursor.execute("DELETE FROM prodotti WHERE asin = ?", (asin,))
         self.conn.commit()
 
-    def get(self, asin) -> Prodotto:
+    def get_by_asin(self, asin) -> Prodotto:
         self.cursor.execute("SELECT * FROM prodotti WHERE asin = ?", (asin,))
+        return self.cursor.fetchone()
+    
+    def get_by_titolo(self, titolo) -> Prodotto:
+        self.cursor.execute("SELECT * FROM prodotti WHERE titolo LIKE ?", ('%' + titolo + '%',))
         return self.cursor.fetchone()
 
     def get_all(self) -> list:

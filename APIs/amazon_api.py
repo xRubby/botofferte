@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 from APIs.bitly_api import shorten_url
 
-from utils.expand_link import expand_url
 from utils.amazon_utils import *
 
 load_dotenv()
@@ -45,11 +44,11 @@ def search_amazon_offers(keyword_or_url):
         "Amazon.com": "Amazon",
     }
 
-    keyword_or_url = expand_url(keyword_or_url)
-    asin = extract_asin_from_url(keyword_or_url)
+
+    extracted_asin = extract_asin_from_url(keyword_or_url)
     warehouse_seller_id = search_warehouse_seller_id_from_link(keyword_or_url)
 
-    keyword = asin if asin else keyword_or_url
+    keyword = extracted_asin if extracted_asin else keyword_or_url
 
     try:
         amazon_client = AmazonApi(
@@ -69,7 +68,7 @@ def search_amazon_offers(keyword_or_url):
             condition=cond
         )
 
-        offers = []
+        offer = []
         for item in response.items:
             asin = item.asin
             product_name = item.item_info.title.display_value
@@ -98,11 +97,13 @@ def search_amazon_offers(keyword_or_url):
 
             prime = get_prime_status(item)
 
+
+            print(asin)
             
 
             cond, cond_comm = get_condition(item)
 
-            offers.append({
+            offer.append({
                 'ASIN': asin,
                 'titolo': product_name,
                 'prezzo': format_price(new_price),
@@ -122,7 +123,7 @@ def search_amazon_offers(keyword_or_url):
                 'condizione_descrizione': cond_comm
             })
         
-        return offers
+        return offer
 
     except Exception as e:
         logging.error(f"Errore nel recupero delle offerte: {e}")

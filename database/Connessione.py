@@ -82,7 +82,7 @@ class Connessione:
             valuta TEXT NOT NULL,
             sconto REAL NOT NULL,
             venditore TEXT NOT NULL,
-            spedito_da INTEGER NOT NULL DEFAULT 0,
+            spedito_Amazon INTEGER NOT NULL DEFAULT 0,
             link TEXT NOT NULL,
             img_url TEXT NOT NULL,
             brand TEXT NOT NULL,

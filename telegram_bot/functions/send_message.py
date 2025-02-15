@@ -7,8 +7,14 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LinkPre
 from telegram.ext import ContextTypes
 import logging
 
+import traceback
 
-from database.DAO.CanaleDAO import *
+from database.Entity.Prodotto import Prodotto
+
+from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO.ProdottoDAO import ProdottoDAO
+
+from utils.amazon_utils import check_url_pattern, extract_asin_from_url
 
 def clean_text(text):
     lines = text.split("\n")
@@ -63,40 +69,64 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         if keyword:
             try:
-                offers = search_amazon_offers(keyword)
-            except Exception as e:
-                logging.error(f"Errore durante la ricerca delle offerte: {e}")
-                await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Errore durante la ricerca delle offerte. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-                return
-            
-            if offers:
-                offer = offers[0]
+                asin = extract_asin_from_url(keyword)
 
-                try:
-                    context_dict = {
-                        "titolo": offer['titolo'],
-                        "prezzo_nuovo": offer['prezzo'],
-                        "prezzo_vecchio": offer['old_prezzo'],
-                        "sconto": offer['sconto'],
-                        "link": offer['link'],
-                        "valuta": offer['valuta'],
-                        "spedito": offer['venditore'],
-                        "prime": offer['isPrime'],
-                        "preorder": offer['preordine'],
-                        "preorderdate": offer['data_preordine'],
-                        "warehouse": offer['isWarehouse'],
-                        "condition": offer['condizione'],
-                        "conditioncomm": offer['condizione_descrizione']
+                with ProdottoDAO() as prodotto_dao:
+                    if(asin):
+                        prodotto = prodotto_dao.get_by_asin(asin)
+                    else:
+                        prodotto = prodotto_dao.get_by_titolo(keyword)
+                
+                    if(not prodotto):
+                        try:
+                            offers = search_amazon_offers(keyword)
+
+                            offer = offers[0]
+
+                            prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
+                                                offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                            
+                            prodotto_dao.insert_Prodotto(prodotto)
+
+                        except Exception as e:
+                            traceback.print_exc()
+                            await context.bot.edit_message_text(
+                                chat_id=update.effective_chat.id,
+                                message_id=message_id,
+                                text="Errore durante la ricerca delle offerte. Riprova più tardi.",
+                                parse_mode='HTML',
+                                reply_markup=reply_markup_back
+                            )
+                            return
+                    
+                    prodotto_dict={
+                        "ASIN": prodotto.getAsin(),
+                        "titolo": prodotto.getTitolo(),
+                        "prezzo": prodotto.getPrezzo(),
+                        "old_prezzo": prodotto.getOldPrezzo(),
+                        "valuta": prodotto.getValuta(),
+                        "sconto": prodotto.getSconto(),
+                        "venditore": prodotto.getVenditore(),
+                        "spedito_Amazon": prodotto.getSpeditoAmazon(),
+                        "link": prodotto.getLink(),
+                        "img_url": prodotto.getImgUrl(),
+                        "brand": prodotto.getBrand(),
+                        "preorder": prodotto.getPreorder(),
+                        "data_preordine": prodotto.getDataPreordine(),
+                        "isPrime": prodotto.getIsPrime(),
+                        "isWarehouse": prodotto.getIsWarehouse(),
+                        "condizione": prodotto.getCondizione(),
+                        "condizione_commento": prodotto.getCondizioneDescrizione()
                     }
+            except Exception as e:
+                logging.error("ERROER")
+    except Exception as e:
+        logging.error("ERRORE")
 
-                    messaggio = (
-                        "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {preorderdate}</b>_}\n"
+            
+    messaggio = (
+        "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {preorderdate}</b>_}\n"
                         "\n"
                         "💶 <b>{prezzo_nuovo}{valuta}</b> {_(invece di: {prezzo_vecchio}{valuta}, <i>{sconto}% di sconto</i>)_}\n"
                         "{_🔄 Condizione: {condition} ({conditioncomm})_}\n"
@@ -106,66 +136,32 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                         "📌 Scopri l'offerta qui: {link}"
                     )
 
-                    message = processa_messaggio(messaggio, context_dict)
+    message = processa_messaggio(messaggio, prodotto_dict)
 
-                    keyboard = [
-                        [InlineKeyboardButton("🛒 Acquista su Amazon!", url=offer['link'])],
-                        [InlineKeyboardButton("⬅️ Indietro", callback_data="back_to_main")]
-                    ]
-                    reply_markup = InlineKeyboardMarkup(keyboard)
-                    
-                    try:
-                        await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text=message,
-                            parse_mode='HTML',
-                            reply_markup=reply_markup,
-                            link_preview_options=LinkPreviewOptions(url=offer['img_url'])
-                        )
-                    except Exception as e:
-                        logging.error(f"Errore durante la modifica del messaggio: {e}")
-                        await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Errore durante la modifica del messaggio. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-                except Exception as e:
-                    logging.error(f"Errore durante la costruzione del messaggio: {e}")
-                    await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Errore durante la costruzione del messaggio. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-            else:
-                await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Nessuna offerta trovata per questa parola chiave o URL.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-        else:
-            await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Per favore, fornisci una parola chiave o un URL per la ricerca.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-    except Exception as e:
+    keyboard = [
+                [InlineKeyboardButton("🛒 Acquista su Amazon!", url=offer['link'])],
+                [InlineKeyboardButton("⬅️ Indietro", callback_data="back_to_main")]
+            ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
         await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Si è verificato un errore imprevisto. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-        logging.error(f"Errore generale nella funzione: {e}")
+                    chat_id=update.effective_chat.id,
+                    message_id=message_id,
+                    text=message,                        
+                    parse_mode='HTML',
+                    reply_markup=reply_markup,
+                    link_preview_options=LinkPreviewOptions(url=offer['img_url'])
+                    )
+    except Exception as e:
+                logging.error(f"Errore durante la modifica del messaggio: {e}")
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=message_id,
+                    text="Errore durante la modifica del messaggio. Riprova più tardi.",
+                    parse_mode='HTML',
+                    reply_markup=reply_markup_back
+                )
 
 
 async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, channel_id: str, keyword: str):

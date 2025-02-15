@@ -1,14 +1,13 @@
 class Prodotto:
-    def __init__(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, sconto_percentuale: float, venditore: str, spedito_da: str, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str):
+    def __init__(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str):
         self.asin = asin
         self.titolo = titolo
         self.prezzo = prezzo
         self.old_prezzo = old_prezzo
         self.valuta = valuta
         self.sconto = sconto
-        self.sconto_percentuale = sconto_percentuale
         self.venditore = venditore
-        self.spedito_da = spedito_da
+        self.spedito_Amazon = spedito_Amazon
         self.link = link
         self.img_url = img_url
         self.brand = brand
@@ -55,23 +54,17 @@ class Prodotto:
     def getSconto(self) -> float:
         return self.sconto
 
-    def setScontoPercentuale(self, new_sconto_percentuale: float) -> None:
-        self.sconto_percentuale = new_sconto_percentuale
-
-    def getScontoPercentuale(self) -> float:
-        return self.sconto_percentuale
-
     def setVenditore(self, new_venditore: str) -> None:
         self.venditore = new_venditore
 
     def getVenditore(self) -> str:
         return self.venditore
 
-    def setSpeditoDa(self, new_spedito_da: str) -> None:
-        self.spedito_da = new_spedito_da
+    def setSpeditoAmazon(self, new_spedito_Amazon: bool) -> None:
+        self.spedito_da = new_spedito_Amazon
 
-    def getSpeditoDa(self) -> str:
-        return self.spedito_da
+    def getSpeditoAmazon(self) -> bool:
+        return self.spedito_Amazon
 
     def setLink(self, new_link: str) -> None:
         self.link = new_link

@@ -4,6 +4,8 @@ import re
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
+from utils.expand_link import expand_url
+
 
 def check_url_pattern(keyword):
     pattern = r'https?://[^\s/$.?#].[^\s]*'
@@ -14,8 +16,10 @@ def check_url_pattern(keyword):
 def extract_asin_from_url(url):
 
     if check_url_pattern(url):
-        parsed_url = urlparse(url)
-        
+        expanded_url = expand_url(url)
+
+        parsed_url = urlparse(expanded_url)
+            
         if '/dp/' in parsed_url.path:
             asin = parsed_url.path.split('/dp/')[1].split('/')[0]
         elif '/gp/product/' in parsed_url.path:
