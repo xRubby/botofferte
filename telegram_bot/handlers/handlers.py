@@ -24,19 +24,22 @@ from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
 from database.Entity.Utente import Utente
 
 from database.DAO.UtenteDAO import UtenteDAO
-from database.DAO.LicenzaDAO import getLicenseDetails, updateUserLicense
-from database.DAO.CanaleDAO import add_channel_to_db, set_affiliate_id
+from database.DAO.LicenzaDAO import LicenzaDAO
+from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.LinkDAO import add_link_to_channel
 
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
-    await create_main_menu(update, context)
-
     user = update.effective_user
 
-    UtenteDAO().insert(Utente(user.id, user.first_name, 0))
+    if not UtenteDAO().get(user.id):
+        UtenteDAO().insert(Utente(user.id, user.first_name, 0))
+
+    await create_main_menu(update, context)
+
+    
 
 
 
@@ -70,6 +73,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if 'awaiting_newmessage_layout' in context.user_data[user_id]:
         context.user_data[user_id]['awaiting_newmessage_layout'] = False
+
         
 
     data_parts = query.data.split("_")
@@ -141,21 +145,46 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         license_code = update.message.text.strip()
         await update.message.delete()
 
+
         keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'offerte_canale')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        
-        license_details = getLicenseDetails(license_code)
-        if license_details:
-            updateUserLicense(license_code,user_id)
+        canale_dao = CanaleDAO()
 
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=message_id,
-                text=f"Licenza '{license_code}' aggiunta con successo!",
-                reply_markup=reply_markup)
+        
+        license_details = LicenzaDAO().get(license_code)
+        if license_details:
+            if(not canale_dao.is_license_used(license_code)):
+
+                channel_data = context.user_data[user_id].get('channel_data')
+                if channel_data:
+                    channel_id = channel_data['id']
+                    channel_name = channel_data['name']
+
+                    canale_dao.insert(channel_id, channel_name, "", license_code, user_id)
+
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=message_id,
+                        text=f"Canale '{channel_name}' aggiunto con la licenza '{license_code}'!",
+                        reply_markup=reply_markup
+                    )
+                else:
+                    await context.bot.edit_message_text(
+                        chat_id=update.effective_chat.id,
+                        message_id=message_id,
+                        text="Errore: nessun canale da associare alla licenza.",
+                        reply_markup=reply_markup
+                    )
+            
+            else:
+                await context.bot.edit_message_text(
+                    chat_id=update.effective_chat.id,
+                    message_id=message_id,
+                    text="Licenza già in uso. Riprova.",
+                    reply_markup=reply_markup)
         else:
         
             await context.bot.edit_message_text(
@@ -163,8 +192,11 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=message_id,
                 text="Licenza non valida. Riprova.",
                 reply_markup=reply_markup)
+            
+        canale_dao.close()
 
-        context.user_data[user_id]['awaiting_license'] = False
+        context.user_data[user_id]['awaiting_license'] = None
+        context.user_data[user_id]['channel_data'] = None
 
 
     elif context.user_data[user_id].get('adding_channel'):
@@ -187,11 +219,15 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     is_admin = any(admin.user.id == user_id for admin in administrators)
 
                     if is_admin:
-                        add_channel_to_db(user_id, channel_id, channel_name, message=getTemplateMessage())
+                        
+                        context.user_data[user_id]['channel_data'] = {'id': channel_id, 'name': channel_name}
+                        context.user_data[user_id]['awaiting_license'] = True
+
+
                         await context.bot.edit_message_text(
                             chat_id=update.effective_chat.id,
                             message_id=message_id,
-                            text=f"Canale '{channel_name}' aggiunto correttamente!",
+                            text=f"Ora invia la licenza per completare il processo.",
                             reply_markup=reply_markup)
                     else:
                         await context.bot.edit_message_text(

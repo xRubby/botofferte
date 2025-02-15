@@ -1,24 +1,17 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import *
 
-from database.DAO.LicenzaDAO import check_license
-from database.DAO.CanaleDAO import get_user_channels, remove_channel_from_user
+from database.Entity.Canale import Canale
 
-from telegram_bot.messages.messages_it import get_licenza_non_attiva
+from database.DAO.CanaleDAO import CanaleDAO
+
 
 async def handle_offers(query, user_id):
+    
+        canale_dao = CanaleDAO()
 
-    if not check_license(user_id):
-            keyboard = [
-            [InlineKeyboardButton("Aggiungi licenza", callback_data='add_license')],
-            [InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')]
-        ]
 
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            await query.edit_message_text(text=get_licenza_non_attiva(),parse_mode="HTML", reply_markup=reply_markup)
-    else:
-        channels = get_user_channels(user_id)
+        channels = canale_dao.get_user_channels(user_id)
         keyboard = []
 
         if not channels:
@@ -26,8 +19,8 @@ async def handle_offers(query, user_id):
         else:
             text = "I tuoi canali:\n"
             for channel in channels:
-                channel_id = channel.get_id()
-                channel_name = channel.get_nome_canale()
+                channel_id = channel.getCanaleId()
+                channel_name = channel.getNomeCanale()
                 text += f"\n- {channel_name}"
 
                 keyboard.append([
@@ -42,6 +35,8 @@ async def handle_offers(query, user_id):
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         await query.edit_message_text(text=text, reply_markup=reply_markup)
+
+        canale_dao.close()
 
 
 
@@ -91,7 +86,7 @@ async def delete_channel(query, channel_id, user_id):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
-        remove_channel_from_user(user_id, channel_id)
+        
         await query.edit_message_text("Canale rimosso con successo!", reply_markup=reply_markup)
     except Exception as e:
         await query.edit_message_text(f"Errore nella rimozione del canale: {e}", reply_markup=reply_markup)

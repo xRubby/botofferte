@@ -1,11 +1,15 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaleDAO import *
+from database.Entity.Canale import Canale
+
+from database.DAO.CanaleDAO import CanaleDAO
 
 async def edit_channel(query, channel_id):
 
-    nome_canale = get_channel(channel_id).get_nome_canale()
+    canale_dao = CanaleDAO()
+
+    nome_canale = canale_dao.get(channel_id).getNomeCanale()
 
     keyboard = [
         [InlineKeyboardButton("➕ Inserisci link", callback_data=f'channel_link_{channel_id}')],
@@ -20,3 +24,5 @@ async def edit_channel(query, channel_id):
         parse_mode="HTML",
         reply_markup=reply_markup
     )
+
+    canale_dao.close()
