@@ -7,6 +7,12 @@ class LinkDAO:
         self.conn = Connessione.get_connection()
         self.cursor = self.conn.cursor()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.close()
+
     def insert(self, link: Link):
         self.cursor.execute("INSERT INTO links (url, id_canale) VALUES (?, ?)", 
                             (link.getUrl(), link.getIdCanale()))

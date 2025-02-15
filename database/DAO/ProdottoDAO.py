@@ -6,6 +6,12 @@ class ProdottoDAO:
         self.conn = Connessione().get_connection()
         self.cursor = self.conn.cursor()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.close()
+
     def insert(self, prodotto):
         self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                             (prodotto.getAsin(), prodotto.getTitolo(), prodotto.getPrezzo(), prodotto.getOldPrezzo(), 

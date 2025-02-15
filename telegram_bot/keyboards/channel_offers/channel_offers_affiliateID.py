@@ -1,7 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaleDAO import get_affiliate_id
+from database.DAO.CanaleDAO import CanaleDAO
 
 async def insert_affiliate_id(query, context, user_id, channel_id):
     message_id = query.message.id
@@ -14,7 +14,7 @@ async def insert_affiliate_id(query, context, user_id, channel_id):
 
     await query.edit_message_text(
         text="Inserisci l'ID dell'affiliato di Amazon:\n\n"
-             f"ID corrente: <b>{get_affiliate_id(channel_id)}</b>",
+             f"ID corrente: <b>{None}</b>",
         reply_markup=reply_markup,
         parse_mode='HTML'
     )

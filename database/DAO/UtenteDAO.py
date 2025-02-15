@@ -7,6 +7,12 @@ class UtenteDAO:
         self.conn = Connessione().get_connection()
         self.cursor = self.conn.cursor()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.conn.close()
+
     def insert(self, utente: Utente):
         self.cursor.execute("INSERT INTO utenti (telegram_id, nome, isAdmin) VALUES (?, ?, ?)", 
                             (utente.getTelegramId(), utente.getNome(), utente.getIsAdmin()))

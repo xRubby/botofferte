@@ -9,7 +9,8 @@ from telegram_bot.messages.messages_it import get_impostazioni
 async def settings_menu(user_id, query): 
         keyboard = []
 
-        utente = UtenteDAO().get(user_id)
+        with UtenteDAO() as utente_dao:
+            utente = utente_dao.get(user_id)
 
         if utente.getIsAdmin():
             keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])

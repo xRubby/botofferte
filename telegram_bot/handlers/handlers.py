@@ -34,8 +34,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     user = update.effective_user
 
-    if not UtenteDAO().get(user.id):
-        UtenteDAO().insert(Utente(user.id, user.first_name, 0))
+    with UtenteDAO() as utente_dao:
+        if not utente_dao.get(user.id):
+            utente_dao.insert(Utente(user.id, user.first_name, 0))
 
     await create_main_menu(update, context)
 
@@ -151,49 +152,47 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        canale_dao = CanaleDAO()
+        with LicenzaDAO() as licenza_dao:
+            license_details = licenza_dao.get(license_code)
+            if license_details:
+                with CanaleDAO() as canale_dao:
+                    if(not canale_dao.is_license_used(license_code)):
 
-        
-        license_details = LicenzaDAO().get(license_code)
-        if license_details:
-            if(not canale_dao.is_license_used(license_code)):
+                        channel_data = context.user_data[user_id].get('channel_data')
+                        if channel_data:
+                            channel_id = channel_data['id']
+                            channel_name = channel_data['name']
 
-                channel_data = context.user_data[user_id].get('channel_data')
-                if channel_data:
-                    channel_id = channel_data['id']
-                    channel_name = channel_data['name']
+                            canale_dao.insert(channel_id, channel_name, "", license_code, user_id)
 
-                    canale_dao.insert(channel_id, channel_name, "", license_code, user_id)
-
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=message_id,
-                        text=f"Canale '{channel_name}' aggiunto con la licenza '{license_code}'!",
-                        reply_markup=reply_markup
-                    )
-                else:
-                    await context.bot.edit_message_text(
-                        chat_id=update.effective_chat.id,
-                        message_id=message_id,
-                        text="Errore: nessun canale da associare alla licenza.",
-                        reply_markup=reply_markup
-                    )
-            
+                            await context.bot.edit_message_text(
+                                chat_id=update.effective_chat.id,
+                                message_id=message_id,
+                                text=f"Canale '{channel_name}' aggiunto con la licenza '{license_code}'!",
+                                reply_markup=reply_markup
+                            )
+                        else:
+                            await context.bot.edit_message_text(
+                                chat_id=update.effective_chat.id,
+                                message_id=message_id,
+                                text="Errore: nessun canale da associare alla licenza.",
+                                reply_markup=reply_markup
+                            )
+                    
+                    else:
+                        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text="Licenza già in uso. Riprova.",
+                            reply_markup=reply_markup)
             else:
+            
                 await context.bot.edit_message_text(
                     chat_id=update.effective_chat.id,
                     message_id=message_id,
-                    text="Licenza già in uso. Riprova.",
+                    text="Licenza non valida. Riprova.",
                     reply_markup=reply_markup)
-        else:
-        
-            await context.bot.edit_message_text(
-                chat_id=update.effective_chat.id,
-                message_id=message_id,
-                text="Licenza non valida. Riprova.",
-                reply_markup=reply_markup)
-            
-        canale_dao.close()
+                
 
         context.user_data[user_id]['awaiting_license'] = None
         context.user_data[user_id]['channel_data'] = None

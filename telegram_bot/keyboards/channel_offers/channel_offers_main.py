@@ -8,10 +8,10 @@ from database.DAO.CanaleDAO import CanaleDAO
 
 async def handle_offers(query, user_id):
     
-        canale_dao = CanaleDAO()
 
+        with CanaleDAO() as canale_dao:
+            channels = canale_dao.get_user_channels(user_id)
 
-        channels = canale_dao.get_user_channels(user_id)
         keyboard = []
 
         if not channels:
@@ -36,7 +36,6 @@ async def handle_offers(query, user_id):
 
         await query.edit_message_text(text=text, reply_markup=reply_markup)
 
-        canale_dao.close()
 
 
 

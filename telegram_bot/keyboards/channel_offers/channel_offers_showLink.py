@@ -3,12 +3,12 @@ from telegram.ext import *
 
 from telegram_bot.functions.send_message import publish_offer
 
-from database.DAO.LinkDAO import *
-from database.DAO.CanaleDAO import *
+from database.DAO.LinkDAO import LinkDAO
+from database.DAO.CanaleDAO import CanaleDAO
 
 
 async def show_links(query, context, channel_id, current_link_index=0):
-    links = get_channel_links(channel_id)
+    links = None
 
     
     if not links:
@@ -37,7 +37,7 @@ async def show_links(query, context, channel_id, current_link_index=0):
     await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode='HTML')
 
 async def publish_message(query, update, context, channel_id, link_id):
-    link = get_channel_links_by_id(channel_id, link_id)
+    link = None
 
     try:
         await publish_offer(update, context, channel_id, link.getMessaggio())
@@ -49,7 +49,7 @@ async def publish_message(query, update, context, channel_id, link_id):
             ]])
             
         )
-        remove_link_from_channel(link_id)
+        #remove_link_from_channel(link_id)
     except Exception as e:
         await query.edit_message_text(
             text="Errore durante la pubblicazione del messaggio. Il bot non ha i requisiti di amministratore all'interno del canale",
@@ -63,7 +63,7 @@ async def publish_message(query, update, context, channel_id, link_id):
     
 
 async def navigate_links(query, context, channel_id, direction, current_link_index):
-    links = get_channel_links(channel_id)
+    links = None
 
     if(len(links) >=2):
         if direction == "prev":
@@ -75,10 +75,10 @@ async def navigate_links(query, context, channel_id, direction, current_link_ind
     else: None
 
 async def remove_product(query, context, id_channel, link_id):
-    link = get_channel_links_by_id(id_channel, link_id)
+    link = None
 
     if link:
-        remove_link_from_channel(link.getId())
+        #remove_link_from_channel(link.getId())
 
         await query.edit_message_text(
             text=f"Link rimosso dalla lista.",

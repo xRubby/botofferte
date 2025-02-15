@@ -1,7 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.CanaleDAO import *
+from database.DAO.CanaleDAO import CanaleDAO
 
 from telegram_bot.messages.messages_it import getTemplateMessage
 
@@ -15,7 +15,7 @@ async def layout_menu(query, channel_id):
     await query.edit_message_text(
         text="In questa pagina potrai modificare il layout del messaggio che verrà inviato all'interno del canale.\n\n"
         "Messaggio attuale:\n\n"
-        f"{get_message_template(channel_id)}",
+        f"{None}",
         reply_markup=reply_markup
     )
 
@@ -58,7 +58,7 @@ async def edit_message(query, context, user_id, channel_id):
 
 async def reset_layout(query, channel_id):
 
-    set_message_template(channel_id, getTemplateMessage())
+    #set_message_template(channel_id, getTemplateMessage())
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
