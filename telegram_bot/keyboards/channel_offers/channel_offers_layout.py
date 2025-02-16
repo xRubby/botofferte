@@ -7,7 +7,9 @@ from telegram_bot.messages.messages_it import getTemplateMessage
 
 async def layout_menu(query, channel_id):
     keyboard = [
-        [InlineKeyboardButton("Modifica messaggio", callback_data=f'channel_editmessage_{channel_id}'), InlineKeyboardButton("Modifica tag (WIP)", callback_data='none')],
+        [InlineKeyboardButton("Aggiungi layout", callback_data=f'edit_channel_{channel_id}')],
+        [InlineKeyboardButton("Seleziona layout", callback_data=f'channel_editmessage_{channel_id}'), InlineKeyboardButton("Modifica Layout", callback_data='none')],
+        [InlineKeyboardButton("Modifica Tag (WIP)", callback_data='none')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
     ]
 

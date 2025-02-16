@@ -42,19 +42,13 @@ class Connessione:
             PRIMARY KEY (telegram_id, canale_id)
         );
 
-        CREATE TABLE IF NOT EXISTS Possiede (
-            canale_id TEXT NOT NULL,
-            layout_id INTEGER NOT NULL,
-            in_uso INTEGER DEFAULT 0,
-            FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE,
-            FOREIGN KEY (layout_id) REFERENCES Layout(layout_id) ON DELETE CASCADE,
-            PRIMARY KEY (canale_id, layout_id)
-        );
-
         CREATE TABLE IF NOT EXISTS Layout (
             layout_id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_layout TEXT NOT NULL,
-            messaggio TEXT NOT NULL
+            messaggio TEXT NOT NULL,
+            in_uso INTEGER DEFAULT 0,
+            canale_id TEXT NOT NULL,
+            FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS Licenze (

@@ -118,9 +118,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id)
     }
 
-    
-    action = actions.get(query.data, lambda: None)
-    await action()
+    try:
+        action = actions.get(query.data, lambda: None)
+        await action()
+    except Exception as e:
+        logging.error(f"Errone nell'hanling dei bottoni: {e}")
 
 async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
