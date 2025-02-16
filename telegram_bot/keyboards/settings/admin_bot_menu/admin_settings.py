@@ -10,7 +10,10 @@ from database.Entity.Licenza import Licenza
 from database.DAO.LicenzaDAO import LicenzaDAO
 
 
-async def admin_menu(query): 
+async def admin_menu(query):
+        
+        await query.answer()
+
         keyboard = [
         [InlineKeyboardButton("Genera Licenza", callback_data='generate_license')],
         [InlineKeyboardButton("Vedi Licenze", callback_data='view_licenses')],
@@ -20,6 +23,9 @@ async def admin_menu(query):
         await query.edit_message_text(text=get_admin_message(),parse_mode="HTML", reply_markup=reply_markup)
 
 async def generate_new_license(query): 
+        
+        await query.answer()
+
         new_license = generate_license()
 
         with LicenzaDAO() as licenza_dao:
@@ -34,6 +40,8 @@ async def generate_new_license(query):
 
 
 async def view_licenses(query):
+
+    await query.answer()
 
     with LicenzaDAO() as licenza_dao:
         licenze = licenza_dao.get_all()
@@ -55,6 +63,8 @@ async def view_licenses(query):
 
 async def view_license_details(query, license_code):
 
+    await query.answer()
+
     with LicenzaDAO() as licenza_dao:
         licenza = licenza_dao.get(license_code)
 
@@ -75,6 +85,8 @@ async def view_license_details(query, license_code):
 
 
 async def delete_license_confirm(query, license_code):
+
+    await query.answer()
 
     with LicenzaDAO() as licenza_dao:
         licenza_dao.delete(license_code)

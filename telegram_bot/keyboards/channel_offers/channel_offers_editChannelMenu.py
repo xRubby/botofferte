@@ -7,6 +7,8 @@ from database.DAO.CanaleDAO import CanaleDAO
 
 async def edit_channel(query, channel_id):
 
+    await query.answer()
+
     canale_dao = CanaleDAO()
 
     nome_canale = canale_dao.get(channel_id).getNomeCanale()

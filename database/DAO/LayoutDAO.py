@@ -1,6 +1,8 @@
 from database.Connessione import Connessione
 from database.Entity.Layout import Layout
 
+from typing import List
+
 class LayoutDAO:
     def __init__(self):
         self.conn = Connessione().get_connection()
@@ -22,6 +24,11 @@ class LayoutDAO:
                             (nome_layout, messaggio, in_uso, canale_id, layout_id))
         self.conn.commit()
 
+    def update_stato(self, in_uso: bool, layout_id: int):
+        self.cursor.execute("UPDATE Layout SET in_uso = ? WHERE layout_id = ?",
+                            (in_uso, layout_id))
+        self.conn.commit()
+
     def delete(self, layout_id: int) -> None:
         self.cursor.execute("DELETE FROM Layout WHERE layout_id = ?", (layout_id,))
         self.conn.commit()
@@ -33,12 +40,21 @@ class LayoutDAO:
             return Layout(*row)
         return None
     
-    def get_channel_layouts(self, canale_id: str) -> list:
-        self.cursor.execute("SELECT * FROM Layout WHERE canale_id = ?", (canale_id))
+    def get_channel_layout_activated(self, canale_id: str) -> Layout:
+        self.cursor.execute("SELECT * FROM Layout WHERE in_uso = ? AND canale_id = ?", (1, canale_id))
+        row = self.cursor.fetchone()
+        if row:
+            return Layout(*row)
+        return None
+    
+    def get_channel_layouts(self, canale_id: str) -> List[Layout]:
+        self.cursor.execute("SELECT * FROM Layout WHERE canale_id = ?", (canale_id,))
         rows = self.cursor.fetchall()
         return [Layout(*row) for row in rows]
+    
 
-    def get_all(self) -> list:
+
+    def get_all(self) -> List[Layout]:
         self.cursor.execute("SELECT * FROM Layout")
         rows = self.cursor.fetchall()
         return [Layout(*row) for row in rows]

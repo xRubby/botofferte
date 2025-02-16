@@ -8,6 +8,8 @@ from database.DAO import CanaleDAO, PubblicaDAO
 
 async def show_links(query, context, channel_id, current_link_index=0):
 
+    await query.answer()
+
     with PubblicaDAO() as pubblica_dao:
         links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
 
@@ -38,6 +40,8 @@ async def show_links(query, context, channel_id, current_link_index=0):
 
 async def publish_message(query, update, context, channel_id, link_id):
 
+    await query.answer()
+
     with PubblicaDAO() as pubblica_dao:
         link = pubblica_dao.get(link_id)
 
@@ -65,6 +69,8 @@ async def publish_message(query, update, context, channel_id, link_id):
     
 
 async def navigate_links(query, context, channel_id, direction, current_link_index):
+
+    await query.answer()
     
     with PubblicaDAO() as pubblica_dao:
         links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
@@ -79,6 +85,8 @@ async def navigate_links(query, context, channel_id, direction, current_link_ind
     else: None
 
 async def remove_product(query, context, id_channel, link_id):
+
+    await query.answer()
     
     with PubblicaDAO() as pubblica_dao:
         link = pubblica_dao.get(link_id)

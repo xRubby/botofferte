@@ -5,6 +5,9 @@ from telegram_bot.messages.messages_it import *
 
 
 async def search_product(query, context, user_id):
+
+    await query.answer()
+
     user_id = query.from_user.id
     message_id = query.message.id
 

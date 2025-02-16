@@ -24,11 +24,14 @@ from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
 from database.DAO.UtenteDAO import UtenteDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.GestisceDAO import GestisceDAO
+from database.DAO.LayoutDAO import LayoutDAO
 
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    
+    query = update.callback_query
+    await query.answer()
+
     user = update.effective_user
 
     with UtenteDAO() as utente_dao:
@@ -39,12 +42,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     
 
-
+async def doNothing(query):
+    await query.answer()
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
 
     user_id = update.effective_user.id 
 
@@ -80,6 +83,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     channel_id = data_parts[2] if data_parts[0] == 'edit' or data_parts[0]=="channel" or data_parts[0] == "delete" and len(data_parts) >= 3 else None
 
+    layout_id = data_parts[2] if len(data_parts) >= 3 and data_parts[1] == 'activatelayout'  else None
+
     if data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' and len(data_parts) >=3:
         channel_id=data_parts[1]
         list_index=data_parts[2]
@@ -113,16 +118,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'prev_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'prev', int(list_index)),
         f'next_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'next', int(list_index)),
 
-        f'channel_layout_{channel_id}': lambda: layout_menu(query, channel_id),
-        f'channel_editmessage_{channel_id}': lambda: edit_message(query, context, user_id, channel_id),
-        f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id)
+        f'channel_layout_{channel_id}': lambda: layout_menu(query, context, channel_id, user_id),
+        f"channel_addlayout_{channel_id}": lambda: add_layout(query, context, channel_id, user_id),
+        f'channel_showlayouts_{channel_id}': lambda: select_layouts(query, channel_id),
+        f'channel_activatelayout_{layout_id}': lambda: activate_layout(query, layout_id),
+        f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
+
+        'none': lambda: doNothing(query)
     }
 
-    try:
-        action = actions.get(query.data, lambda: None)
-        await action()
-    except Exception as e:
-        logging.error(f"Errone nell'hanling dei bottoni: {e}")
+    #try:
+    action = actions.get(query.data, lambda: None)
+    await action()
+    #except Exception as e:
+    #    logging.error(f"Errone nell'hanling dei bottoni: {e}")
 
 async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
@@ -308,13 +317,62 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             text=f"ID affiliato aggiunto con successo: {affiliate_id}",
                             reply_markup=reply_markup)
     
-    elif context.user_data[user_id].get('awaiting_newmessage_layout'):
-        new_message = update.message.text
+
+    elif context.user_data[user_id].get('awaiting_name_layout'):
+        name_layout = update.message.text
         channel_id = context.user_data[user_id].get('channel_id')
 
         await update.message.delete()
 
-        set_message_template(channel_id, new_message)
+
+        context.user_data[user_id]['awaiting_name_layout'] = False
+
+        context.user_data[user_id]['name_layout'] = name_layout
+        context.user_data[user_id]['awaiting_message_layout'] = True
+
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
+        ]  
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await context.bot.edit_message_text(
+            chat_id=update.effective_chat.id,
+            message_id=message_id,
+            text="Crea Layout\n\n"
+             "Tag disponibili:\n"
+             "- <code>{titolo}</code>\n"
+             "- <code>{prezzo_nuovo}</code>\n"
+             "- <code>{prezzo_vecchio}</code>\n"
+             "- <code>{sconto}</code>\n"
+             "- <code>{link}</code>\n"
+             "- <code>{linkfull}</code>\n"
+             "- <code>{valuta}</code>\n"
+             "- <code>{spedito}</code>\n"
+             "- <code>{prime}</code>\n"
+             "- <code>{preorder}</code>\n"
+             "- <code>{preorderdate}</code>\n"
+             "- <code>{warehouse}</code>\n"
+             "- <code>{condition}</code>\n"
+             "- <code>{conditioncomm}</code>\n"
+             "- <code>{minimo}</code>\n\n"
+             "TAG Speciale:\n"
+            "I TAG speciali {_ e _} permettono di collegare la Frase compresa tra i due TAG Speciali al TAG Post" 
+            "inserito all'interno dei due tag speciali. In caso in cui il TAG Post sia nullo (ovvero manca" 
+            "l'informazione su Amazon) la frase non viene visualizzata. Inoltre è possibile inserire più TAG Post," 
+            "tra i due TAG Speciali, in caso manca UNO dei TAG Post la frase non viene visualizzata.",
+            parse_mode="HTML",
+            reply_markup=reply_markup
+        )
+
+    elif context.user_data[user_id].get('awaiting_message_layout'):
+        new_message = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+        name_layout = context.user_data[user_id].get('name_layout')
+
+        await update.message.delete()
+
+        with LayoutDAO() as layout_dao:
+            layout_dao.insert(name_layout, new_message, 0, channel_id)
 
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
@@ -324,7 +382,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.edit_message_text(
                             chat_id=update.effective_chat.id,
                             message_id=message_id,
-                            text=f"Messaggio modificato con successo!",
+                            text=f"Layout aggiunto con successo!",
                             reply_markup=reply_markup)
 
-        context.user_data[user_id]['awaiting_affiliate_id'] = False
+        context.user_data[user_id]['awaiting_message_id'] = False

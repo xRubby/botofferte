@@ -2,6 +2,9 @@ from telegram import *
 from telegram.ext import *
 
 async def insert_link(query, context, user_id, channel_id):
+
+    await query.answer()
+
     message_id = query.message.id
     context.user_data[user_id] = {'awaiting_link': True, 'message_id': message_id, 'channel_id': channel_id}
     

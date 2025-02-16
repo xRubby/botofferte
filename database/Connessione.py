@@ -88,7 +88,6 @@ class Connessione:
             condizione_descrizione TEXT
         );
                              
-
         CREATE VIRTUAL TABLE IF NOT EXISTS Prodotti_fts USING FTS5(
             titolo,
             asin

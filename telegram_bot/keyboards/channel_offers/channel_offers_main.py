@@ -7,6 +7,8 @@ from database.DAO.CanaleDAO import CanaleDAO
 
 
 async def handle_offers(query, user_id):
+        
+        await query.answer()
     
 
         with CanaleDAO() as canale_dao:
@@ -41,6 +43,8 @@ async def handle_offers(query, user_id):
 
 
 async def add_license_start(query, context, user_id):
+
+    await query.answer()
     
     keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data='offerte_canale')]
@@ -59,6 +63,9 @@ async def add_license_start(query, context, user_id):
 
 
 async def add_channel_start(query,update,context):
+
+    await query.answer()
+
     user_id = update.effective_user.id
     message_id=query.message.id
 
@@ -78,6 +85,8 @@ async def add_channel_start(query,update,context):
                 )
 
 async def delete_channel(query, channel_id, user_id):
+
+    await query.answer()
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'offerte_canale')]

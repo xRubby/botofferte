@@ -6,7 +6,10 @@ from database.Entity.Utente import Utente
 
 from telegram_bot.messages.messages_it import get_impostazioni
 
-async def settings_menu(user_id, query): 
+async def settings_menu(user_id, query):
+        
+        await query.answer()
+
         keyboard = []
 
         with UtenteDAO() as utente_dao:

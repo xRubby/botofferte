@@ -4,6 +4,9 @@ from telegram.ext import *
 from database.DAO.CanaleDAO import CanaleDAO
 
 async def insert_affiliate_id(query, context, user_id, channel_id):
+
+    await query.answer()
+
     message_id = query.message.id
     context.user_data[user_id] = {'awaiting_affiliate_id': True, 'message_id': message_id, 'channel_id': channel_id}
     
