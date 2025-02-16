@@ -16,6 +16,12 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 REGION = os.getenv('REGION')
 
+def is_future_date(date_string, date_format="%d %B %Y"):
+    try:
+        release_date = datetime.strptime(date_string, date_format).date()
+        return release_date > datetime.today().date()
+    except ValueError:
+        return False
 
 def format_price(price):
     return "{:.2f}".format(price).replace('.', ',')
@@ -89,8 +95,8 @@ def search_amazon_offers(keyword_or_url):
 
             try:
                 data = item.item_info.product_info.release_date.display_value
-                preorder = True
-                data_preordine = formatta_data(data)
+                preorder = is_future_date(data)
+                data_preordine = formatta_data(data) if preorder else None
             except Exception:
                 preorder = False
                 data_preordine = None

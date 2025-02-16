@@ -14,7 +14,8 @@ from database.Entity.Prodotto import Prodotto
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.ProdottoDAO import ProdottoDAO
 
-from utils.amazon_utils import check_url_pattern, extract_asin_from_url
+from utils.amazon_utils import extract_asin_from_url
+from utils.send_message_utils import venduto_e_spedito
 
 def clean_text(text):
     lines = text.split("\n")
@@ -47,8 +48,13 @@ def processa_messaggio(template, context):
     
     for key, value in context.items():
         messaggio = messaggio.replace(f"{{{key}}}", str(value))
+        
 
     messaggio = clean_text(messaggio)
+
+
+
+    print(repr(messaggio))
 
     return messaggio
 
@@ -90,15 +96,8 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
-                            traceback.print_exc()
-                            await context.bot.edit_message_text(
-                                chat_id=update.effective_chat.id,
-                                message_id=message_id,
-                                text="Errore durante la ricerca delle offerte. Riprova più tardi.",
-                                parse_mode='HTML',
-                                reply_markup=reply_markup_back
-                            )
-                            return
+                            logging.error("altro errore")
+                            #prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                     
                     prodotto_dict={
                         "ASIN": prodotto.getAsin(),
@@ -109,12 +108,13 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                         "sconto": prodotto.getSconto(),
                         "venditore": prodotto.getVenditore(),
                         "spedito_Amazon": prodotto.getSpeditoAmazon(),
+                        "spedito": venduto_e_spedito(prodotto.getVenditore(), prodotto.getSpeditoAmazon()),
                         "link": prodotto.getLink(),
                         "img_url": prodotto.getImgUrl(),
                         "brand": prodotto.getBrand(),
-                        "preorder": prodotto.getPreorder(),
+                        "preorder": "Preordine" if prodotto.getPreorder() else "",
                         "data_preordine": prodotto.getDataPreordine(),
-                        "isPrime": prodotto.getIsPrime(),
+                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.getIsPrime() else "",
                         "isWarehouse": prodotto.getIsWarehouse(),
                         "condizione": prodotto.getCondizione(),
                         "condizione_commento": prodotto.getCondizioneDescrizione()
@@ -126,12 +126,12 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
             
     messaggio = (
-        "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {preorderdate}</b>_}\n"
+        "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"
                         "\n"
-                        "💶 <b>{prezzo_nuovo}{valuta}</b> {_(invece di: {prezzo_vecchio}{valuta}, <i>{sconto}% di sconto</i>)_}\n"
-                        "{_🔄 Condizione: {condition} ({conditioncomm})_}\n"
+                        "💶 <b>{prezzo}{valuta}</b> {_(invece di: {old_prezzo}{valuta}, <i>{sconto}% di sconto</i>)_}\n"
+                        "{_🔄 Condizione: {condizione} ({condizione_commento})_}\n"
                         "\n"
-                        "🚚  {spedito} {_| Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>{prime}</a></b>_}\n"
+                        "🚚 {spedito} {_| {prime}_}\n"
                         "\n"
                         "📌 Scopri l'offerta qui: {link}"
                     )
@@ -139,7 +139,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
     message = processa_messaggio(messaggio, prodotto_dict)
 
     keyboard = [
-                [InlineKeyboardButton("🛒 Acquista su Amazon!", url=offer['link'])],
+                [InlineKeyboardButton("🛒 Acquista su Amazon!", url=prodotto.getLink())],
                 [InlineKeyboardButton("⬅️ Indietro", callback_data="back_to_main")]
             ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -151,7 +151,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                     text=message,                        
                     parse_mode='HTML',
                     reply_markup=reply_markup,
-                    link_preview_options=LinkPreviewOptions(url=offer['img_url'])
+                    link_preview_options=LinkPreviewOptions(url=prodotto.getImgUrl())
                     )
     except Exception as e:
                 logging.error(f"Errore durante la modifica del messaggio: {e}")

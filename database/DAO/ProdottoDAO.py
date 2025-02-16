@@ -1,6 +1,8 @@
 from database.Connessione import Connessione
 from database.Entity.Prodotto import Prodotto
 
+import re
+
 class ProdottoDAO:
     def __init__(self):
         self.conn = Connessione().get_connection()
@@ -42,15 +44,26 @@ class ProdottoDAO:
 
     def get_by_asin(self, asin) -> Prodotto:
         self.cursor.execute("SELECT * FROM prodotti WHERE asin = ?", (asin,))
-        return self.cursor.fetchone()
+        row = self.cursor.fetchone()
+        if row:
+            return Prodotto(*row)
+        return None
     
     def get_by_titolo(self, titolo) -> Prodotto:
-        self.cursor.execute("SELECT * FROM prodotti WHERE titolo LIKE ?", ('%' + titolo + '%',))
-        return self.cursor.fetchone()
+
+        titolo_pulito  = re.sub(r'[^a-zA-Z0-9 ]', '', titolo)
+
+        self.cursor.execute("SELECT p.* FROM Prodotti_fts fts JOIN Prodotti p ON fts.asin = p.asin WHERE fts.titolo MATCH ?", (titolo_pulito,))
+        row = self.cursor.fetchone()
+        if row:
+            return Prodotto(*row)
+        return None
 
     def get_all(self) -> list:
         self.cursor.execute("SELECT * FROM prodotti")
-        return self.cursor.fetchall()
+        rows = self.cursor.fetchall()
+
+        return [Prodotto(*row) for row in rows] 
     
     def close(self) -> None:
         self.conn.close()

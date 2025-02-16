@@ -93,6 +93,18 @@ class Connessione:
             condizione TEXT,
             condizione_descrizione TEXT
         );
+                             
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS Prodotti_fts USING FTS5(
+            titolo,
+            asin
+        );
+                             
+        CREATE TRIGGER IF NOT EXISTS update_prodotti_fts AFTER INSERT ON Prodotti
+        BEGIN
+            INSERT INTO Prodotti_fts (titolo, asin)
+            VALUES (REPLACE(new.titolo, '-', ''), new.asin);
+        END;
         """)
         
         conn.commit()
