@@ -96,8 +96,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
-                            logging.error("altro errore")
-                            #prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
+                            prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                     
                     prodotto_dict={
                         "ASIN": prodotto.getAsin(),

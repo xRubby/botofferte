@@ -126,6 +126,9 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user_id = update.effective_user.id
 
+    if user_id not in context.user_data:
+        context.user_data[user_id] = {}
+
     message_id = context.user_data.get(user_id, {}).get('message_id')
     
     
