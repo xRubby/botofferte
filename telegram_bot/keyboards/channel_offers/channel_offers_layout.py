@@ -55,9 +55,9 @@ async def select_layouts_buildMessage(query, channel_id):
         if layouts:
             text=f"I tuoi layout\n\nLayout totali: {len(layouts)}"
             for layout in layouts:
-                emoji_stato = "🟢" if layout.get_in_uso() else "🔴"
+                emoji_stato = "🟢" if layout.in_uso else "🔴"
 
-                keyboard.append([InlineKeyboardButton(f"{layout.get_nome_layout()}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channel_activatelayout_{layout.get_layout_id()}')])
+                keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channel_activatelayout_{channel_id}_{layout.layout_id}')])
 
         else:
             text = "Nessun layout presente"
@@ -83,16 +83,16 @@ async def activate_layout(query, layout_id):
 
     with LayoutDAO() as layout_dao:
         layout = layout_dao.get(layout_id)
-        id_canale = layout.get_canale_id()
+        id_canale = layout.canale_id
 
-        if(layout.get_in_uso()):
-            layout_dao.update_stato(0, layout.get_layout_id())
+        if(layout.in_uso):
+            layout_dao.update_stato(0, layout.layout_id)
             text="Layout disattivato!"
         else:
             layout_old = layout_dao.get_channel_layout_activated(id_canale)
             if layout_old:
-                layout_dao.update_stato(0, layout_old.get_layout_id())
-            layout_dao.update_stato(1, layout.get_layout_id())
+                layout_dao.update_stato(0, layout_old.layout_id)
+            layout_dao.update_stato(1, layout.layout_id)
             text="Layout selezionato!"
     
     await query.answer(text=text, show_alert=True)
@@ -100,22 +100,87 @@ async def activate_layout(query, layout_id):
     await select_layouts_buildMessage(query, id_canale)
 
 
-
-async def edit_message(query, context, user_id, channel_id):
+async def edit_layouts(query, channel_id):
 
     await query.answer()
 
-    message_id = query.message.id
-    context.user_data[user_id] = {'awaiting_newmessage_layout': True, 'message_id': message_id, 'channel_id': channel_id}
+    keyboard = []
+
+    with LayoutDAO() as layout_dao:
+        layouts = layout_dao.get_channel_layouts(channel_id)
+        if layouts:
+            text=f"Seleziona un layout da modificare"
+            for layout in layouts:
+                keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'channel_editlayout_{channel_id}_{layout.layout_id}')])
+
+        else:
+            text = "Nessun layout presente"
+
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+    )
+
+
+
+
+
+async def edit_layout(query, layout_id):
+
+    await query.answer()
+
+    with LayoutDAO() as layout_dao:
+        layout = layout_dao.get(layout_id)
     
+    text = (f"Layout selezionato: {layout.nome_layout}\n\n"
+            f"Messaggio attuale\n\n{layout.messaggio}")
+
     keyboard = [
-        [InlineKeyboardButton("Reset layout", callback_data=f'channel_resetlayout_{channel_id}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
+        [InlineKeyboardButton("Modifica messaggio", callback_data=f'none'),InlineKeyboardButton("Cancella Layout", callback_data=f'channel_deletelayout_{layout.canale_id}_{layout.layout_id}')],
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{layout.canale_id}')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(
-        text="Crea Layout\n\n"
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+    )
+
+async def delete_layout(query, layout_id, canale_id):
+
+    await query.answer()
+
+    with LayoutDAO() as layout_dao:
+        layout_dao.delete(layout_id)
+
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{canale_id}')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+            text="Layout eliminato con successo",
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+    )
+
+async def edit_message_layout(query, context, user_id, canale_id, layout_id):
+    message_id = query.message.id
+    context.user_data[user_id] = {'awaiting_newmessage_layout': True, 'message_id': message_id, 'layout_id': layout_id}
+    
+    keyboard = [
+        [InlineKeyboardButton("Reset layout", callback_data=f'none')],
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{id_canale}')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text="Modifica Layout\n\n"
          "Tag disponibili:\n"
          "- <code>{titolo}</code>\n"
          "- <code>{prezzo_nuovo}</code>\n"

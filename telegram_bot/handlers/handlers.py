@@ -30,7 +30,8 @@ from database.DAO.LayoutDAO import LayoutDAO
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
 
     user = update.effective_user
 
@@ -83,7 +84,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     channel_id = data_parts[2] if data_parts[0] == 'edit' or data_parts[0]=="channel" or data_parts[0] == "delete" and len(data_parts) >= 3 else None
 
-    layout_id = data_parts[2] if len(data_parts) >= 3 and data_parts[1] == 'activatelayout'  else None
+    layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout']  else None
 
     if data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' and len(data_parts) >=3:
         channel_id=data_parts[1]
@@ -121,7 +122,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'channel_layout_{channel_id}': lambda: layout_menu(query, context, channel_id, user_id),
         f"channel_addlayout_{channel_id}": lambda: add_layout(query, context, channel_id, user_id),
         f'channel_showlayouts_{channel_id}': lambda: select_layouts(query, channel_id),
-        f'channel_activatelayout_{layout_id}': lambda: activate_layout(query, layout_id),
+        f'channel_activatelayout_{channel_id}_{layout_id}': lambda: activate_layout(query, layout_id),
+        f"channel_editlayouts_{channel_id}": lambda: edit_layouts(query, channel_id),
+        f"channel_editlayout_{channel_id}_{layout_id}": lambda: edit_layout(query, layout_id),
+        f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
 
         'none': lambda: doNothing(query)
