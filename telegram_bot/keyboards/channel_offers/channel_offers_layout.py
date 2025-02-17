@@ -129,9 +129,12 @@ async def edit_layouts(query, channel_id):
 
 
 
-async def edit_layout(query, layout_id):
+async def edit_layout(query, context, user_id, layout_id):
 
     await query.answer()
+
+    if context.user_data[user_id].get('awaiting_newmessage_layout'):
+        context.user_data[user_id]['awaiting_newmessage_layout'] = False
 
     with LayoutDAO() as layout_dao:
         layout = layout_dao.get(layout_id)
@@ -140,7 +143,7 @@ async def edit_layout(query, layout_id):
             f"Messaggio attuale\n\n{layout.messaggio}")
 
     keyboard = [
-        [InlineKeyboardButton("Modifica messaggio", callback_data=f'none'),InlineKeyboardButton("Cancella Layout", callback_data=f'channel_deletelayout_{layout.canale_id}_{layout.layout_id}')],
+        [InlineKeyboardButton("Modifica messaggio", callback_data=f'channel_editmessagelayout_{layout.canale_id}_{layout_id}'),InlineKeyboardButton("Cancella Layout", callback_data=f'channel_deletelayout_{layout.canale_id}_{layout.layout_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{layout.canale_id}')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -151,36 +154,13 @@ async def edit_layout(query, layout_id):
             parse_mode="HTML"
     )
 
-async def delete_layout(query, layout_id, canale_id):
-
+async def edit_layout_message(query, context, user_id, layout_id, canale_id):
     await query.answer()
 
-    with LayoutDAO() as layout_dao:
-        layout_dao.delete(layout_id)
-
-    keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{canale_id}')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-            text="Layout eliminato con successo",
-            reply_markup=reply_markup,
-            parse_mode="HTML"
-    )
-
-async def edit_message_layout(query, context, user_id, canale_id, layout_id):
     message_id = query.message.id
-    context.user_data[user_id] = {'awaiting_newmessage_layout': True, 'message_id': message_id, 'layout_id': layout_id}
-    
-    keyboard = [
-        [InlineKeyboardButton("Reset layout", callback_data=f'none')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{id_canale}')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.user_data[user_id] = {'awaiting_newmessage_layout': True, 'message_id': message_id, 'layout_id': layout_id, 'channel_id': canale_id}
 
-    await query.edit_message_text(
-        text="Modifica Layout\n\n"
+    text = ("Modifica Layout\n\n"
          "Tag disponibili:\n"
          "- <code>{titolo}</code>\n"
          "- <code>{prezzo_nuovo}</code>\n"
@@ -201,9 +181,37 @@ async def edit_message_layout(query, context, user_id, canale_id, layout_id):
         "I TAG speciali {_ e _} permettono di collegare la Frase compresa tra i due TAG Speciali al TAG Post" 
         "inserito all'interno dei due tag speciali. In caso in cui il TAG Post sia nullo (ovvero manca" 
         "l'informazione su Amazon) la frase non viene visualizzata. Inoltre è possibile inserire più TAG Post," 
-        "tra i due TAG Speciali, in caso manca UNO dei TAG Post la frase non viene visualizzata.",
-        parse_mode="HTML",
-        reply_markup=reply_markup
+        "tra i due TAG Speciali, in caso manca UNO dei TAG Post la frase non viene visualizzata.")
+        
+
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayout_{canale_id}_{layout_id}')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+    )
+
+
+async def delete_layout(query, layout_id, canale_id):
+
+    await query.answer()
+
+    with LayoutDAO() as layout_dao:
+        layout_dao.delete(layout_id)
+
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayouts_{canale_id}')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+            text="Layout eliminato con successo",
+            reply_markup=reply_markup,
+            parse_mode="HTML"
     )
 
 async def reset_layout(query, channel_id):

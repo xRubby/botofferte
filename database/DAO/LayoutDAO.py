@@ -24,7 +24,12 @@ class LayoutDAO:
                             (nome_layout, messaggio, in_uso, canale_id, layout_id))
         self.conn.commit()
 
-    def update_stato(self, in_uso: bool, layout_id: int):
+    def update_messaggio(self, messaggio: str, layout_id: int) -> None:
+        self.cursor.execute("UPDATE Layout SET messaggio = ? WHERE layout_id = ?",
+                            (messaggio, layout_id))
+        self.conn.commit()
+
+    def update_stato(self, in_uso: bool, layout_id: int) -> None:
         self.cursor.execute("UPDATE Layout SET in_uso = ? WHERE layout_id = ?",
                             (in_uso, layout_id))
         self.conn.commit()

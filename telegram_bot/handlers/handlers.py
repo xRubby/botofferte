@@ -84,7 +84,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     channel_id = data_parts[2] if data_parts[0] == 'edit' or data_parts[0]=="channel" or data_parts[0] == "delete" and len(data_parts) >= 3 else None
 
-    layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout']  else None
+    layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout', 'editmessagelayout']  else None
 
     if data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' and len(data_parts) >=3:
         channel_id=data_parts[1]
@@ -124,7 +124,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'channel_showlayouts_{channel_id}': lambda: select_layouts(query, channel_id),
         f'channel_activatelayout_{channel_id}_{layout_id}': lambda: activate_layout(query, layout_id),
         f"channel_editlayouts_{channel_id}": lambda: edit_layouts(query, channel_id),
-        f"channel_editlayout_{channel_id}_{layout_id}": lambda: edit_layout(query, layout_id),
+        f"channel_editlayout_{channel_id}_{layout_id}": lambda: edit_layout(query, context, user_id, layout_id),
+        f"channel_editmessagelayout_{channel_id}_{layout_id}": lambda: edit_layout_message(query, context, user_id, layout_id, channel_id),
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
 
@@ -269,58 +270,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text="Errore: devi inoltrare un messaggio da un canale.",
                 reply_markup=reply_markup)
         await update.message.delete()
-        context.user_data[user_id]['adding_channel'] = False
-
-
-    elif context.user_data[user_id].get('awaiting_link'):
-        link = update.message.text
-        await update.message.delete()
-        channel_id = context.user_data[user_id].get('channel_id')
-
-        try:
-            messaggio = await search_offer(update, context, channel_id, link)
-            add_link_to_channel(channel_id, link, messaggio)
-
-            keyboard=[
-            [InlineKeyboardButton("Lista link", callback_data=f'channel_listlinks_{channel_id}')],
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
-            ]
-
-            reply_markup=InlineKeyboardMarkup(keyboard)
-
-            await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                message_id=message_id,
-                text=f"Link aggiunto con successo: {link}", 
-                reply_markup=reply_markup)
-            
-        except Exception as e:
-            logging.error(e)
-
-        context.user_data[user_id]['awaiting_link'] = False
-
-        
-
-
-    elif context.user_data[user_id].get('awaiting_affiliate_id'):
-        affiliate_id = update.message.text
-        await update.message.delete()
-        channel_id = context.user_data[user_id].get('channel_id')
-
-        set_affiliate_id(channel_id, affiliate_id)
-
-        keyboard = [
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        context.user_data[user_id]['awaiting_affiliate_id'] = False
-
-        await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text=f"ID affiliato aggiunto con successo: {affiliate_id}",
-                            reply_markup=reply_markup)
-    
+        context.user_data[user_id]['adding_channel'] = False 
 
     elif context.user_data[user_id].get('awaiting_name_layout'):
         name_layout = update.message.text
@@ -369,14 +319,14 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif context.user_data[user_id].get('awaiting_message_layout'):
-        new_message = update.message.text
+        message_layout = update.message.text
         channel_id = context.user_data[user_id].get('channel_id')
         name_layout = context.user_data[user_id].get('name_layout')
 
         await update.message.delete()
 
         with LayoutDAO() as layout_dao:
-            layout_dao.insert(name_layout, new_message, 0, channel_id)
+            layout_dao.insert(name_layout, message_layout, 0, channel_id)
 
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
@@ -389,4 +339,27 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             text=f"Layout aggiunto con successo!",
                             reply_markup=reply_markup)
 
-        context.user_data[user_id]['awaiting_message_id'] = False
+        context.user_data[user_id]['awaiting_message_layout'] = False
+    
+    elif context.user_data[user_id].get('awaiting_newmessage_layout'):
+        new_message_layout = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+        layout_id = context.user_data[user_id].get('layout_id')
+
+        await update.message.delete()
+
+        with LayoutDAO() as layout_dao:
+            layout_dao.update_messaggio(new_message_layout, layout_id)
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayout_{channel_id}_{layout_id}')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=f"Layout modificato con successo!",
+                            reply_markup=reply_markup)
+
+        context.user_data[user_id]['awaiting_newmessage_layout'] = False
