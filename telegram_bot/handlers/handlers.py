@@ -130,7 +130,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
 
-        f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, channel_id, user_id),
+        f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, context, channel_id, user_id),
+        f'channel_adminaffiliateid_{channel_id}': lambda: admin_edit_affiliateid(query, context, channel_id, user_id),
+        f'channel_adminremoveaffiliateid_{channel_id}': lambda: admin_remove_affiliateid(query, context, channel_id, user_id),
 
         'none': lambda: doNothing(query)
     }
@@ -366,3 +368,25 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reply_markup=reply_markup)
 
         context.user_data[user_id]['awaiting_newmessage_layout'] = False
+
+    elif context.user_data[user_id].get('awaiting_admin_affiliateid'):
+        affiliate_id = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+
+        await update.message.delete()
+
+        with CanaleDAO() as canale_dao:
+            canale_dao.update_id_affiliato(channel_id, affiliate_id)
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_adminpanel_{channel_id}')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=f"ID affiliato modificato correttamente!",
+                            reply_markup=reply_markup)
+
+        context.user_data[user_id]['awaiting_admin_affiliateid'] = False

@@ -11,7 +11,7 @@ async def edit_channel(query, channel_id):
 
     canale_dao = CanaleDAO()
 
-    nome_canale = canale_dao.get(channel_id).getNomeCanale()
+    nome_canale = canale_dao.get(channel_id).nome_canale
 
     keyboard = [
         [InlineKeyboardButton("➕ Inserisci link", callback_data=f'channel_link_{channel_id}')],
