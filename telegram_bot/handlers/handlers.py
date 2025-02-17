@@ -17,6 +17,7 @@ from telegram_bot.keyboards.channel_offers.channel_offers_editChannelMenu import
 from telegram_bot.keyboards.channel_offers.channel_offers_main import *
 from telegram_bot.keyboards.channel_offers.channel_offers_showLink import *
 from telegram_bot.keyboards.channel_offers.channel_offers_layout import *
+from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import *
 
 from telegram_bot.keyboards.settings.settings_menu import *
 from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
@@ -128,6 +129,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_editmessagelayout_{channel_id}_{layout_id}": lambda: edit_layout_message(query, context, user_id, layout_id, channel_id),
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
+
+        f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, channel_id, user_id),
 
         'none': lambda: doNothing(query)
     }
