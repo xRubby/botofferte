@@ -102,11 +102,7 @@ def search_amazon_offers(keyword_or_url):
                 data_preordine = None
 
             prime = get_prime_status(item)
-
-
-            print(asin)
-            
-
+        
             cond, cond_comm = get_condition(item)
 
             offer.append({

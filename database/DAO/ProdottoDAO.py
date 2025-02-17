@@ -1,6 +1,8 @@
 from database.Connessione import Connessione
 from database.Entity.Prodotto import Prodotto
 
+from typing import List
+
 import re
 
 class ProdottoDAO:
@@ -22,10 +24,10 @@ class ProdottoDAO:
 
     def insert_Prodotto(self, prodotto: Prodotto):
         self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                        (prodotto.getAsin(), prodotto.getTitolo(), prodotto.getPrezzo(), prodotto.getOldPrezzo(), prodotto.getValuta(), 
-                         prodotto.getSconto(), prodotto.getVenditore(), prodotto.getSpeditoAmazon(), prodotto.getLink(), prodotto.getImgUrl(), 
-                         prodotto.getBrand(), prodotto.getPreorder(), prodotto.getDataPreordine(), prodotto.getIsPrime(), prodotto.getIsWarehouse(), 
-                         prodotto.getCondizione(), prodotto.getCondizioneDescrizione()))
+                        (prodotto.asin, prodotto.titolo, prodotto.prezzo, prodotto.old_prezzo, prodotto.valuta, 
+                         prodotto.sconto, prodotto.venditore, prodotto.spedito_Amazon, prodotto.link, prodotto.img_url, 
+                         prodotto.brand, prodotto.preorder, prodotto.data_preordine, prodotto.isPrime, prodotto.isWarehouse, 
+                         prodotto.condizione, prodotto.condizione_descrizione))
         self.conn.commit()
 
     def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str) -> None:
@@ -59,7 +61,7 @@ class ProdottoDAO:
             return Prodotto(*row)
         return None
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Prodotto]:
         self.cursor.execute("SELECT * FROM prodotti")
         rows = self.cursor.fetchall()
 

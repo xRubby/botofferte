@@ -1,6 +1,8 @@
 from database.Connessione import Connessione
 from database.Entity.Licenza import Licenza
 
+from typing import List
+
 class LicenzaDAO:
     def __init__(self):
         self.conn = Connessione().get_connection()
@@ -33,7 +35,7 @@ class LicenzaDAO:
             return Licenza(*row)
         return None
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Licenza]:
         self.cursor.execute("SELECT * FROM licenze")
 
         rows = self.cursor.fetchall()

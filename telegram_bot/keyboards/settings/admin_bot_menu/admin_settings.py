@@ -48,7 +48,7 @@ async def view_licenses(query):
 
     if licenze:
         keyboard = [
-            [InlineKeyboardButton(licenza.getCodiceLicenza(), callback_data=f'views_{licenza.getCodiceLicenza()}')]
+            [InlineKeyboardButton(licenza.codice_licenza, callback_data=f'views_{licenza.codice_licenza}')]
             for licenza in licenze
         ]
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')])
@@ -69,7 +69,7 @@ async def view_license_details(query, license_code):
         licenza = licenza_dao.get(license_code)
 
     if licenza:
-        text = f"Licenza: {licenza.getCodiceLicenza()}\nStato: {'Attiva' if licenza.getStato() else 'Non attiva'}\nData scadenza: {licenza.getScadenza()}"
+        text = f"Licenza: {licenza.codice_licenza}\nStato: {'Attiva' if licenza.stato else 'Non attiva'}\nData scadenza: {licenza.scadenza}"
         
         keyboard = [
             [InlineKeyboardButton("Cancella Licenza", callback_data=f'confirmdelete_{license_code}')],

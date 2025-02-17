@@ -1,7 +1,7 @@
 from database.Connessione import Connessione
 from database.Entity.Gestisce import Gestisce
 
-
+from typing import List
 
 class GestisceDAO:
     def __init__(self):
@@ -43,7 +43,7 @@ class GestisceDAO:
             return Gestisce(*row)
         return None
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Gestisce]:
         self.cursor.execute("SELECT * FROM Gestisce")
         rows = self.cursor.fetchall()
 

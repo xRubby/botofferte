@@ -21,8 +21,8 @@ async def handle_offers(query, user_id):
         else:
             text = "I tuoi canali:\n"
             for channel in channels:
-                channel_id = channel.getCanaleId()
-                channel_name = channel.getNomeCanale()
+                channel_id = channel.canale_id
+                channel_name = channel.nome_canale
                 text += f"\n- {channel_name}"
 
                 keyboard.append([
@@ -83,18 +83,3 @@ async def add_channel_start(query,update,context):
                     "Il bot aspetterà che tu invii il messaggio dal canale corretto.",
                     reply_markup=reply_markup
                 )
-
-async def delete_channel(query, channel_id, user_id):
-
-    await query.answer()
-
-    keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'offerte_canale')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    try:
-        
-        await query.edit_message_text("Canale rimosso con successo!", reply_markup=reply_markup)
-    except Exception as e:
-        await query.edit_message_text(f"Errore nella rimozione del canale: {e}", reply_markup=reply_markup)

@@ -1,6 +1,7 @@
 from database.Connessione import Connessione
 from database.Entity.Canale import Canale
 
+from typing import List
 
 
 class CanaleDAO:
@@ -43,7 +44,7 @@ class CanaleDAO:
             return Canale(*row)
         return None
     
-    def get_user_channels(self, user_id: int) -> list:
+    def get_user_channels(self, user_id: int) -> List[Canale]:
         self.cursor.execute("""SELECT c.* FROM Canali c JOIN Gestisce g ON c.canale_id = g.canale_id
         WHERE g.telegram_id = ?""", (user_id,))
         rows = self.cursor.fetchall()
@@ -54,7 +55,7 @@ class CanaleDAO:
         self.cursor.execute("SELECT * FROM canali WHERE codice_licenza = ? LIMIT 1", (license_code,))
         return self.cursor.fetchone() is not None
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Canale]:
         self.cursor.execute("SELECT * FROM canali")
         rows = self.cursor.fetchall()
 

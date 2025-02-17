@@ -1,6 +1,7 @@
 from database.Connessione import Connessione
 from database.Entity.Utente import Utente
 
+from typing import List
 
 class UtenteDAO:
     def __init__(self):
@@ -36,7 +37,7 @@ class UtenteDAO:
             return Utente(*row)
         return None
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Utente]:
         self.cursor.execute("SELECT * FROM utenti")
 
         rows = self.cursor.fetchall()

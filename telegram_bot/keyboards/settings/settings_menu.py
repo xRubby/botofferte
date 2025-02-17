@@ -15,7 +15,7 @@ async def settings_menu(user_id, query):
         with UtenteDAO() as utente_dao:
             utente = utente_dao.get(user_id)
 
-        if utente.getIsAdmin():
+        if utente.isAdmin:
             keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])
 
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')])

@@ -52,10 +52,6 @@ def processa_messaggio(template, context):
 
     messaggio = clean_text(messaggio)
 
-
-
-    print(repr(messaggio))
-
     return messaggio
 
 
@@ -95,31 +91,36 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             
                             prodotto_dao.insert_Prodotto(prodotto)
 
+                            
+
+                            
+
                         except Exception as e:
+                            traceback.print_exc()
                             prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                     
                     prodotto_dict={
-                        "ASIN": prodotto.getAsin(),
-                        "titolo": prodotto.getTitolo(),
-                        "prezzo": prodotto.getPrezzo(),
-                        "old_prezzo": prodotto.getOldPrezzo(),
-                        "valuta": prodotto.getValuta(),
-                        "sconto": prodotto.getSconto(),
-                        "venditore": prodotto.getVenditore(),
-                        "spedito_Amazon": prodotto.getSpeditoAmazon(),
-                        "spedito": venduto_e_spedito(prodotto.getVenditore(), prodotto.getSpeditoAmazon()),
-                        "link": prodotto.getLink(),
-                        "img_url": prodotto.getImgUrl(),
-                        "brand": prodotto.getBrand(),
-                        "preorder": "Preordine" if prodotto.getPreorder() else "",
-                        "data_preordine": prodotto.getDataPreordine(),
-                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.getIsPrime() else "",
-                        "isWarehouse": prodotto.getIsWarehouse(),
-                        "condizione": prodotto.getCondizione(),
-                        "condizione_commento": prodotto.getCondizioneDescrizione()
+                        "ASIN": prodotto.asin,
+                        "titolo": prodotto.titolo,
+                        "prezzo": prodotto.prezzo,
+                        "old_prezzo": prodotto.old_prezzo,
+                        "valuta": prodotto.valuta,
+                        "sconto": prodotto.sconto,
+                        "venditore": prodotto.venditore,
+                        "spedito_Amazon": prodotto.spedito_Amazon,
+                        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+                        "link": prodotto.link,
+                        "img_url": prodotto.img_url,
+                        "brand": prodotto.brand,
+                        "preorder": "Preordine" if prodotto.preorder else "",
+                        "data_preordine": prodotto.data_preordine,
+                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+                        "isWarehouse": prodotto.isWarehouse,
+                        "condizione": prodotto.condizione,
+                        "condizione_commento": prodotto.condizione_descrizione
                     }
             except Exception as e:
-                logging.error("ERROER")
+                traceback.print_exc()
     except Exception as e:
         logging.error("ERRORE")
 
@@ -138,7 +139,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
     message = processa_messaggio(messaggio, prodotto_dict)
 
     keyboard = [
-                [InlineKeyboardButton("🛒 Acquista su Amazon!", url=prodotto.getLink())],
+                [InlineKeyboardButton("🛒 Acquista su Amazon!", url=prodotto.link)],
                 [InlineKeyboardButton("⬅️ Indietro", callback_data="back_to_main")]
             ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -150,7 +151,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                     text=message,                        
                     parse_mode='HTML',
                     reply_markup=reply_markup,
-                    link_preview_options=LinkPreviewOptions(url=prodotto.getImgUrl())
+                    link_preview_options=LinkPreviewOptions(url=prodotto.img_url)
                     )
     except Exception as e:
                 logging.error(f"Errore durante la modifica del messaggio: {e}")

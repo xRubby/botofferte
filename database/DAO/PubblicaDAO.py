@@ -1,6 +1,8 @@
 from database.Connessione import Connessione
 from database.Entity.Pubblica import Pubblica
 
+from typing import List
+
 class PubblicaDAO:
     def __init__(self):
         self.conn = Connessione().get_connection()
@@ -53,7 +55,7 @@ class PubblicaDAO:
             return Pubblica(*row)
         return None
     
-    def get_channel_link_non_pubblicati_(self, id_canale: str) -> list:
+    def get_channel_link_non_pubblicati_(self, id_canale: str) -> List[Pubblica]:
         self.cursor.execute(
             "SELECT * FROM Pubblica WHERE id_canale = ? AND isPubblicato = 0", 
             (id_canale,)
@@ -61,7 +63,7 @@ class PubblicaDAO:
         rows = self.cursor.fetchall()
         return [Pubblica(*row) for row in rows] 
     
-    def get_channel_link_pubblicati_(self, id_canale: str) -> list:
+    def get_channel_link_pubblicati_(self, id_canale: str) -> List[Pubblica]:
         self.cursor.execute(
             "SELECT * FROM Pubblica WHERE id_canale = ? AND isPubblicato = 1", 
             (id_canale,)
@@ -69,7 +71,7 @@ class PubblicaDAO:
         rows = self.cursor.fetchall()
         return [Pubblica(*row) for row in rows]
 
-    def get_all(self) -> list:
+    def get_all(self) -> List[Pubblica]:
         self.cursor.execute("SELECT * FROM Pubblica")
         rows = self.cursor.fetchall()
         return [Pubblica(*row) for row in rows] 
