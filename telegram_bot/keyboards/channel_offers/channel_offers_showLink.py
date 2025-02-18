@@ -3,7 +3,7 @@ from telegram.ext import *
 
 from telegram_bot.functions.send_message import publish_offer
 
-from database.DAO import CanaleDAO, PubblicaDAO
+from database.DAO.PubblicaDAO import PubblicaDAO
 
 
 async def show_links(query, context, channel_id, current_link_index=0):
@@ -11,7 +11,7 @@ async def show_links(query, context, channel_id, current_link_index=0):
     await query.answer()
 
     with PubblicaDAO() as pubblica_dao:
-        links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
+        links = pubblica_dao.get_channel_link_non_pubblicati(channel_id)
 
     if not links:
         await query.edit_message_text(
@@ -24,11 +24,11 @@ async def show_links(query, context, channel_id, current_link_index=0):
 
     link = links[current_link_index]
 
-    text = f"Link corrente: {current_link_index+1}\n\n{link.getMessaggio()}"
+    text = f"Link corrente: {current_link_index+1}\n\n{link.messaggio}"
 
     keyboard = [
-        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.getId()}')],
-        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.getId()}')],
+        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
+        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')],
         [InlineKeyboardButton("⬅️ Precedente", callback_data=f'prev_{channel_id}_{current_link_index}')],
         [InlineKeyboardButton("➡️ Successivo", callback_data=f'next_{channel_id}_{current_link_index}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
