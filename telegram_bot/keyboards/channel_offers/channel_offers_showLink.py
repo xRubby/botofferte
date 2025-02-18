@@ -28,11 +28,16 @@ async def show_links(query, context, channel_id, current_link_index=0):
 
     keyboard = [
         [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
-        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')],
-        [InlineKeyboardButton("⬅️ Precedente", callback_data=f'prev_{channel_id}_{current_link_index}')],
-        [InlineKeyboardButton("➡️ Successivo", callback_data=f'next_{channel_id}_{current_link_index}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
+        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')]
     ]
+
+    if len(links) > 1:
+        keyboard.extend([
+            [InlineKeyboardButton("⬅️ Precedente", callback_data=f'prev_{channel_id}_{current_link_index}'),
+            InlineKeyboardButton("➡️ Successivo", callback_data=f'next_{channel_id}_{current_link_index}')]
+        ])
+
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -43,10 +48,10 @@ async def publish_message(query, update, context, channel_id, link_id):
     await query.answer()
 
     with PubblicaDAO() as pubblica_dao:
-        link = pubblica_dao.get(link_id)
+        link = pubblica_dao.get_channel_link_by_id(link_id, channel_id)
 
         try:
-            await publish_offer(update, context, channel_id, link.getMessaggio())
+            await publish_offer(update, context, link)
 
             await query.edit_message_text(
                 text=f"Messaggio pubblicato nel canale!",
@@ -55,7 +60,7 @@ async def publish_message(query, update, context, channel_id, link_id):
                 ]])
                 
             )
-            pubblica_dao.update_is_pubblicato(link.getId(), link.getIdCanale(), link.getAsinProdotti(), 1)
+            pubblica_dao.update_is_pubblicato(link.id, link.id_canale, link.asin_prodotti, 1)
         except Exception as e:
             await query.edit_message_text(
                 text="Errore durante la pubblicazione del messaggio. Il bot non ha i requisiti di amministratore all'interno del canale",
@@ -73,7 +78,7 @@ async def navigate_links(query, context, channel_id, direction, current_link_ind
     await query.answer()
     
     with PubblicaDAO() as pubblica_dao:
-        links = pubblica_dao.get_channel_link_non_pubblicati_(channel_id)
+        links = pubblica_dao.get_channel_link_non_pubblicati(channel_id)
 
     if(len(links) >=2):
         if direction == "prev":
@@ -89,10 +94,10 @@ async def remove_product(query, context, id_channel, link_id):
     await query.answer()
     
     with PubblicaDAO() as pubblica_dao:
-        link = pubblica_dao.get(link_id)
+        link = pubblica_dao.get_channel_link_by_id(link_id, id_channel)
 
         if link:
-            pubblica_dao.delete(link.getId(), link.getIdCanale(), link.getAsinProdotti())
+            pubblica_dao.delete(link.id, link.id_canale, link.asin_prodotti)
 
             await query.edit_message_text(
                 text=f"Link rimosso dalla lista.",

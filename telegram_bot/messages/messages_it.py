@@ -43,8 +43,8 @@ def get_licenza_generata(licenza):
 
 def getTemplateMessage():
     msg=("📦 <b>{titolo}</b>\n"
-        "💲 <i>Prezzo vecchio:</i> {prezzo_vecchio}{valuta}\n"
-        "💰 <i>Prezzo nuovo:</i> <b>{prezzo_nuovo}{valuta}</b>\n"
+        "💲 <i>Prezzo vecchio:</i> {old_prezzo}{valuta}\n"
+        "💰 <i>Prezzo nuovo:</i> <b>{prezzo}{valuta}</b>\n"
         "📉 <i>Sconto:</i> {sconto}%\n\n"
         "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>")
     return msg

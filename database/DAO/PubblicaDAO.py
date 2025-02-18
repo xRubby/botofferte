@@ -55,6 +55,16 @@ class PubblicaDAO:
             return Pubblica(*row)
         return None
     
+    def get_channel_link_by_id(self, id: int, id_canale: str) -> Pubblica:
+        self.cursor.execute(
+            "SELECT * FROM Pubblica WHERE id = ? AND id_canale = ?", 
+            (id, id_canale)
+        )
+        row = self.cursor.fetchone()
+        if row:
+            return Pubblica(*row)
+        return None
+    
     def get_channel_link_non_pubblicati(self, id_canale: str) -> List[Pubblica]:
         self.cursor.execute(
             "SELECT * FROM Pubblica WHERE id_canale = ? AND isPubblicato = 0", 

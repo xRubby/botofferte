@@ -1,4 +1,3 @@
-import os
 import re
 from APIs.amazon_api import search_amazon_offers
 from dotenv import load_dotenv
@@ -10,12 +9,16 @@ import logging
 import traceback
 
 from database.Entity.Prodotto import Prodotto
+from database.Entity.Pubblica import Pubblica
 
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.ProdottoDAO import ProdottoDAO
+from database.DAO.PubblicaDAO import PubblicaDAO
+from database.DAO.LayoutDAO import LayoutDAO
 
 from utils.amazon_utils import extract_asin_from_url
 from utils.send_message_utils import venduto_e_spedito
+from telegram_bot.messages.messages_it import getTemplateMessage
 
 def clean_text(text):
     lines = text.split("\n")
@@ -91,10 +94,6 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             
                             prodotto_dao.insert_Prodotto(prodotto)
 
-                            
-
-                            
-
                         except Exception as e:
                             traceback.print_exc()
                             prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
@@ -166,113 +165,94 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, channel_id: str, keyword: str):
 
-    try:
-        template = get_message_template(channel_id)
-
-        if not template:
-            logging.error(f"Nessun template trovato per il canale {channel_id}.")
-            return
-    except Exception as e:
-        logging.error(f"Errore durante il recupero del template: {e}")
-        return
-    
-    user_id = update.effective_user.id
+    user_id = update.effective_user.id 
     message_id = context.user_data.get(user_id, {}).get('message_id')
-    
-    keyboard_back = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"edit_channel_{channel_id}")]
-    ]
-    reply_markup_back = InlineKeyboardMarkup(keyboard_back)
-        
+
     try:
         if keyword:
             try:
-                offers = search_amazon_offers(keyword)
-            except Exception as e:
-                raise
-            
-            if offers:
-                offer = offers[0]
+                asin = extract_asin_from_url(keyword)
 
-                try:
-                    context_dict = {
-                        "titolo": offer['name'],
-                        "prezzo_nuovo": offer['new_price'],
-                        "prezzo_vecchio": offer['old_price'],
-                        "sconto": offer['discount_percentage'],
-                        "link": offer['url'],
-                        "linkfull": offer['full_url'],
-                        "valuta": offer['currency'],
-                        "spedito": offer['spedito'],
-                        "prime": offer['prime'],
-                        "preorder": offer['preorder'],
-                        "preorderdate": offer['preorderdate'],
-                        "warehouse": offer['warehouse'],
-                        "condition": offer['condition'],
-                        "conditioncomm": offer['conditioncomm'],
-                        "minimo": offer['minimo']
-                    }
-
-                    return processa_messaggio(template, context_dict)
+                with ProdottoDAO() as prodotto_dao:
+                    if(asin):
+                        prodotto = prodotto_dao.get_by_asin(asin)
+                    else:
+                        prodotto = prodotto_dao.get_by_titolo(keyword)
                 
-                except Exception as e:
-                    logging.error(f"Errore durante la costruzione del messaggio: {e}")
-                    await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Errore durante la costruzione del messaggio. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-            else:
-                await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Nessuna offerta trovata per questa parola chiave o URL.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-        else:
-            await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Per favore, fornisci una parola chiave o un URL per la ricerca.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-    except Exception as e:
-        await context.bot.edit_message_text(
-                            chat_id=update.effective_chat.id,
-                            message_id=message_id,
-                            text="Si è verificato un errore imprevisto. Riprova più tardi.",
-                            parse_mode='HTML',
-                            reply_markup=reply_markup_back
-                        )
-        raise
+                    if(not prodotto):
+                        try:
+                            offers = search_amazon_offers(keyword)
 
+                            offer = offers[0]
+
+                            prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
+                                                offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                            
+                            prodotto_dao.insert_Prodotto(prodotto)
+
+                        except Exception as e:
+                            traceback.print_exc()
+                            prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
+                    
+                    prodotto_dict={
+                        "ASIN": prodotto.asin,
+                        "titolo": prodotto.titolo,
+                        "prezzo": prodotto.prezzo,
+                        "old_prezzo": prodotto.old_prezzo,
+                        "valuta": prodotto.valuta,
+                        "sconto": prodotto.sconto,
+                        "venditore": prodotto.venditore,
+                        "spedito_Amazon": prodotto.spedito_Amazon,
+                        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+                        "link": prodotto.link,
+                        "img_url": prodotto.img_url,
+                        "brand": prodotto.brand,
+                        "preorder": "Preordine" if prodotto.preorder else "",
+                        "data_preordine": prodotto.data_preordine,
+                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+                        "isWarehouse": prodotto.isWarehouse,
+                        "condizione": prodotto.condizione,
+                        "condizione_commento": prodotto.condizione_descrizione
+                    }
+            except Exception as e:
+                traceback.print_exc()
+    except Exception as e:
+        logging.error("ERRORE")
+
+            
+    with LayoutDAO() as layout_dao:
+        layout_in_uso = layout_dao.get_channel_layout_activated(channel_id)
+
+        if(layout_in_uso):
+            messaggio_layout = layout_in_uso.messaggio
+        else:
+            messaggio_layout = getTemplateMessage()
+
+    message = processa_messaggio(messaggio_layout, prodotto_dict)
+
+    with PubblicaDAO() as pubblica_dao:
+        pubblica_dao.insert(channel_id, prodotto.asin, message)
     
 
-                  
-
-
-async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, channel_id: str, message: str):
+async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
 
        
-    user_id = update.effective_user.id
-    message_id = context.user_data.get(user_id, {}).get('message_id')
-    
+   
     keyboard_back = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channel_listlinks_{channel_id}")]
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channel_listlinks_{link.id_canale}")]
     ]
     reply_markup_back = InlineKeyboardMarkup(keyboard_back)
         
+    with ProdottoDAO() as prodotto_dao:
+        prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
                    
     try:
-        await context.bot.send_message(
-            chat_id=channel_id,
-            text=message,
-            parse_mode='HTML',
-            disable_web_page_preview=False
+        await context.bot.send_photo(
+            chat_id=link.id_canale,
+            photo=prodotto.img_url, 
+            caption=link.messaggio,
+            parse_mode='HTML'
         )
 
         

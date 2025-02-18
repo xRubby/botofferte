@@ -26,6 +26,7 @@ from database.DAO.LayoutDAO import LayoutDAO
 
 from utils.generate_license import *
 
+from telegram_bot.functions.send_message import search_offer
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -161,7 +162,31 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await search_and_send_offer(update, context, keyword)
         context.user_data[user_id]['awaiting_input'] = False
         
+    elif context.user_data.get(user_id, {}).get('awaiting_link'):
+        link = update.message.text
+        await update.message.delete()
 
+        channel_id = context.user_data[user_id].get('channel_id')
+        
+        try:
+            await search_offer(update, context, channel_id, link)
+
+            keyboard=[
+            [InlineKeyboardButton("Lista link", callback_data=f'channel_listlinks_{channel_id}')],
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
+            ]
+
+            reply_markup=InlineKeyboardMarkup(keyboard)
+
+            await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                message_id=message_id,
+                text=f"Link aggiunto con successo: {link}", 
+                reply_markup=reply_markup)
+            
+        except Exception as e:
+            logging.error(e)
+
+        context.user_data[user_id]['awaiting_link'] = False
 
     elif context.user_data.get(user_id, {}).get('awaiting_license'):
         
