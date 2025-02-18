@@ -33,6 +33,11 @@ class CanaleDAO:
                             (new_id_affiliato, canale_id))
         self.conn.commit()
 
+    def update_codice_licenza(self, canale_id: str, new_codice_licenza: str) -> None:
+        self.cursor.execute("UPDATE canali SET codice_licenza = ? WHERE canale_id = ?", 
+                            (new_codice_licenza, canale_id))
+        self.conn.commit()
+
     def delete(self, canale_id: str) -> None:
         self.cursor.execute("DELETE FROM canali WHERE canale_id = ?", (canale_id,))
         self.conn.commit()
@@ -50,6 +55,13 @@ class CanaleDAO:
         rows = self.cursor.fetchall()
 
         return [Canale(*row) for row in rows] 
+    
+    def get_channel_by_licensecode(self, license_code) -> Canale:
+        self.cursor.execute("SELECT * FROM canali WHERE codice_licenza = ? LIMIT 1", (license_code,))
+        row = self.cursor.fetchone()
+        if row:
+            return Canale(*row)
+        return None
     
     def is_license_used(self, license_code: str) -> bool:
         self.cursor.execute("SELECT * FROM canali WHERE codice_licenza = ? LIMIT 1", (license_code,))

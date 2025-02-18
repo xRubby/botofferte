@@ -28,8 +28,7 @@ class Connessione:
             canale_id TEXT PRIMARY KEY NOT NULL,
             nome_canale TEXT NOT NULL,
             id_affiliato TEXT,
-            codice_licenza TEXT NOT NULL,
-            FOREIGN KEY (codice_licenza) REFERENCES Licenze(codice_licenza) ON DELETE CASCADE
+            codice_licenza TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS Gestisce (
@@ -53,8 +52,9 @@ class Connessione:
 
         CREATE TABLE IF NOT EXISTS Licenze (
             codice_licenza TEXT PRIMARY KEY,
-            scadenza DATE NOT NULL,
-            stato INTEGER NOT NULL
+            tipo TEXT NOT NULL,
+            data_attivazione DATETIME,
+            data_scadenza DATETIME
         );
 
         CREATE TABLE IF NOT EXISTS Pubblica (

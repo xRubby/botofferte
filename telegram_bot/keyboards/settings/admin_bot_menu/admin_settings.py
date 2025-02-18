@@ -1,4 +1,5 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import *
+from telegram.ext import *
 
 from telegram_bot.messages.messages_it import get_admin_message, get_licenza_generata
 
@@ -10,8 +11,11 @@ from database.Entity.Licenza import Licenza
 from database.DAO.LicenzaDAO import LicenzaDAO
 
 
-async def admin_menu(query):
+async def admin_menu(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE, user_id: str):
         
+        if context.user_data[user_id].get('awaiting_tipo_license'):
+            context.user_data[user_id]['awaiting_tipo_license'] = False
+
         await query.answer()
 
         keyboard = [
@@ -22,24 +26,29 @@ async def admin_menu(query):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(text=get_admin_message(),parse_mode="HTML", reply_markup=reply_markup)
 
-async def generate_new_license(query): 
+async def generate_new_license(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE, user_id: str): 
         
-        await query.answer()
+    await query.answer()
 
-        new_license = generate_license()
+    message_id = query.message.id
+    context.user_data[user_id] = {'awaiting_tipo_license': True, 'message_id': message_id}
 
-        with LicenzaDAO() as licenza_dao:
-            licenza_dao.insert(new_license, "2050-01-01")
+    text = "Inserisci il tipo della licenza. Puoi usare anche i tasti rapidi qui sotto.\n\nEsempi: 2 mesi, 3 anni"
 
-        keyboard = [
-            [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text(text=get_licenza_generata(new_license),parse_mode="HTML", reply_markup=reply_markup)
+    keyboard = [
+        [InlineKeyboardButton("1 Settimana (WIP)", callback_data='none'), InlineKeyboardButton("30 Giorni (WIP)", callback_data='none')],
+        [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
 
 
-async def view_licenses(query):
+    await query.edit_message_text(text=text,parse_mode="HTML", reply_markup=reply_markup)
+
+
+
+async def view_licenses(query: CallbackQuery):
 
     await query.answer()
 
@@ -61,15 +70,22 @@ async def view_licenses(query):
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
 
-async def view_license_details(query, license_code):
+async def view_license_details(query: CallbackQuery, license_code: str):
 
     await query.answer()
 
     with LicenzaDAO() as licenza_dao:
         licenza = licenza_dao.get(license_code)
+        stato = licenza_dao.get_stato(license_code)
 
     if licenza:
-        text = f"Licenza: {licenza.codice_licenza}\nStato: {'Attiva' if licenza.stato else 'Non attiva'}\nData scadenza: {licenza.scadenza}"
+        text = f"Licenza: {licenza.codice_licenza}\nTipo: {licenza.tipo.title()}\n"
+
+        if(stato):
+            text += f"Stato: 'Attiva'\n\nData attivazione: {licenza.data_attivazione}\nData scadenza: {licenza.data_scadenza}"
+        else:
+            text += "Stato: 'Non attiva'"
+
         
         keyboard = [
             [InlineKeyboardButton("Cancella Licenza", callback_data=f'confirmdelete_{license_code}')],
@@ -84,7 +100,7 @@ async def view_license_details(query, license_code):
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
 
 
-async def delete_license_confirm(query, license_code):
+async def delete_license_confirm(query: CallbackQuery, license_code: str):
 
     await query.answer()
 

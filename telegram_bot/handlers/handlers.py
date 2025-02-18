@@ -4,9 +4,6 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from telegram_bot.messages.messages_it import getTemplateMessage
-from telegram_bot.functions.send_message import search_offer
-
 from telegram_bot.keyboards.main_menu import create_main_menu
 
 from telegram_bot.keyboards.search_product.search_product_menu import *
@@ -26,6 +23,8 @@ from database.DAO.UtenteDAO import UtenteDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.LayoutDAO import LayoutDAO
+
+from utils.generate_license import *
 
 
 
@@ -97,18 +96,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         'back_to_main': lambda: start(update, context),
 
         'search_product': lambda: search_product(query, context, user_id),
-        'offerte_canale': lambda: handle_offers(query, user_id),
+        'offerte_canale': lambda: handle_offers(query, context, user_id),
         'settings': lambda: settings_menu(user_id,query),
         
-        'admin_settings': lambda: admin_menu(query),
-        'generate_license': lambda: generate_new_license(query),
+        'admin_settings': lambda: admin_menu(query, context, user_id),
+        'generate_license': lambda: generate_new_license(query, context, user_id),
         'view_licenses': lambda: view_licenses(query),
         f'views_{license_code}': lambda: view_license_details(query, license_code),
         f'confirmdelete_{license_code}': lambda: delete_license_confirm(query, license_code),
         
         'add_channel': lambda: add_channel_start(query, update, context),
         'add_license': lambda: add_license_start(query,context,user_id),
-        f'edit_channel_{channel_id}': lambda: edit_channel(query, channel_id),
+        f'edit_channel_{channel_id}': lambda: edit_channel(query, context, user_id, channel_id),
         f'delete_channel_{channel_id}': lambda: delete_channel(query, channel_id, user_id),
         f'channel_link_{channel_id}': lambda: insert_link(query,context,user_id,channel_id),
         f'channel_listlinks_{channel_id}': lambda: show_links(query,context,channel_id),
@@ -188,6 +187,8 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                             canale_dao.insert(channel_id, channel_name, "", license_code)
                             gestisce_dao.insert(user_id, channel_id, "", 1)
+
+                            licenza_dao.activate_licenza(license_code)
 
                             await context.bot.edit_message_text(
                                 chat_id=update.effective_chat.id,
@@ -414,3 +415,67 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reply_markup=reply_markup)
 
         context.user_data[user_id]['awaiting_affiliate_id'] = False
+
+    
+    elif context.user_data[user_id].get('awaiting_tipo_license'):
+        tipo_licenza = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+
+        await update.message.delete()
+
+        if(calcola_tipo_scadenza(tipo_licenza)):
+
+            codice_licenza = generate_license()
+            with LicenzaDAO() as licenza_dao:
+                licenza_dao.insert(codice_licenza, tipo_licenza)
+
+            text = f"Licenza con codice {codice_licenza} aggiunta correttamente!"
+        else:
+            text = f"Il tipo della licenza è errato!"
+
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'admin_settings')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=text,
+                            reply_markup=reply_markup)
+
+        context.user_data[user_id]['awaiting_tipo_license'] = False
+
+    elif context.user_data[user_id].get('awaiting_newlicense'):
+        new_licenza = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+
+        await update.message.delete()
+
+        with LicenzaDAO() as licenza_dao, CanaleDAO() as canale_dao:
+            licenza = licenza_dao.get(new_licenza)
+
+            if licenza:
+                if not canale_dao.is_license_used(new_licenza):
+                    canale_dao.update_codice_licenza(channel_id, new_licenza)
+                    licenza_dao.activate_licenza(new_licenza)
+                    text = "Licenza aggiornata con successo!"
+                else:
+                    text = "La licenza è già in uso su un altro canale."
+            else:
+                text = "La licenza non esiste."
+                
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'offerte_canale')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=text,
+                            reply_markup=reply_markup)
+
+        context.user_data[user_id]['awaiting_newlicense'] = False
