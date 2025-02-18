@@ -1,6 +1,8 @@
 #handlers.py
 
 import logging
+import time
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
@@ -158,6 +160,15 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get(user_id, {}).get('awaiting_input'):
         keyword = update.message.text
         await update.message.delete()
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                message_id=message_id,
+                text=f"<b>🔍 Cerca prodotto</b>"
+                    "\n\n"
+                    "Sto elaborando il tuo link...",
+                parse_mode="HTML")
+        
+        time.sleep(2)
+
         from telegram_bot.functions.send_message import search_and_send_offer
         await search_and_send_offer(update, context, keyword)
         context.user_data[user_id]['awaiting_input'] = False
@@ -167,6 +178,11 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.delete()
 
         channel_id = context.user_data[user_id].get('channel_id')
+
+        
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                message_id=message_id,
+                text=f"Sto elaborando il tuo link...")
         
         try:
             await search_offer(update, context, channel_id, link)
@@ -178,9 +194,11 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             reply_markup=InlineKeyboardMarkup(keyboard)
 
+            time.sleep(2)
+
             await context.bot.edit_message_text(chat_id=update.effective_chat.id,
                 message_id=message_id,
-                text=f"Link aggiunto con successo: {link}", 
+                text=f"Link aggiunto con successo.", 
                 reply_markup=reply_markup)
             
         except Exception as e:
