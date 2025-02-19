@@ -16,9 +16,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 REGION = os.getenv('REGION')
 
-def is_future_date(date_string, date_format="%d %B %Y"):
+def is_future_date(date_string, date_format="%Y-%m-%dT%H:%M:%SZ"):
     try:
         release_date = datetime.strptime(date_string, date_format).date()
+        
         return release_date > datetime.today().date()
     except ValueError:
         return False
