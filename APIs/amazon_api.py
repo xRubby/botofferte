@@ -16,10 +16,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 REGION = os.getenv('REGION')
 
-def is_future_date(date_string, date_format="%Y-%m-%dT%H:%M:%SZ"):
+def is_future_date(date_string, date_format="%d %B %Y"):
     try:
         release_date = datetime.strptime(date_string, date_format).date()
-        
         return release_date > datetime.today().date()
     except ValueError:
         return False
@@ -36,7 +35,7 @@ def get_prime_status(item):
     return True if item.offers.listings[0].delivery_info.is_prime_eligible else False
 
 
-def search_amazon_offers(keyword_or_url):
+def search_amazon_offers(keyword, seller_id = None):
 
     currency_symbols = {
         'EUR': '€',
@@ -51,12 +50,6 @@ def search_amazon_offers(keyword_or_url):
         "Amazon.com": "Amazon",
     }
 
-
-    extracted_asin = extract_asin_from_url(keyword_or_url)
-    warehouse_seller_id = search_warehouse_seller_id_from_link(keyword_or_url)
-
-    keyword = extracted_asin if extracted_asin else keyword_or_url
-
     try:
         amazon_client = AmazonApi(
             ACCESS_KEY,
@@ -65,7 +58,7 @@ def search_amazon_offers(keyword_or_url):
             country=REGION
         )
 
-        is_warehouse = warehouse_seller_id == "A1HO9729ND375Y"
+        is_warehouse = seller_id == "A1HO9729ND375Y"
         cond = "Used" if is_warehouse else "New"
 
         response = amazon_client.search_items(
@@ -88,7 +81,7 @@ def search_amazon_offers(keyword_or_url):
             spedito_amazon = item.offers.listings[0].delivery_info.is_amazon_fulfilled
             venduto = seller_name_mapping.get(venditore, venditore)
 
-            product_url = f"https://www.amazon.it/dp/{asin}?m={warehouse_seller_id}" if is_warehouse else f"https://www.amazon.it/dp/{asin}"
+            product_url = f"https://www.amazon.it/dp/{asin}?m={seller_id}" if is_warehouse else f"https://www.amazon.it/dp/{asin}"
 
             image_url = item.images.primary.large.url if item.images and item.images.primary.large else ''
 

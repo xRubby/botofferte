@@ -16,7 +16,8 @@ from database.DAO.ProdottoDAO import ProdottoDAO
 from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.LayoutDAO import LayoutDAO
 
-from utils.amazon_utils import extract_asin_from_url
+from utils.amazon_utils import extract_asin_from_url, search_warehouse_seller_id_from_link
+from utils.expand_link import expand_url
 from utils.send_message_utils import venduto_e_spedito
 from telegram_bot.messages.messages_it import getTemplateMessage
 
@@ -74,11 +75,28 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         if keyword:
             try:
-                asin = extract_asin_from_url(keyword)
+
+                expanded_url = expand_url(keyword)
+
+                asin = extract_asin_from_url(expanded_url)
+                if asin:
+                    keyword = asin
+                    warehouse_seller_id = search_warehouse_seller_id_from_link(expanded_url)
+                    is_warehouse = warehouse_seller_id == "A1HO9729ND375Y"
 
                 with ProdottoDAO() as prodotto_dao:
                     if(asin):
-                        prodotto = prodotto_dao.get_by_asin(asin)
+                        if is_warehouse:
+                            
+                            offers = search_amazon_offers(keyword, warehouse_seller_id)
+
+                            offer = offers[0]
+
+                            prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
+                                                offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                        else:
+                            prodotto = prodotto_dao.get_by_asin(asin)
                     else:
                         prodotto = prodotto_dao.get_by_titolo(keyword)
                 
@@ -95,7 +113,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
-                            traceback.print_exc()
+                            #traceback.print_exc()
                             prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                     
                     prodotto_dict={
