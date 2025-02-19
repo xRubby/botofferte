@@ -1,7 +1,7 @@
 #handlers.py
 
 import logging
-import time
+import asyncio
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -167,7 +167,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "Sto elaborando il tuo link...",
                 parse_mode="HTML")
         
-        time.sleep(2)
+        await asyncio.sleep(2)
 
         from telegram_bot.functions.send_message import search_and_send_offer
         await search_and_send_offer(update, context, keyword)
@@ -194,7 +194,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             reply_markup=InlineKeyboardMarkup(keyboard)
 
-            time.sleep(2)
+            await asyncio.sleep(2)
 
             await context.bot.edit_message_text(chat_id=update.effective_chat.id,
                 message_id=message_id,
