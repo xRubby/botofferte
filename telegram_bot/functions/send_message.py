@@ -17,7 +17,7 @@ from database.DAO.ProdottoDAO import ProdottoDAO
 from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.LayoutDAO import LayoutDAO
 
-from utils.amazon_utils import extract_asin_from_url, search_warehouse_seller_id_from_link
+from utils.amazon_utils import extract_asin_from_url, search_warehouse_seller_id_from_link, is_future_date
 from utils.expand_link import expand_url
 from utils.send_message_utils import venduto_e_spedito
 from telegram_bot.messages.messages_it import getTemplateMessage
@@ -69,6 +69,16 @@ def processa_messaggio(template, context):
 
     return messaggio
 
+def check_preorder(prodotto: Prodotto) -> Prodotto:
+    if prodotto:
+        if prodotto.preorder and prodotto.data_preordine:
+            if not is_future_date(prodotto.data_preordine):
+                with ProdottoDAO() as dao:
+                    dao.update_preorder(prodotto.asin, False, None)
+                
+                prodotto.preorder = False
+                prodotto.data_preordine = None
+        return prodotto
 
 
 async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, keyword: str):
@@ -127,7 +137,8 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                             traceback.print_exc()
                             prodotto = aggiorna_prezzo(prodotto_dao.get_by_asin(offer["ASIN"]))
                             
-                    
+                    prodotto= check_preorder(prodotto)
+
                     prodotto.link+= f"?tag={ASSOCIATE_TAG}"
 
                     prodotto_dict={

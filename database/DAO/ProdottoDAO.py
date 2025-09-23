@@ -46,6 +46,12 @@ class ProdottoDAO:
                             WHERE asin = ?''', 
                             (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, last_check, asin))
         self.conn.commit()
+    
+    def update_preorder(self, asin: str, preorder: bool, data_preordine: str) -> None:
+        self.cursor.execute('''UPDATE prodotti SET preorder = ?, data_preordine = ?
+                            WHERE asin = ?''', 
+                            (preorder, data_preordine, asin))
+        self.conn.commit()
 
     def delete(self, asin) -> None:
         self.cursor.execute("DELETE FROM prodotti WHERE asin = ?", (asin,))
