@@ -1,6 +1,7 @@
 import re
 from APIs.amazon_api import search_amazon_offers
 from dotenv import load_dotenv
+import os
 #from PIL import Image, ImageDraw, ImageFont
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions
 from telegram.ext import ContextTypes
@@ -20,6 +21,13 @@ from utils.amazon_utils import extract_asin_from_url, search_warehouse_seller_id
 from utils.expand_link import expand_url
 from utils.send_message_utils import venduto_e_spedito
 from telegram_bot.messages.messages_it import getTemplateMessage
+
+from scraper.amazon_scraper import fetch_price
+
+from APIs.bitly_api import shorten_url
+
+load_dotenv()
+ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 
 def clean_text(text):
     lines = text.split("\n")
@@ -75,7 +83,6 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
     try:
         if keyword:
             try:
-
                 expanded_url = expand_url(keyword)
 
                 asin = extract_asin_from_url(expanded_url)
@@ -102,20 +109,22 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                 
                     if(not prodotto):
                         try:
-                            offers = search_amazon_offers(keyword)
-
-                            offer = offers[0]
+                            offer = fetch_price(asin)
+                            print("fetching")
 
                             prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
                                                 offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
-                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], 0, 0)
+                            
                             
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
-                            #traceback.print_exc()
+                            traceback.print_exc()
                             prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                     
+                    prodotto.link+= f"?tag={ASSOCIATE_TAG}"
+
                     prodotto_dict={
                         "ASIN": prodotto.asin,
                         "titolo": prodotto.titolo,
@@ -127,6 +136,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                         "spedito_Amazon": prodotto.spedito_Amazon,
                         "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
                         "link": prodotto.link,
+                        "link_short": shorten_url(prodotto.link),
                         "img_url": prodotto.img_url,
                         "brand": prodotto.brand,
                         "preorder": "Preordine" if prodotto.preorder else "",
@@ -150,10 +160,20 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                         "\n"
                         "🚚 {spedito} {_| {prime}_}\n"
                         "\n"
-                        "📌 Scopri l'offerta qui: {link}"
+                        "📌 Scopri l'offerta qui: {link_short}"
                     )
 
-    message = processa_messaggio(messaggio, prodotto_dict)
+    try:
+        message = processa_messaggio(messaggio, prodotto_dict)
+    except Exception as e:
+        logging.error(f"Errore durante la costruzione del messaggio: {e}")
+        await context.bot.edit_message_text(
+            chat_id=update.effective_chat.id,
+            message_id=message_id,
+            text="Errore durante la costruzione del messaggio. Riprova più tardi.",
+            parse_mode='HTML',
+            reply_markup=reply_markup_back
+        )
 
     keyboard = [
                 [InlineKeyboardButton("🛒 Acquista su Amazon!", url=prodotto.link)],

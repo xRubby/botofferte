@@ -5,8 +5,6 @@ import re
 from amazon_paapi import AmazonApi
 from dotenv import load_dotenv
 
-from APIs.bitly_api import shorten_url
-
 from utils.amazon_utils import *
 
 load_dotenv()
@@ -15,25 +13,6 @@ ACCESS_KEY = os.getenv('ACCESS_KEY')
 SECRET_KEY = os.getenv('SECRET_KEY')
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 REGION = os.getenv('REGION')
-
-def is_future_date(date_string, date_format="%Y-%m-%dT%H:%M:%SZ"):
-    try:
-        release_date = datetime.strptime(date_string, date_format).date()
-        return release_date > datetime.today().date()
-    except ValueError:
-        return False
-
-def format_price(price):
-    return "{:.2f}".format(price).replace('.', ',')
-
-def get_condition(item):
-    if item.offers.listings[0].condition.value == "Used":
-        return item.offers.listings[0].condition.value, item.offers.listings[0].condition.condition_note.value
-    return "", ""
-
-def get_prime_status(item):
-    return True if item.offers.listings[0].delivery_info.is_prime_eligible else False
-
 
 def search_amazon_offers(keyword, seller_id = None):
 

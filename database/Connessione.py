@@ -85,7 +85,9 @@ class Connessione:
             isPrime INTEGER NOT NULL DEFAULT 0,
             isWarehouse INTEGER NOT NULL DEFAULT 0,
             condizione TEXT,
-            condizione_descrizione TEXT
+            condizione_descrizione TEXT,
+            last_check INTEGER DEFAULT 0,
+            priorita INTEGER DEFAULT 2
         );
                              
         CREATE VIRTUAL TABLE IF NOT EXISTS Prodotti_fts USING FTS5(

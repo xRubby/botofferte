@@ -1,5 +1,5 @@
 class Prodotto:
-    def __init__(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str):
+    def __init__(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str, last_check: int, priorita: int):
         self.asin = asin
         self.titolo = titolo
         self.prezzo = prezzo
@@ -17,3 +17,5 @@ class Prodotto:
         self.isWarehouse = isWarehouse
         self.condizione = condizione
         self.condizione_descrizione = condizione_descrizione
+        self.last_check = last_check
+        self.priorita = priorita

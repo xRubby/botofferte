@@ -172,3 +172,4 @@ cython_debug/
 
 # Database
 amazon_offers.db
+test.py
