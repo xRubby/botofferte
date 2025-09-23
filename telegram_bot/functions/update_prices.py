@@ -1,6 +1,10 @@
 import time
 import sqlite3
 
+from database.DAO.ProdottoDAO import ProdottoDAO
+from scraper.amazon_scraper import scraping_product
+from database.Entity.Prodotto import Prodotto
+
 def aggiorna_priorita():
     conn = sqlite3.connect("amazon_offers.db")
     cursor = conn.cursor()
@@ -70,3 +74,40 @@ def aggiorna_prezzi():
 
     conn.commit()
     conn.close()
+
+def aggiorna_prezzo(prodotto: Prodotto) -> Prodotto:
+
+    if not prodotto:
+        return None
+    
+    epoch_corrente = int(time.time())
+    
+    if(epoch_corrente - prodotto.last_check) > 1200:
+        prodotto_aggiornato = scraping_product(prodotto.asin)
+
+        if prodotto_aggiornato and prodotto_aggiornato['prezzo'] != prodotto.prezzo:
+            
+            with ProdottoDAO() as dao:
+                dao.update_price(
+                    prodotto.asin,
+                    prodotto_aggiornato['prezzo'],
+                    prodotto_aggiornato['old_prezzo'],
+                    prodotto_aggiornato['valuta'],
+                    prodotto_aggiornato['sconto'],
+                    prodotto_aggiornato['venditore'],
+                    prodotto_aggiornato['spedito_Amazon'],
+                    epoch_corrente
+                )
+            
+            prodotto.prezzo = prodotto_aggiornato['prezzo']
+            prodotto.old_prezzo = prodotto_aggiornato['old_prezzo']
+            prodotto.valuta = prodotto_aggiornato['valuta']
+            prodotto.sconto = prodotto_aggiornato['sconto']
+            prodotto.venditore = prodotto_aggiornato['venditore']
+            prodotto.spedito_Amazon = prodotto_aggiornato['spedito_Amazon']
+            prodotto.last_check = epoch_corrente
+
+    return prodotto
+        
+
+

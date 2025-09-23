@@ -22,9 +22,12 @@ from utils.expand_link import expand_url
 from utils.send_message_utils import venduto_e_spedito
 from telegram_bot.messages.messages_it import getTemplateMessage
 
-from scraper.amazon_scraper import fetch_price
+from scraper.amazon_scraper import scraping_product
 
 from APIs.bitly_api import shorten_url
+
+from telegram_bot.functions.update_prices import aggiorna_prezzo
+import time
 
 load_dotenv()
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
@@ -92,6 +95,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                     is_warehouse = warehouse_seller_id == "A1HO9729ND375Y"
 
                 with ProdottoDAO() as prodotto_dao:
+                    prodotto = None
                     if(asin):
                         if is_warehouse:
                             
@@ -103,25 +107,26 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                                                 offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
                                                 offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
                         else:
-                            prodotto = prodotto_dao.get_by_asin(asin)
+                            prodotto = aggiorna_prezzo(prodotto_dao.get_by_asin(asin))
+
                     else:
-                        prodotto = prodotto_dao.get_by_titolo(keyword)
+                        prodotto = aggiorna_prezzo(prodotto_dao.get_by_titolo(keyword))
                 
                     if(not prodotto):
                         try:
-                            offer = fetch_price(asin)
-                            print("fetching")
+                            offer = scraping_product(asin)
 
                             prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
                                                 offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
-                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], 0, 0)
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], int(time.time()), 1)
                             
                             
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
                             traceback.print_exc()
-                            prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
+                            prodotto = aggiorna_prezzo(prodotto_dao.get_by_asin(offer["ASIN"]))
+                            
                     
                     prodotto.link+= f"?tag={ASSOCIATE_TAG}"
 
@@ -150,7 +155,6 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                 traceback.print_exc()
     except Exception as e:
         logging.error("ERRORE")
-
             
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"

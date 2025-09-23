@@ -10,7 +10,7 @@ def parse_price(price_str):
     return float(price_str.replace("€", "").replace(".", "").replace(",", "."))
 
 
-def fetch_price(asin):
+def scraping_product(asin):
     url = f"https://www.amazon.it/dp/{asin}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
@@ -170,5 +170,5 @@ def fetch_price(asin):
         return None
     
 if __name__ == "__main__":
-    offerta = fetch_price("B0F2NF1MYG")
+    offerta = scraping_product("B0F2NF1MYG")
     print(offerta)

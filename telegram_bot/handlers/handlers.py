@@ -2,6 +2,8 @@
 
 import logging
 import asyncio
+import os
+from dotenv import load_dotenv
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
@@ -31,6 +33,7 @@ from utils.generate_license import *
 from telegram_bot.functions.send_message import search_offer
 
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query:
@@ -39,8 +42,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
 
     with UtenteDAO() as utente_dao:
+        load_dotenv()
+        USER_ID_ADMIN = os.getenv('USER_ID_ADMIN')
+
         if not utente_dao.get(user.id):
-            utente_dao.insert(user.id, user.first_name)
+            if user.id == int(USER_ID_ADMIN):
+                utente_dao.insert(user.id, user.first_name, 1)
+            else:
+                utente_dao.insert(user.id, user.first_name)
 
     await create_main_menu(update, context)
 
