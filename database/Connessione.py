@@ -86,7 +86,7 @@ class Connessione:
             isWarehouse INTEGER NOT NULL DEFAULT 0,
             condizione TEXT,
             condizione_descrizione TEXT,
-            last_check INTEGER DEFAULT 0,
+            last_check INTEGER DEFAULT (strftime('%s','now')),
             priorita INTEGER DEFAULT 2
         );
                              
@@ -100,6 +100,15 @@ class Connessione:
             INSERT INTO Prodotti_fts (titolo, asin)
             VALUES (REPLACE(new.titolo, '-', ''), new.asin);
         END;
+                             
+        CREATE TABLE IF NOT EXISTS PrezziStorico (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asin TEXT NOT NULL,
+            prezzo REAL NOT NULL,
+            valuta TEXT NOT NULL,
+            rilevato INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+            FOREIGN KEY (asin) REFERENCES Prodotti(asin) ON DELETE CASCADE
+        );                    
         """)
         
         conn.commit()
