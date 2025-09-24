@@ -11,11 +11,13 @@ import traceback
 
 from database.Entity.Prodotto import Prodotto
 from database.Entity.Pubblica import Pubblica
+from database.Entity.Gestisce import Gestisce
 
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.ProdottoDAO import ProdottoDAO
 from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.LayoutDAO import LayoutDAO
+from database.DAO.GestisceDAO import GestisceDAO
 
 from utils.amazon_utils import extract_asin_from_url, search_warehouse_seller_id_from_link, is_future_date
 from utils.expand_link import expand_url
@@ -230,50 +232,83 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
     try:
         if keyword:
             try:
-                asin = extract_asin_from_url(keyword)
+                expanded_url = expand_url(keyword)
+
+                asin = extract_asin_from_url(expanded_url)
+                
+                if asin:
+                    keyword = asin
 
                 with ProdottoDAO() as prodotto_dao:
-                    if(asin):
-                        prodotto = prodotto_dao.get_by_asin(asin)
-                    else:
-                        prodotto = prodotto_dao.get_by_titolo(keyword)
-                
-                    if(not prodotto):
-                        try:
-                            offers = search_amazon_offers(keyword)
+                    prodotto = None
 
-                            offer = offers[0]
+                    prodotto = prodotto_dao.get_by_asin(keyword)
+
+                    if not prodotto:
+                        prodotto = prodotto_dao.get_by_titolo(keyword)
+
+                    #if is_warehouse:
+                            
+                    #    offers = search_amazon_offers(keyword, warehouse_seller_id)
+
+                    #    offer = offers[0]
+
+                    #    prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
+                    #                        offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
+                    #                        offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                
+                    if not prodotto :
+                        try:
+                            offer = scraping_product(asin)
 
                             prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
                                                 offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
-                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], int(time.time()), 1)
+                            
                             
                             prodotto_dao.insert_Prodotto(prodotto)
 
                         except Exception as e:
                             traceback.print_exc()
                             prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
-                    
-                    prodotto_dict={
-                        "ASIN": prodotto.asin,
-                        "titolo": prodotto.titolo,
-                        "prezzo": prodotto.prezzo,
-                        "old_prezzo": prodotto.old_prezzo,
-                        "valuta": prodotto.valuta,
-                        "sconto": prodotto.sconto,
-                        "venditore": prodotto.venditore,
-                        "spedito_Amazon": prodotto.spedito_Amazon,
-                        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
-                        "link": prodotto.link,
-                        "img_url": prodotto.img_url,
-                        "brand": prodotto.brand,
-                        "preorder": "Preordine" if prodotto.preorder else "",
-                        "data_preordine": prodotto.data_preordine,
-                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
-                        "isWarehouse": prodotto.isWarehouse,
-                        "condizione": prodotto.condizione,
-                        "condizione_commento": prodotto.condizione_descrizione
-                    }
+                            
+                    if prodotto:
+
+                        prodotto = aggiorna_prezzo(prodotto)
+
+                        prodotto = check_preorder(prodotto)
+
+                        with GestisceDAO() as gestisce_dao:
+                            gestisce = gestisce_dao.get(user_id, channel_id)
+                        if gestisce and gestisce.id_affiliato:
+                            prodotto.link+= f"?tag={gestisce.id_affiliato}"
+                        else:
+                            with CanaleDAO() as canale_dao:
+                                canale = canale_dao.get(channel_id)
+                                if canale and canale.id_affiliato:
+                                    prodotto.link+= f"?tag={canale.id_affiliato}"
+
+                        prodotto_dict={
+                            "ASIN": prodotto.asin,
+                            "titolo": prodotto.titolo,
+                            "prezzo": prodotto.prezzo,
+                            "old_prezzo": prodotto.old_prezzo,
+                            "valuta": prodotto.valuta,
+                            "sconto": prodotto.sconto,
+                            "venditore": prodotto.venditore,
+                            "spedito_Amazon": prodotto.spedito_Amazon,
+                            "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+                            "link": prodotto.link,
+                            "link_short": shorten_url(prodotto.link),
+                            "img_url": prodotto.img_url,
+                            "brand": prodotto.brand,
+                            "preorder": "Preordine" if prodotto.preorder else "",
+                            "data_preordine": prodotto.data_preordine,
+                            "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+                            "isWarehouse": prodotto.isWarehouse,
+                            "condizione": prodotto.condizione,
+                            "condizione_commento": prodotto.condizione_descrizione
+                        }
             except Exception as e:
                 traceback.print_exc()
     except Exception as e:
