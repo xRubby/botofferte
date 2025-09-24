@@ -106,6 +106,7 @@ class Connessione:
             asin TEXT NOT NULL,
             prezzo REAL NOT NULL,
             valuta TEXT NOT NULL,
+            venditore TEXT NOT NULL,
             rilevato INTEGER NOT NULL DEFAULT (strftime('%s','now')),
             FOREIGN KEY (asin) REFERENCES Prodotti(asin) ON DELETE CASCADE
         );                    

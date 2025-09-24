@@ -1,5 +1,5 @@
 from database.Connessione import Connessione
-from Entity.PrezziStorico import PrezziStorico
+from database.Entity.PrezziStorico import PrezziStorico
 
 from typing import List
 
@@ -17,9 +17,9 @@ class PrezziStoricoDAO:
     def close(self) -> None:
         self.conn.close()
 
-    def insert(self, asin: str, prezzo: float, valuta: str) -> None:
-        self.cursor.execute('''INSERT INTO PrezziStorico (asin, prezzo, valuta) VALUES (?, ?, ?)''', 
-                            (asin, prezzo, valuta))
+    def insert(self, asin: str, prezzo: float, valuta: str, venditore: str) -> None:
+        self.cursor.execute('''INSERT INTO PrezziStorico (asin, prezzo, valuta, venditore) VALUES (?, ?, ?, ?)''', 
+                            (asin, prezzo, valuta, venditore))
         self.conn.commit()
     
     def get_by_asin(self, asin: str) -> List[PrezziStorico]:
@@ -27,9 +27,9 @@ class PrezziStoricoDAO:
         rows = self.cursor.fetchall()
         return [PrezziStorico(*row) for row in rows] 
 
-    def update(self, id: int, asin: str, prezzo: float, valuta: str, rilevato: int) -> None:
-        self.cursor.execute('''UPDATE PrezziStorico SET asin = ?, prezzo = ?, valuta = ?, rilevato = ? WHERE id = ?''', 
-                            (asin, prezzo, valuta, rilevato, id))
+    def update(self, id: int, asin: str, prezzo: float, valuta: str, venditore: str, rilevato: int) -> None:
+        self.cursor.execute('''UPDATE PrezziStorico SET asin = ?, prezzo = ?, valuta = ?, venditore = ?, rilevato = ? WHERE id = ?''', 
+                            (asin, prezzo, valuta, rilevato, venditore, id))
         self.conn.commit()
 
     def delete(self, id: int) -> None:

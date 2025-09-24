@@ -28,6 +28,8 @@ def scraping_product(asin):
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
+        print("Scraping URL")
+
         # Ricerca titolo
         title_span = soup.find("span", id="productTitle")
         if not title_span:

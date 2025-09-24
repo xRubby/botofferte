@@ -80,14 +80,14 @@ def aggiorna_prezzo(prodotto: Prodotto) -> Prodotto:
     if not prodotto:
         return None
     
+    print("Aggiorno prezzo")
+
     epoch_corrente = int(time.time())
     
     if(epoch_corrente - prodotto.last_check) > 1200:
         prodotto_aggiornato = scraping_product(prodotto.asin)
-
-        if prodotto_aggiornato and prodotto_aggiornato['prezzo'] != prodotto.prezzo:
-            
-            with ProdottoDAO() as dao:
+        with ProdottoDAO() as dao:
+            if prodotto_aggiornato and prodotto_aggiornato['prezzo'] != prodotto.prezzo:
                 dao.update_price(
                     prodotto.asin,
                     prodotto_aggiornato['prezzo'],
@@ -96,16 +96,16 @@ def aggiorna_prezzo(prodotto: Prodotto) -> Prodotto:
                     prodotto_aggiornato['sconto'],
                     prodotto_aggiornato['venditore'],
                     prodotto_aggiornato['spedito_Amazon'],
-                    epoch_corrente
                 )
-            
-            prodotto.prezzo = prodotto_aggiornato['prezzo']
-            prodotto.old_prezzo = prodotto_aggiornato['old_prezzo']
-            prodotto.valuta = prodotto_aggiornato['valuta']
-            prodotto.sconto = prodotto_aggiornato['sconto']
-            prodotto.venditore = prodotto_aggiornato['venditore']
-            prodotto.spedito_Amazon = prodotto_aggiornato['spedito_Amazon']
-            prodotto.last_check = epoch_corrente
+                prodotto.prezzo = prodotto_aggiornato['prezzo']
+                prodotto.old_prezzo = prodotto_aggiornato['old_prezzo']
+                prodotto.valuta = prodotto_aggiornato['valuta']
+                prodotto.sconto = prodotto_aggiornato['sconto']
+                prodotto.venditore = prodotto_aggiornato['venditore']
+                prodotto.spedito_Amazon = prodotto_aggiornato['spedito_Amazon']
+
+            dao.update_last_check(prodotto.asin, epoch_corrente)
+        prodotto.last_check = epoch_corrente
 
     return prodotto
         

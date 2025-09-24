@@ -99,6 +99,7 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
                 expanded_url = expand_url(keyword)
 
                 asin = extract_asin_from_url(expanded_url)
+                
                 if asin:
                     keyword = asin
                     warehouse_seller_id = search_warehouse_seller_id_from_link(expanded_url)
@@ -106,23 +107,23 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
                 with ProdottoDAO() as prodotto_dao:
                     prodotto = None
-                    if(asin):
-                        if is_warehouse:
+
+                    prodotto = prodotto_dao.get_by_asin(keyword)
+
+                    if not prodotto:
+                        prodotto = prodotto_dao.get_by_titolo(keyword)
+
+                    #if is_warehouse:
                             
-                            offers = search_amazon_offers(keyword, warehouse_seller_id)
+                    #    offers = search_amazon_offers(keyword, warehouse_seller_id)
 
-                            offer = offers[0]
+                    #    offer = offers[0]
 
-                            prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
-                                                offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
-                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
-                        else:
-                            prodotto = aggiorna_prezzo(prodotto_dao.get_by_asin(asin))
-
-                    else:
-                        prodotto = aggiorna_prezzo(prodotto_dao.get_by_titolo(keyword))
+                    #    prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
+                    #                        offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
+                    #                        offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"])
                 
-                    if(not prodotto):
+                    if not prodotto :
                         try:
                             offer = scraping_product(asin)
 
@@ -135,38 +136,43 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
                         except Exception as e:
                             traceback.print_exc()
-                            prodotto = aggiorna_prezzo(prodotto_dao.get_by_asin(offer["ASIN"]))
+                            prodotto = prodotto_dao.get_by_asin(offer["ASIN"])
                             
-                    prodotto= check_preorder(prodotto)
+                    if prodotto:
 
-                    prodotto.link+= f"?tag={ASSOCIATE_TAG}"
+                        prodotto = aggiorna_prezzo(prodotto)
 
-                    prodotto_dict={
-                        "ASIN": prodotto.asin,
-                        "titolo": prodotto.titolo,
-                        "prezzo": prodotto.prezzo,
-                        "old_prezzo": prodotto.old_prezzo,
-                        "valuta": prodotto.valuta,
-                        "sconto": prodotto.sconto,
-                        "venditore": prodotto.venditore,
-                        "spedito_Amazon": prodotto.spedito_Amazon,
-                        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
-                        "link": prodotto.link,
-                        "link_short": shorten_url(prodotto.link),
-                        "img_url": prodotto.img_url,
-                        "brand": prodotto.brand,
-                        "preorder": "Preordine" if prodotto.preorder else "",
-                        "data_preordine": prodotto.data_preordine,
-                        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
-                        "isWarehouse": prodotto.isWarehouse,
-                        "condizione": prodotto.condizione,
-                        "condizione_commento": prodotto.condizione_descrizione
-                    }
+                        prodotto= check_preorder(prodotto)
+
+                        prodotto.link+= f"?tag={ASSOCIATE_TAG}"
+
+                        prodotto_dict={
+                            "ASIN": prodotto.asin,
+                            "titolo": prodotto.titolo,
+                            "prezzo": prodotto.prezzo,
+                            "old_prezzo": prodotto.old_prezzo,
+                            "valuta": prodotto.valuta,
+                            "sconto": prodotto.sconto,
+                            "venditore": prodotto.venditore,
+                            "spedito_Amazon": prodotto.spedito_Amazon,
+                            "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+                            "link": prodotto.link,
+                            "link_short": shorten_url(prodotto.link),
+                            "img_url": prodotto.img_url,
+                            "brand": prodotto.brand,
+                            "preorder": "Preordine" if prodotto.preorder else "",
+                            "data_preordine": prodotto.data_preordine,
+                            "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+                            "isWarehouse": prodotto.isWarehouse,
+                            "condizione": prodotto.condizione,
+                            "condizione_commento": prodotto.condizione_descrizione
+                        }
             except Exception as e:
                 traceback.print_exc()
     except Exception as e:
         logging.error("ERRORE")
-            
+
+ 
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"
                         "\n"

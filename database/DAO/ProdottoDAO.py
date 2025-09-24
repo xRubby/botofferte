@@ -1,5 +1,6 @@
 from database.Connessione import Connessione
 from database.Entity.Prodotto import Prodotto
+from database.DAO.PrezziStoricoDAO import PrezziStoricoDAO
 
 from typing import List
 
@@ -21,6 +22,8 @@ class ProdottoDAO:
                             (asin, titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione))
         self.conn.commit()
+        with PrezziStoricoDAO as prezzi_storico_dao:
+            prezzi_storico_dao.insert(asin, prezzo, valuta, venditore)
 
     def insert_Prodotto(self, prodotto: Prodotto):
         self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
@@ -29,6 +32,8 @@ class ProdottoDAO:
                          prodotto.brand, prodotto.preorder, prodotto.data_preordine, prodotto.isPrime, prodotto.isWarehouse, 
                          prodotto.condizione, prodotto.condizione_descrizione, prodotto.last_check, prodotto.priorita))
         self.conn.commit()
+        with PrezziStoricoDAO() as prezzi_storico_dao:
+            prezzi_storico_dao.insert(prodotto.asin, prodotto.prezzo, prodotto.valuta, prodotto.venditore)
 
     def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str, last_check: int) -> None:
         self.cursor.execute('''UPDATE prodotti SET titolo = ?, prezzo = ?, old_prezzo = ?, valuta = ?, 
@@ -40,11 +45,19 @@ class ProdottoDAO:
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione, last_check, asin))
         self.conn.commit()
 
-    def update_price(self, asin: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, last_check: int) -> None:
+    def update_price(self, asin: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool) -> None:
         self.cursor.execute('''UPDATE prodotti SET prezzo = ?, old_prezzo = ?, valuta = ?, 
                             sconto = ?, venditore = ?, spedito_Amazon = ?, last_check = ? 
                             WHERE asin = ?''', 
-                            (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, last_check, asin))
+                            (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, asin))
+        self.conn.commit()
+        with PrezziStoricoDAO() as prezzi_storico_dao:
+            prezzi_storico_dao.insert(asin, prezzo, valuta, venditore)
+    
+    def update_last_check(self, asin: str, last_check: int) -> None:
+        self.cursor.execute('''UPDATE prodotti SET last_check = ?
+                            WHERE asin = ?''', 
+                            (last_check, asin))
         self.conn.commit()
     
     def update_preorder(self, asin: str, preorder: bool, data_preordine: str) -> None:
