@@ -149,6 +149,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'channel_adminaffiliateid_{channel_id}': lambda: admin_edit_affiliateid(query, context, channel_id, user_id),
         f'channel_adminremoveaffiliateid_{channel_id}': lambda: admin_remove_affiliateid(query, context, channel_id, user_id),
         f'channel_admindelete_{channel_id}': lambda: admin_delete_channel(query, context, channel_id, user_id),
+        f'channel_adminlicenseinfo_{channel_id}': lambda: admin_license_info(query, context, channel_id, user_id),
 
         'none': lambda: doNothing(query)
     }
