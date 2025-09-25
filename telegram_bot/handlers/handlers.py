@@ -113,6 +113,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         
         'admin_settings': lambda: admin_menu(query, context, user_id),
         'generate_license': lambda: generate_new_license(query, context, user_id),
+        'generate_license_7days': lambda: generate_license_days(query, context, user_id, 7),
+        'generate_license_30days': lambda: generate_license_days(query, context, user_id, 30),
         'view_licenses': lambda: view_licenses(query),
         f'views_{license_code}': lambda: view_license_details(query, license_code),
         f'confirmdelete_{license_code}': lambda: delete_license_confirm(query, license_code),
@@ -481,7 +483,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with LicenzaDAO() as licenza_dao:
                 licenza_dao.insert(codice_licenza, tipo_licenza)
 
-            text = f"Licenza con codice {codice_licenza} aggiunta correttamente!"
+            text = f"Licenza con codice <code>{codice_licenza}</code> generata correttamente!"
         else:
             text = f"Il tipo della licenza è errato!"
 
@@ -495,6 +497,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             chat_id=update.effective_chat.id,
                             message_id=message_id,
                             text=text,
+                            parse_mode="HTML",
                             reply_markup=reply_markup)
 
         context.user_data[user_id]['awaiting_tipo_license'] = False
