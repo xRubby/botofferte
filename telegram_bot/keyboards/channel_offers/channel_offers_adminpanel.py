@@ -22,8 +22,8 @@ async def admin_panel(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE, 
 
     keyboard = [
         [InlineKeyboardButton("Invita membri (WIP)", callback_data=f'none')],
-        [InlineKeyboardButton("Tag affiliato", callback_data=f'channel_adminaffiliateid_{channel_id}')],
-        [InlineKeyboardButton("Cancella canale (WIP)", callback_data='none')],
+        [InlineKeyboardButton("Tag affiliato", callback_data=f'channel_adminaffiliateid_{channel_id}'), InlineKeyboardButton("Informazioni Licenza", callback_data=f'none')],
+        [InlineKeyboardButton("Cancella canale", callback_data=f'channel_admindelete_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
     ]
 
@@ -92,4 +92,32 @@ async def admin_remove_affiliateid(query: CallbackQuery, context: ContextTypes.D
         reply_markup=reply_markup
     )
     
+async def admin_delete_channel(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE, channel_id: str, user_id: int):
     
+    with GestisceDAO() as gestisce_dao, CanaleDAO() as canale_dao:
+        gestisce_info = gestisce_dao.get(user_id, channel_id)
+        canale = canale_dao.get(channel_id)
+
+    if(gestisce_info.isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+    
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'offerte_canale')]
+    ]
+
+    try:
+        with CanaleDAO() as canale_dao:
+            canale_dao.delete(channel_id)
+        text = f"Canale <b>{canale.nome_canale}</b> eliminato con successo!"
+    except Exception as e:
+        text = f"Errore durante l'eliminazione del canale"
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
