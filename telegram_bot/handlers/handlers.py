@@ -98,7 +98,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout', 'editmessagelayout']  else None
 
-    if data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' and len(data_parts) >=3:
+    if len(data_parts) >=3 and (data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' or data_parts[0] == 'first' or data_parts[0] == 'last'):
         channel_id=data_parts[1]
         list_index=data_parts[2]
     else:
@@ -134,6 +134,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'remove_{channel_id}_{list_index}': lambda: remove_product(query, context, channel_id, int(list_index)),
         f'prev_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'prev', int(list_index)),
         f'next_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'next', int(list_index)),
+        f'first_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'first', int(list_index)),
+        f'last_{channel_id}_{list_index}': lambda: navigate_links(query, context, channel_id, 'last', int(list_index)),
 
         f'channel_layout_{channel_id}': lambda: layout_menu(query, context, channel_id, user_id),
         f"channel_addlayout_{channel_id}": lambda: add_layout(query, context, channel_id, user_id),

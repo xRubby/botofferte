@@ -176,15 +176,15 @@ async def search_and_send_offer(update: Update, context: ContextTypes.DEFAULT_TY
 
  
     messaggio = (
-        "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"
-                        "\n"
-                        "💶 <b>{prezzo}{valuta}</b> {_(invece di: {old_prezzo}{valuta}, <i>{sconto}% di sconto</i>)_}\n"
-                        "{_🔄 Condizione: {condizione} ({condizione_commento})_}\n"
-                        "\n"
-                        "🚚 {spedito} {_| {prime}_}\n"
-                        "\n"
-                        "📌 Scopri l'offerta qui: {link_short}"
-                    )
+    """📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}
+    
+💶 <b>{prezzo}{valuta}</b> {_(invece di: {old_prezzo}{valuta}, <i>{sconto}% di sconto</i>)_}
+{_🔄 Condizione: {condizione} ({condizione_commento})_}
+                        
+🚚 {spedito} {_| {prime}_}
+                        
+📌 Scopri l'offerta qui: {link_short}"""
+    )
 
     try:
         message = processa_messaggio(messaggio, prodotto_dict)

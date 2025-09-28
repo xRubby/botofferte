@@ -26,16 +26,23 @@ async def show_links(query, context, channel_id, current_link_index=0):
 
     text = f"Link corrente: {current_link_index+1}\n\n{link.messaggio}"
 
-    keyboard = [
-        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
-        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')]
-    ]
+    keyboard = []
 
     if len(links) > 1:
         keyboard.extend([
-            [InlineKeyboardButton("⬅️ Precedente", callback_data=f'prev_{channel_id}_{current_link_index}'),
-            InlineKeyboardButton("➡️ Successivo", callback_data=f'next_{channel_id}_{current_link_index}')]
-        ])
+            [InlineKeyboardButton("⏮️", callback_data=f'first_{channel_id}_0' if current_link_index != 0 else f'none'),
+            InlineKeyboardButton("⬅️", callback_data=f'prev_{channel_id}_{current_link_index}'),
+            InlineKeyboardButton("➡️", callback_data=f'next_{channel_id}_{current_link_index}'),
+            InlineKeyboardButton("⏭️", callback_data=f'last_{channel_id}_{len(links)-1}' if current_link_index != len(links)-1 else f'none')],
+        ]
+        )
+
+    keyboard.extend( [
+        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
+        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')]
+    ])
+
+    
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')])
 
