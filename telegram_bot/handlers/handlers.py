@@ -19,6 +19,7 @@ from telegram_bot.keyboards.channel_offers.channel_offers_main import *
 from telegram_bot.keyboards.channel_offers.channel_offers_showLink import *
 from telegram_bot.keyboards.channel_offers.channel_offers_layout import *
 from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import *
+from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import *
 
 from telegram_bot.keyboards.settings.settings_menu import *
 from telegram_bot.keyboards.settings.admin_bot_menu.admin_settings import *
@@ -106,6 +107,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     page = int(data_parts[1]) if data_parts[0] == 'license' and len(data_parts) >= 2 else None
 
+    edit_tag_type = data_parts[3] if len(data_parts) >=4 and data_parts[1] == 'edittags' else None
+
+    edit_tag_subtype = data_parts[4] if len(data_parts) >=5 and data_parts[1] == 'edittags' else None
+
     actions = {
         'back_to_main': lambda: start(update, context),
 
@@ -149,6 +154,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
         f'channel_edittags_{channel_id}': lambda: edit_tags(query, channel_id),
+        f'channel_edittags_{channel_id}_{edit_tag_type}': lambda: edit_tag_menu(query, context, channel_id, edit_tag_type),
+        f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}': lambda: edit_tag_submenu(query, context, channel_id, edit_tag_type, edit_tag_subtype),
 
         f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, context, channel_id, user_id),
         f'channel_adminaffiliateid_{channel_id}': lambda: admin_edit_affiliateid(query, context, channel_id, user_id),
