@@ -148,6 +148,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_editmessagelayout_{channel_id}_{layout_id}": lambda: edit_layout_message(query, context, user_id, layout_id, channel_id),
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
+        f'channel_edittags_{channel_id}': lambda: edit_tags(query, channel_id),
 
         f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, context, channel_id, user_id),
         f'channel_adminaffiliateid_{channel_id}': lambda: admin_edit_affiliateid(query, context, channel_id, user_id),

@@ -19,7 +19,7 @@ async def layout_menu(query, context: ContextTypes, channel_id: str, user_id: in
     keyboard = [
         [InlineKeyboardButton("Aggiungi layout", callback_data=f'channel_addlayout_{channel_id}')],
         [InlineKeyboardButton("Seleziona layout", callback_data=f'channel_showlayouts_{channel_id}'), InlineKeyboardButton("Modifica Layout", callback_data=f'channel_editlayouts_{channel_id}')],
-        [InlineKeyboardButton("Modifica Tag (WIP)", callback_data='none')],
+        [InlineKeyboardButton("Modifica Tag (WIP)", callback_data=f'channel_edittags_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
     ]
 
@@ -227,5 +227,31 @@ async def reset_layout(query, channel_id):
 
     await query.edit_message_text(
         text="Layout resettato con successo!",
+        reply_markup=reply_markup
+    )
+
+async def edit_tags(query, channel_id):
+
+    await query.answer()
+
+
+
+    keyboard = [
+        [
+            InlineKeyboardButton("{spedito}", callback_data=f'channel_edittags_{channel_id}_spedito'),
+            InlineKeyboardButton("{prime}", callback_data=f'channel_edittags_{channel_id}_prime'),
+        ],
+        [
+            InlineKeyboardButton("{preorder}", callback_data=f'channel_edittags_{channel_id}_preorder')
+        ],
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
+    ]
+
+
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text="Qui puoi modificare le informazioni dei tag.",
         reply_markup=reply_markup
     )
