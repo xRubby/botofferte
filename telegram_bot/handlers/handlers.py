@@ -104,6 +104,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     else:
         list_index=None
 
+    page = int(data_parts[1]) if data_parts[0] == 'license' and len(data_parts) >= 2 else None
+
     actions = {
         'back_to_main': lambda: start(update, context),
 
@@ -115,7 +117,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         'generate_license': lambda: generate_new_license(query, context, user_id),
         'generate_license_7days': lambda: generate_license_days(query, context, user_id, 7),
         'generate_license_30days': lambda: generate_license_days(query, context, user_id, 30),
-        'view_licenses': lambda: view_licenses(query),
+        f'license_{page}': lambda: view_licenses(query, page),
         f'views_{license_code}': lambda: view_license_details(query, license_code),
         f'confirmdelete_{license_code}': lambda: delete_license_confirm(query, license_code),
         

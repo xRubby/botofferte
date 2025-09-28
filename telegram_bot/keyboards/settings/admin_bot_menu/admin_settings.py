@@ -23,7 +23,7 @@ async def admin_menu(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE, u
 
         keyboard = [
         [InlineKeyboardButton("Genera Licenza", callback_data='generate_license')],
-        [InlineKeyboardButton("Vedi Licenze", callback_data='view_licenses')],
+        [InlineKeyboardButton("Vedi Licenze", callback_data='license_0')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data='settings')],
     ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -79,20 +79,42 @@ async def generate_license_days(query: CallbackQuery, context: ContextTypes.DEFA
     await query.edit_message_text(text=text,parse_mode="HTML", reply_markup=reply_markup)
 
 
+LICENZE_PER_PAGINA = 5
 
-
-async def view_licenses(query: CallbackQuery):
+async def view_licenses(query: CallbackQuery, page: int = 0):
 
     await query.answer()
 
     with LicenzaDAO() as licenza_dao:
         licenze = licenza_dao.get_all()
 
-    if licenze:
-        keyboard = [
-            [InlineKeyboardButton(licenza.codice_licenza, callback_data=f'views_{licenza.codice_licenza}')]
-            for licenza in licenze
-        ]
+    start = page * LICENZE_PER_PAGINA
+    end = start + LICENZE_PER_PAGINA
+    licenze_pagina = licenze[start:end]
+
+    keyboard = []
+
+    if licenze_pagina:
+
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(
+                InlineKeyboardButton("⬅️ Indietro", callback_data=f"license_{page-1}")
+            )
+        if end < len(licenze):
+            nav_buttons.append(
+                InlineKeyboardButton("Avanti ➡️", callback_data=f"license_{page+1}")
+            )
+        if nav_buttons:
+            keyboard.append(nav_buttons)
+
+        keyboard.extend([
+            [InlineKeyboardButton(l.codice_licenza,callback_data=f'views_{l.codice_licenza}')]
+            for l in licenze_pagina
+        ])
+        
+        
+
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')])
         reply_markup = InlineKeyboardMarkup(keyboard)
         text = "Licenze generate:"
@@ -144,7 +166,7 @@ async def delete_license_confirm(query: CallbackQuery, license_code: str):
         licenza_dao.delete(license_code)
     
     text = f"Licenza '{license_code}' cancellata con successo!"
-    keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='view_licenses')]]
+    keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='license_0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
