@@ -63,6 +63,7 @@ class Connessione:
             asin_prodotti TEXT NOT NULL,
             messaggio TEXT NOT NULL,
             isPubblicato INTEGER DEFAULT 0,
+            data_pubblicazione TEXT,
             FOREIGN KEY (id_canale) REFERENCES Canali(canale_id) ON DELETE CASCADE,
             FOREIGN KEY (asin_prodotti) REFERENCES Prodotti(asin) ON DELETE CASCADE,
             PRIMARY KEY(id,id_canale,asin_prodotti)

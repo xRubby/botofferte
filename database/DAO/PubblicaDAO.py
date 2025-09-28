@@ -1,6 +1,7 @@
 from database.Connessione import Connessione
 from database.Entity.Pubblica import Pubblica
 
+from datetime import datetime
 from typing import List
 
 class PubblicaDAO:
@@ -31,10 +32,10 @@ class PubblicaDAO:
         )
         self.conn.commit()
 
-    def update_is_pubblicato(self, id: int, id_canale: str, asin_prodotti: str, is_pubblicato: bool) -> None:
+    def update_pubblicato(self, id: int, id_canale: str, asin_prodotti: str, is_pubblicato: bool) -> None:
         self.cursor.execute(
-            "UPDATE Pubblica SET isPubblicato = ? WHERE id = ? AND id_canale = ? AND asin_prodotti = ?", 
-            (is_pubblicato, id, id_canale, asin_prodotti)
+            "UPDATE Pubblica SET isPubblicato = ?, data_pubblicazione = ? WHERE id = ? AND id_canale = ? AND asin_prodotti = ?", 
+            (is_pubblicato, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), id, id_canale, asin_prodotti)
         )
         self.conn.commit()
 

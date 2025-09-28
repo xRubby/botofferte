@@ -67,7 +67,7 @@ async def publish_message(query, update, context, channel_id, link_id):
                 ]])
                 
             )
-            pubblica_dao.update_is_pubblicato(link.id, link.id_canale, link.asin_prodotti, 1)
+            pubblica_dao.update_pubblicato(link.id, link.id_canale, link.asin_prodotti, 1)
         except Exception as e:
             await query.edit_message_text(
                 text="Errore durante la pubblicazione del messaggio. Il bot non ha i requisiti di amministratore all'interno del canale",
