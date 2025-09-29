@@ -150,8 +150,7 @@ async def edit_layout(query, context, user_id, layout_id):
 
     await query.edit_message_text(
             text=text,
-            reply_markup=reply_markup,
-            parse_mode="HTML"
+            reply_markup=reply_markup
     )
 
 async def edit_layout_message(query, context, user_id, layout_id, canale_id):
