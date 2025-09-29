@@ -1,6 +1,10 @@
 from telegram import *
 from telegram.ext import *
 
+from database.Entity.Canale import Canale
+
+from database.DAO.CanaleDAO import CanaleDAO
+
 async def edit_tags(query, channel_id):
 
     await query.answer()
@@ -57,5 +61,65 @@ Venduto e spedito da VENDITORE → Aggiorna il messaggio indicando che il vendit
         reply_markup=reply_markup
     )
 
-async def edit_tag_submenu(query, context, channel_id, tag_type, tag_subtype):
-    await query.answer("Funzione in sviluppo", show_alert=True)
+async def edit_tag_submenu(query, context, user_id, channel_id, tag_type, tag_subtype):
+    await query.answer()
+
+    keyboard = []
+
+    message_id = query.message.id
+    context.user_data[user_id] = {'awaiting_tag_subtype_message': True, 'tag_type': tag_type, 'tag_subtype': tag_subtype, 'message_id': message_id, 'channel_id': channel_id}
+
+    with CanaleDAO() as canale_dao:
+        canale = canale_dao.get(channel_id)
+
+    if tag_type == 'spedito':
+        if tag_subtype in ['amazon', 'venditoreamazon', 'venditore']:
+            if tag_subtype == 'amazon':
+                
+                
+
+                text=f"Hai selezionato: Venduto e spedito da Amazon.\n\nMessaggio corrente: {canale.amazon_tag}"
+            elif tag_subtype == 'venditoreamazon':
+                text=f"Hai selezionato: Venduto da VENDITORE e spedito da Amazon.\n\nMessaggio corrente: {canale.venditoreamazon_tag}"
+            elif tag_subtype == 'venditore':
+                text=f"Hai selezionato: Venduto e spedito da VENDITORE.\n\nMessaggio corrente: {canale.venditore_tag}"
+    else:
+        text="Tag non valido."
+        context.user_data[user_id]['awaiting_tag_subtype_message'] = False
+
+    keyboard.append([InlineKeyboardButton("Resetta messaggio", callback_data=f'channel_edittags_{channel_id}_{tag_type}_{tag_subtype}_reset')])
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=reply_markup
+    )
+
+async def reset_tag_message(query, context, user_id, channel_id, tag_type, tag_subtype):
+    await query.answer()
+
+    if 'awaiting_tag_subtype_message' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_tag_subtype_message'] = False
+
+    with CanaleDAO() as canale_dao:
+        if tag_type == 'spedito':
+            if tag_subtype == 'amazon':
+                canale_dao.update_tag(channel_id, 'amazon', 'Venduto e spedito da Amazon')
+                text = "Messaggio aggiornato a: Venduto e spedito da Amazon."
+            elif tag_subtype == 'venditoreamazon':
+                canale_dao.update_tag(channel_id, 'venditoreamazon', 'Venduto da {venditore} e spedito da Amazon')
+                text = "Messaggio aggiornato a: Venduto da {venditore} e spedito da Amazon."
+            elif tag_subtype == 'venditore':
+                canale_dao.update_tag(channel_id, 'venditore', 'Venduto e spedito da {venditore}')
+                text = "Messaggio aggiornato a: Venduto e spedito da {venditore}"
+
+    keyboard = []
+
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}_{tag_subtype}')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=reply_markup
+    )

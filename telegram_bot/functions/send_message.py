@@ -297,7 +297,7 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
                             "sconto": prodotto.sconto,
                             "venditore": prodotto.venditore,
                             "spedito_Amazon": prodotto.spedito_Amazon,
-                            "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+                            "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon, channel_id),
                             "link": prodotto.link,
                             "link_short": shorten_url(prodotto.link),
                             "img_url": prodotto.img_url,

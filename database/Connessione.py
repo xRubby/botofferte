@@ -28,7 +28,14 @@ class Connessione:
             canale_id TEXT PRIMARY KEY NOT NULL,
             nome_canale TEXT NOT NULL,
             id_affiliato TEXT,
-            codice_licenza TEXT NOT NULL
+            codice_licenza TEXT NOT NULL,
+            amazon_tag TEXT DEFAULT 'Venduto e spedito da Amazon',
+            venditoreamazon_tag TEXT DEFAULT 'Venduto da {venditore} e spedito da Amazon',
+            venditore_tag TEXT DEFAULT 'Venduto e spedito da {venditore}',
+            preorder_tag TEXT DEFAULT 'Preordine:',
+            prime_tag TEXT DEFAULT 'Spedizione gratuita con Amazon Prime',
+            FOREIGN KEY (codice_licenza) REFERENCES Licenze(codice_licenza) ON DELETE SET NULL
+            
         );
 
         CREATE TABLE IF NOT EXISTS Gestisce (

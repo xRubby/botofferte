@@ -89,6 +89,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if 'awaiting_newmessage_layout' in context.user_data[user_id]:
         context.user_data[user_id]['awaiting_newmessage_layout'] = False
 
+    if 'awaiting_tag_subtype_message' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_tag_subtype_message'] = False
+
         
 
     data_parts = query.data.split("_")
@@ -155,7 +158,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
         f'channel_edittags_{channel_id}': lambda: edit_tags(query, channel_id),
         f'channel_edittags_{channel_id}_{edit_tag_type}': lambda: edit_tag_menu(query, context, channel_id, edit_tag_type),
-        f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}': lambda: edit_tag_submenu(query, context, channel_id, edit_tag_type, edit_tag_subtype),
+        f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}': lambda: edit_tag_submenu(query, context, user_id, channel_id, edit_tag_type, edit_tag_subtype),
+        f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}_reset' : lambda: reset_tag_message(query, context, user_id, channel_id, edit_tag_type, edit_tag_subtype),
 
         f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, context, channel_id, user_id),
         f'channel_adminaffiliateid_{channel_id}': lambda: admin_edit_affiliateid(query, context, channel_id, user_id),
@@ -548,3 +552,28 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reply_markup=reply_markup)
 
         context.user_data[user_id]['awaiting_newlicense'] = False
+
+    elif context.user_data[user_id].get('awaiting_tag_subtype_message'):
+        tag_subtype_message = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+        tag_type = context.user_data[user_id].get('tag_type')
+        tag_subtype = context.user_data[user_id].get('tag_subtype')
+        message_id = context.user_data[user_id].get('message_id')
+
+        await update.message.delete()
+
+        with CanaleDAO() as canale_dao:
+            if tag_subtype in ['amazon', 'venditoreamazon', 'venditore']:
+                canale_dao.update_tag(channel_id, tag_subtype, tag_subtype_message)
+                text = f"Messaggio aggiornato a: {tag_subtype_message}"
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=text,
+                            reply_markup=reply_markup)

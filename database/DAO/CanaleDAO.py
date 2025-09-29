@@ -38,6 +38,21 @@ class CanaleDAO:
                             (new_codice_licenza, canale_id))
         self.conn.commit()
 
+    def update_tag(self, canale_id: str, tag_subtype: str, new_message: str) -> None:
+        if tag_subtype == 'amazon':
+            self.cursor.execute("UPDATE canali SET amazon_tag = ? WHERE canale_id = ?", 
+                                (new_message, canale_id))
+            self.conn.commit()  
+        elif tag_subtype == 'venditoreamazon':
+            self.cursor.execute("UPDATE canali SET venditoreamazon_tag = ? WHERE canale_id = ?", 
+                                (new_message, canale_id))
+            self.conn.commit()
+        elif tag_subtype == 'venditore':
+            self.cursor.execute("UPDATE canali SET venditore_tag = ? WHERE canale_id = ?", 
+                                (new_message, canale_id))
+            self.conn.commit()
+        
+
     def delete(self, canale_id: str) -> None:
         self.cursor.execute("DELETE FROM canali WHERE canale_id = ?", (canale_id,))
         self.conn.commit()
