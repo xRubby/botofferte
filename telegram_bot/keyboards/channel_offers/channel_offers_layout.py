@@ -19,7 +19,7 @@ async def layout_menu(query, context: ContextTypes, channel_id: str, user_id: in
     keyboard = [
         [InlineKeyboardButton("Aggiungi layout", callback_data=f'channel_addlayout_{channel_id}')],
         [InlineKeyboardButton("Seleziona layout", callback_data=f'channel_showlayouts_{channel_id}'), InlineKeyboardButton("Modifica Layout", callback_data=f'channel_editlayouts_{channel_id}')],
-        [InlineKeyboardButton("Modifica Tag (WIP)", callback_data=f'channel_edittags_{channel_id}')],
+        [InlineKeyboardButton("Modifica Tag", callback_data=f'channel_edittags_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'edit_channel_{channel_id}')]
     ]
 
