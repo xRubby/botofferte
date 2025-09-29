@@ -133,7 +133,7 @@ async def edit_layout(query, context, user_id, layout_id):
 
     await query.answer()
 
-    if context.user_data[user_id].get('awaiting_newmessage_layout'):
+    if user_id is not None and context.user_data[user_id].get('awaiting_newmessage_layout'):
         context.user_data[user_id]['awaiting_newmessage_layout'] = False
 
     with LayoutDAO() as layout_dao:
@@ -185,6 +185,7 @@ async def edit_layout_message(query, context, user_id, layout_id, canale_id):
         
 
     keyboard = [
+        [InlineKeyboardButton("Resetta Layout", callback_data=f'channel_resetlayout_{canale_id}_{layout_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_editlayout_{canale_id}_{layout_id}')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -214,18 +215,10 @@ async def delete_layout(query, layout_id, canale_id):
             parse_mode="HTML"
     )
 
-async def reset_layout(query, channel_id):
+async def reset_layout(query, channel_id, layout_id):
+    with LayoutDAO() as layout_dao:
+        layout_dao.update_messaggio(getTemplateMessage(), layout_id)
 
-    await query.answer()
+    await query.answer("Layout resettato con successo!", show_alert=True)
 
-    #set_message_template(channel_id, getTemplateMessage())
-
-    keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_layout_{channel_id}')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-        text="Layout resettato con successo!",
-        reply_markup=reply_markup
-    )
+    await edit_layout(query, None, None, layout_id)

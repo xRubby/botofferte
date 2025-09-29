@@ -46,5 +46,6 @@ def getTemplateMessage():
         "💲 <i>Prezzo vecchio:</i> {old_prezzo}{valuta}\n"
         "💰 <i>Prezzo nuovo:</i> <b>{prezzo}{valuta}</b>\n"
         "📉 <i>Sconto:</i> {sconto}%\n\n"
+        "🚚 {spedito}\n\n"
         "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>")
     return msg

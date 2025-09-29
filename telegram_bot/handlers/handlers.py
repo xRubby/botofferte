@@ -100,7 +100,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     channel_id = data_parts[2] if data_parts[0] == 'edit' or data_parts[0]=="channel" or data_parts[0] == "delete" and len(data_parts) >= 3 else None
 
-    layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout', 'editmessagelayout']  else None
+    layout_id = data_parts[3] if len(data_parts) >= 4 and data_parts[1] in ['activatelayout', 'editlayout', 'deletelayout', 'editmessagelayout', 'resetlayout']  else None
 
     if len(data_parts) >=3 and (data_parts[0] == 'publish' or data_parts[0] == 'remove' or data_parts[0] == 'prev' or data_parts[0] == 'next' or data_parts[0] == 'first' or data_parts[0] == 'last'):
         channel_id=data_parts[1]
@@ -155,7 +155,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_editlayout_{channel_id}_{layout_id}": lambda: edit_layout(query, context, user_id, layout_id),
         f"channel_editmessagelayout_{channel_id}_{layout_id}": lambda: edit_layout_message(query, context, user_id, layout_id, channel_id),
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
-        f'channel_resetlayout_{channel_id}': lambda: reset_layout(query, channel_id),
+        f'channel_resetlayout_{channel_id}_{layout_id}': lambda: reset_layout(query, channel_id, layout_id),
         f'channel_edittags_{channel_id}': lambda: edit_tags(query, channel_id),
         f'channel_edittags_{channel_id}_{edit_tag_type}': lambda: edit_tag_menu(query, context, channel_id, edit_tag_type),
         f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}': lambda: edit_tag_submenu(query, context, user_id, channel_id, edit_tag_type, edit_tag_subtype),
