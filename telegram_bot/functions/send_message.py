@@ -287,7 +287,6 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
                                 canale = canale_dao.get(channel_id)
                                 if canale and canale.id_affiliato:
                                     prodotto.link+= f"?tag={canale.id_affiliato}"
-
                         prodotto_dict={
                             "ASIN": prodotto.asin,
                             "titolo": prodotto.titolo,
@@ -304,11 +303,13 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
                             "brand": prodotto.brand,
                             "preorder": "Preordine" if prodotto.preorder else "",
                             "data_preordine": prodotto.data_preordine,
-                            "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+                            "prime": canale.prime_tag if prodotto.isPrime else "",
                             "isWarehouse": prodotto.isWarehouse,
                             "condizione": prodotto.condizione,
                             "condizione_commento": prodotto.condizione_descrizione
                         }
+
+                        print(prodotto_dict.get("prime"))
             except Exception as e:
                 traceback.print_exc()
     except Exception as e:

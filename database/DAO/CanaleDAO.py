@@ -51,6 +51,14 @@ class CanaleDAO:
             self.cursor.execute("UPDATE canali SET venditore_tag = ? WHERE canale_id = ?", 
                                 (new_message, canale_id))
             self.conn.commit()
+        elif tag_subtype == 'preorder':
+            self.cursor.execute("UPDATE canali SET preorder_tag = ? WHERE canale_id = ?", 
+                                (new_message, canale_id))
+            self.conn.commit()
+        elif tag_subtype == 'prime':
+            self.cursor.execute("UPDATE canali SET prime_tag = ? WHERE canale_id = ?", 
+                                (new_message, canale_id))
+            self.conn.commit()
         
 
     def delete(self, canale_id: str) -> None:

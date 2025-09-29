@@ -91,6 +91,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if 'awaiting_tag_subtype_message' in context.user_data[user_id]:
         context.user_data[user_id]['awaiting_tag_subtype_message'] = False
+    
+    if 'awaiting_tag_type_message' in context.user_data[user_id]:
+        context.user_data[user_id]['awaiting_tag_type_message'] = False
 
         
 
@@ -156,9 +159,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"channel_editmessagelayout_{channel_id}_{layout_id}": lambda: edit_layout_message(query, context, user_id, layout_id, channel_id),
         f"channel_deletelayout_{channel_id}_{layout_id}": lambda: delete_layout(query, layout_id, channel_id),
         f'channel_resetlayout_{channel_id}_{layout_id}': lambda: reset_layout(query, channel_id, layout_id),
-        f'channel_edittags_{channel_id}': lambda: edit_tags(query, channel_id),
-        f'channel_edittags_{channel_id}_{edit_tag_type}': lambda: edit_tag_menu(query, context, channel_id, edit_tag_type),
+        f'channel_edittags_{channel_id}': lambda: edit_tags(query, context, user_id, channel_id),
+        f'channel_edittags_{channel_id}_{edit_tag_type}': lambda: edit_tag_menu(query, context, user_id, channel_id, edit_tag_type),
         f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}': lambda: edit_tag_submenu(query, context, user_id, channel_id, edit_tag_type, edit_tag_subtype),
+        f'channel_edittags_{channel_id}_{edit_tag_type}_reset' : lambda: reset_tag_message(query, context, user_id, channel_id, edit_tag_type, None),
         f'channel_edittags_{channel_id}_{edit_tag_type}_{edit_tag_subtype}_reset' : lambda: reset_tag_message(query, context, user_id, channel_id, edit_tag_type, edit_tag_subtype),
 
         f'channel_adminpanel_{channel_id}': lambda: admin_panel(query, context, channel_id, user_id),
@@ -569,6 +573,30 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.edit_message_text(
+                            chat_id=update.effective_chat.id,
+                            message_id=message_id,
+                            text=text,
+                            reply_markup=reply_markup)
+        
+    elif context.user_data[user_id].get('awaiting_tag_type_message'):
+        tag_type_message = update.message.text
+        channel_id = context.user_data[user_id].get('channel_id')
+        tag_type = context.user_data[user_id].get('tag_type')
+        message_id = context.user_data[user_id].get('message_id')
+
+        await update.message.delete()
+
+        with CanaleDAO() as canale_dao:
+            if tag_type in ['prime']:
+                canale_dao.update_tag(channel_id, tag_type, tag_type_message)
+                text = f"Messaggio aggiornato a: {tag_type_message}"
+
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
