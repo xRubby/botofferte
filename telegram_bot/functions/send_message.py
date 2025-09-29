@@ -78,6 +78,7 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
                 with ProdottoDAO() as dao:
                     dao.update_preorder(prodotto.asin, False, None)
                 
+                print("sono qui")
                 prodotto.preorder = False
                 prodotto.data_preordine = None
         return prodotto
@@ -301,15 +302,13 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
                             "link_short": shorten_url(prodotto.link),
                             "img_url": prodotto.img_url,
                             "brand": prodotto.brand,
-                            "preorder": "Preordine" if prodotto.preorder else "",
+                            "preorder": canale.preorder_tag if prodotto.preorder else "",
                             "data_preordine": prodotto.data_preordine,
                             "prime": canale.prime_tag if prodotto.isPrime else "",
                             "isWarehouse": prodotto.isWarehouse,
                             "condizione": prodotto.condizione,
                             "condizione_commento": prodotto.condizione_descrizione
                         }
-
-                        print(prodotto_dict.get("prime"))
             except Exception as e:
                 traceback.print_exc()
     except Exception as e:

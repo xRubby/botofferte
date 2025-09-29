@@ -61,6 +61,13 @@ Venduto e spedito da VENDITORE → Aggiorna il messaggio indicando che il vendit
                 canale = canale_dao.get(channel_id)
             text=f"Hai selezionato: Prime.\n\nMessaggio corrente: {canale.prime_tag}"
             keyboard.append([InlineKeyboardButton("Resetta messaggio", callback_data=f'channel_edittags_{channel_id}_prime_reset')])
+        elif tag_type == 'preorder':
+            message_id = query.message.id
+            context.user_data[user_id] = {'awaiting_tag_type_message': True, 'tag_type': tag_type,'message_id': message_id, 'channel_id': channel_id}
+            with CanaleDAO() as canale_dao:
+                canale = canale_dao.get(channel_id)
+            text=f"Hai selezionato: Preordine.\n\nMessaggio corrente: {canale.preorder_tag}"
+            keyboard.append([InlineKeyboardButton("Resetta messaggio", callback_data=f'channel_edittags_{channel_id}_preorder_reset')])
     else:
         text="Tipo di tag non valido."
 
@@ -124,13 +131,16 @@ async def reset_tag_message(query, context, user_id, channel_id, tag_type, tag_s
         elif tag_type == 'prime':
             canale_dao.update_tag(channel_id, 'prime', 'Spedizione gratuita con Amazon Prime')
             text = "Messaggio aggiornato a: Spedizione gratuita con Amazon Prime."
+        elif tag_type == 'preorder':
+            canale_dao.update_tag(channel_id, 'preorder', 'Preordine')
+            text = "Messaggio aggiornato a: Preordine"
 
     keyboard = []
 
     if tag_subtype is not None:
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}_{tag_subtype}')])
     else:
-        keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}')])
+        keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(

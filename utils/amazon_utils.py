@@ -51,9 +51,15 @@ def formatta_data(data):
     data_formattata = f"{giorno} {mese} {anno}"
     return data_formattata
 
-def is_future_date(date_string, date_format="%Y-%m-%dT%H:%M:%SZ"):
+def is_future_date(date_string, date_format="%d %B %Y"):
+    
+    locale.setlocale(locale.LC_TIME, 'it_IT.UTF-8')
+
+    print(date_string)
+
     try:
         release_date = datetime.strptime(date_string, date_format).date()
+        print(release_date > datetime.today().date())
         return release_date > datetime.today().date()
     except ValueError:
         return False

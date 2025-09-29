@@ -572,7 +572,7 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text = f"Messaggio aggiornato a: {tag_subtype_message}"
         
         keyboard = [
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')]
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}_{tag_subtype}')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
@@ -591,12 +591,12 @@ async def handle_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.delete()
 
         with CanaleDAO() as canale_dao:
-            if tag_type in ['prime']:
+            if tag_type in ['prime', 'preorder']:
                 canale_dao.update_tag(channel_id, tag_type, tag_type_message)
                 text = f"Messaggio aggiornato a: {tag_type_message}"
 
         keyboard = [
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}')]
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channel_edittags_{channel_id}_{tag_type}')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
