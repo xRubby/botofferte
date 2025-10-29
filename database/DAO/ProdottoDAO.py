@@ -47,7 +47,7 @@ class ProdottoDAO:
 
     def update_price(self, asin: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool) -> None:
         self.cursor.execute('''UPDATE prodotti SET prezzo = ?, old_prezzo = ?, valuta = ?, 
-                            sconto = ?, venditore = ?, spedito_Amazon = ?, last_check = ? 
+                            sconto = ?, venditore = ?, spedito_Amazon = ? 
                             WHERE asin = ?''', 
                             (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, asin))
         self.conn.commit()
