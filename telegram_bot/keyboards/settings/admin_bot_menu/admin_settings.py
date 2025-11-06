@@ -147,12 +147,12 @@ async def view_license_details(query: CallbackQuery, license_code: str):
         
         keyboard = [
             [InlineKeyboardButton("Cancella Licenza", callback_data=f'confirmdelete_{license_code}')],
-            [InlineKeyboardButton("⬅️ Indietro", callback_data='view_licenses')]
+            [InlineKeyboardButton("⬅️ Indietro", callback_data='license_0')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
     else:
         text = "Licenza non trovata."
-        keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='view_licenses')]]
+        keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='license_0')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
