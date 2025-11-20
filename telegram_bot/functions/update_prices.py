@@ -96,6 +96,7 @@ def aggiorna_prezzo(prodotto: Prodotto) -> Prodotto:
                     prodotto_aggiornato['sconto'],
                     prodotto_aggiornato['venditore'],
                     prodotto_aggiornato['spedito_Amazon'],
+                    prodotto_aggiornato['offertaesclusiva']
                 )
                 prodotto.prezzo = prodotto_aggiornato['prezzo']
                 prodotto.old_prezzo = prodotto_aggiornato['old_prezzo']
@@ -103,6 +104,7 @@ def aggiorna_prezzo(prodotto: Prodotto) -> Prodotto:
                 prodotto.sconto = prodotto_aggiornato['sconto']
                 prodotto.venditore = prodotto_aggiornato['venditore']
                 prodotto.spedito_Amazon = prodotto_aggiornato['spedito_Amazon']
+                prodotto.offertaesclusiva = prodotto_aggiornato['offertaesclusiva']
 
             dao.update_last_check(prodotto.asin, epoch_corrente)
         prodotto.last_check = epoch_corrente

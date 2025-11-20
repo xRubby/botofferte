@@ -264,7 +264,7 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
 
                             prodotto = Prodotto(offer["ASIN"], offer["titolo"], offer["prezzo"], offer["old_prezzo"], offer["valuta"], offer["sconto"],
                                                 offer["venditore"], offer["spedito_Amazon"], offer["link"], offer["img_url"], offer["brand"], offer["preordine"], offer["data_preordine"],
-                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], int(time.time()), 1)
+                                                offer["isPrime"], offer["isWarehouse"], offer["condizione"], offer["condizione_descrizione"], int(time.time()), 1, offer["offertaesclusiva"])
                             
                             
                             prodotto_dao.insert_Prodotto(prodotto)
@@ -307,7 +307,8 @@ async def search_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, chann
                             "prime": canale.prime_tag if prodotto.isPrime else "",
                             "isWarehouse": prodotto.isWarehouse,
                             "condizione": prodotto.condizione,
-                            "condizione_commento": prodotto.condizione_descrizione
+                            "condizione_commento": prodotto.condizione_descrizione,
+                            "offertaesclusiva": prodotto.offertaesclusiva
                         }
             except Exception as e:
                 traceback.print_exc()

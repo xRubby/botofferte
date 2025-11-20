@@ -143,6 +143,11 @@ def scraping_product(asin):
         cond = ""
         cond_comm = ""
 
+        offertaesclusiva = ""
+        badge_offerta = soup.find("span", id="dealBadgeSupportingText")
+        if badge_offerta and "aok-hidden" not in badge_offerta.get("class", []):
+            offertaesclusiva = badge_offerta.text.strip()
+
         offerta = {
             'ASIN': asin,
             'titolo': title,
@@ -160,8 +165,8 @@ def scraping_product(asin):
             'isPrime': prime,
             'isWarehouse': is_warehouse,
             'condizione': cond,
-            'condizione_descrizione': cond_comm
-
+            'condizione_descrizione': cond_comm,
+            'offertaesclusiva': offertaesclusiva
             
             
         }
