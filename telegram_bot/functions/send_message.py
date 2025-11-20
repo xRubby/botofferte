@@ -67,9 +67,9 @@ def processa_messaggio(template, context):
         messaggio = messaggio.replace(f"{{{key}}}", str(value))
         
 
-    messaggio = clean_text(messaggio)
+    messaggio_pulito = clean_text(messaggio).strip()
 
-    return messaggio
+    return messaggio_pulito
 
 def check_preorder(prodotto: Prodotto) -> Prodotto:
     if prodotto:

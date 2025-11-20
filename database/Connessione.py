@@ -95,7 +95,8 @@ class Connessione:
             condizione TEXT,
             condizione_descrizione TEXT,
             last_check INTEGER DEFAULT (strftime('%s','now')),
-            priorita INTEGER DEFAULT 2
+            priorita INTEGER DEFAULT 2,
+            offertaesclusiva TEXT
         );
                              
         CREATE VIRTUAL TABLE IF NOT EXISTS Prodotti_fts USING FTS5(
