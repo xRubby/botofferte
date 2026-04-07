@@ -55,12 +55,30 @@ async def handler_keyword(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int
         chat_id=update.effective_chat.id,
         message_id=message_id,
         text="<b>🔍 Cerca prodotto</b>\n\nSto elaborando il tuo link...",
-        parse_mode="HTML",
-        reply_markup=reply_markup,
+        parse_mode="HTML"
     )
 
     await asyncio.sleep(2)
-    await search_and_send_offer(update, ctx, keyword)
+    
+    try:
+        await search_and_send_offer(update, ctx, keyword)
+    except ValueError as ve:
+        await ctx.bot.edit_message_text(
+            chat_id=update.effective_chat.id,
+            message_id=message_id,
+            text=f"<b>Errore durante l'elaborazione del prodotto</b>\n\nErrore: {ve}",
+            parse_mode="HTML",
+            reply_markup=reply_markup,
+        )
+    except Exception:
+        await ctx.bot.edit_message_text(
+            chat_id=update.effective_chat.id,
+            message_id=message_id,
+            text=f"<b>Errore durante l'elaborazione del prodotto</b>\n\nErrore generico",
+            parse_mode="HTML",
+            reply_markup=reply_markup,
+        )
+    
  
     return ConversationHandler.END
 

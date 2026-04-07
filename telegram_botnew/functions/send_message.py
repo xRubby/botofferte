@@ -149,5 +149,5 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         parse_mode='HTML',
         reply_markup=reply_markup,
         link_preview_options=LinkPreviewOptions(url=info_prodotto["img_url"])
-        )
+    )
 
