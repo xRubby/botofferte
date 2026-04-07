@@ -2,96 +2,62 @@ from database.Connessione import Connessione
 from database.Entity.Prodotto import Prodotto
 from database.DAO.PrezziStoricoDAO import PrezziStoricoDAO
 
-from typing import List
-
 import re
 
 class ProdottoDAO:
-    def __init__(self):
-        self.conn = Connessione().get_connection()
-        self.cursor = self.conn.cursor()
-
-    def __enter__(self) -> 'ProdottoDAO':
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.conn.close()
-
     def insert(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str, offertaesclusiva: str) -> None:
-        self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+        with Connessione() as con:
+            con.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                             (asin, titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione, offertaesclusiva))
-        self.conn.commit()
-        with PrezziStoricoDAO as prezzi_storico_dao:
-            prezzi_storico_dao.insert(asin, prezzo, valuta, venditore)
+        PrezziStoricoDAO.insert(asin, prezzo, valuta, venditore)
 
     def insert_Prodotto(self, prodotto: Prodotto):
-        self.cursor.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+        with Connessione() as con:
+            con.execute('''INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
                         (prodotto.asin, prodotto.titolo, prodotto.prezzo, prodotto.old_prezzo, prodotto.valuta, 
                          prodotto.sconto, prodotto.venditore, prodotto.spedito_Amazon, prodotto.link, prodotto.img_url, 
                          prodotto.brand, prodotto.preorder, prodotto.data_preordine, prodotto.isPrime, prodotto.isWarehouse, 
                          prodotto.condizione, prodotto.condizione_descrizione, prodotto.last_check, prodotto.priorita, prodotto.offertaesclusiva))
-        self.conn.commit()
-        with PrezziStoricoDAO() as prezzi_storico_dao:
-            prezzi_storico_dao.insert(prodotto.asin, prodotto.prezzo, prodotto.valuta, prodotto.venditore)
+        PrezziStoricoDAO.insert(prodotto.asin, prodotto.prezzo, prodotto.valuta, prodotto.venditore)
 
     def update(self, asin: str, titolo: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, link: str, img_url: str, brand: str, preorder: bool, data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str, condizione_descrizione: str, last_check: int, offertaesclusiva: str) -> None:
-        self.cursor.execute('''UPDATE prodotti SET titolo = ?, prezzo = ?, old_prezzo = ?, valuta = ?, 
+        with Connessione() as con:
+            con.execute('''UPDATE prodotti SET titolo = ?, prezzo = ?, old_prezzo = ?, valuta = ?, 
                             sconto = ?, venditore = ?, spedito_Amazon = ?, 
                             link = ?, img_url = ?, brand = ?, preorder = ?, data_preordine = ?, 
                             isPrime = ?, isWarehouse = ?, condizione = ?, condizione_descrizione = ?, last_check = ?, offertaesclusiva = ? 
                             WHERE asin = ?''', 
                             (titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
                              link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse, condizione, condizione_descrizione, last_check, offertaesclusiva, asin))
-        self.conn.commit()
 
     def update_price(self, asin: str, prezzo: float, old_prezzo: float, valuta: str, sconto: float, venditore: str, spedito_Amazon: bool, offertaesclusiva: str) -> None:
-        self.cursor.execute('''UPDATE prodotti SET prezzo = ?, old_prezzo = ?, valuta = ?, 
+        with Connessione() as con:
+            con.execute('''UPDATE prodotti SET prezzo = ?, old_prezzo = ?, valuta = ?, 
                             sconto = ?, venditore = ?, spedito_Amazon = ?, offertaesclusiva = ? 
                             WHERE asin = ?''', 
                             (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, offertaesclusiva, asin))
-        self.conn.commit()
-        with PrezziStoricoDAO() as prezzi_storico_dao:
-            prezzi_storico_dao.insert(asin, prezzo, valuta, venditore)
-    
-    def update_last_check(self, asin: str, last_check: int) -> None:
-        self.cursor.execute('''UPDATE prodotti SET last_check = ?
-                            WHERE asin = ?''', 
-                            (last_check, asin))
-        self.conn.commit()
-    
-    def update_preorder(self, asin: str, preorder: bool, data_preordine: str) -> None:
-        self.cursor.execute('''UPDATE prodotti SET preorder = ?, data_preordine = ?
-                            WHERE asin = ?''', 
-                            (preorder, data_preordine, asin))
-        self.conn.commit()
+        PrezziStoricoDAO.insert(asin, prezzo, valuta, venditore)
 
     def delete(self, asin) -> None:
-        self.cursor.execute("DELETE FROM prodotti WHERE asin = ?", (asin,))
-        self.conn.commit()
+        with Connessione() as con:
+            con.execute("DELETE FROM prodotti WHERE asin = ?", (asin,))
 
-    def get_by_asin(self, asin) -> Prodotto:
-        self.cursor.execute("SELECT * FROM prodotti WHERE asin = ?", (asin,))
-        row = self.cursor.fetchone()
-        if row:
-            return Prodotto(*row)
-        return None
+    def get_by_asin(self, asin) -> Prodotto | None:
+        with Connessione() as con:
+            row = con.execute("SELECT * FROM prodotti WHERE asin = ?", (asin,)).fetchone()
+        return Prodotto(*row) if row else None
     
-    def get_by_titolo(self, titolo) -> Prodotto:
+    def get_by_titolo(self, titolo) -> Prodotto | None:
 
         titolo_pulito  = re.sub(r'[^a-zA-Z0-9 ]', '', titolo)
 
-        self.cursor.execute("SELECT p.* FROM Prodotti_fts fts JOIN Prodotti p ON fts.asin = p.asin WHERE fts.titolo MATCH ?", (titolo_pulito,))
-        row = self.cursor.fetchone()
-        if row:
-            return Prodotto(*row)
-        return None
+        with Connessione() as con:
+            row = con.execute("SELECT p.* FROM Prodotti_fts fts JOIN Prodotti p ON fts.asin = p.asin WHERE fts.titolo MATCH ?", (titolo_pulito,)).fetchone()
+        return Prodotto(*row) if row else None
 
-    def get_all(self) -> List[Prodotto]:
-        self.cursor.execute("SELECT * FROM prodotti")
-        rows = self.cursor.fetchall()
+    def get_all(self) -> list[Prodotto]:
+        with Connessione() as con:
+            rows = con.execute("SELECT * FROM prodotti").fetchall()
 
         return [Prodotto(*row) for row in rows] 
-    
-    def close(self) -> None:
-        self.conn.close()

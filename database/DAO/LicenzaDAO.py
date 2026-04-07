@@ -5,29 +5,18 @@ from database.DAO.CanaleDAO import CanaleDAO
 
 from utils.generate_license import calcola_data_scadenza
 
-from typing import List
 from datetime import datetime
 
 class LicenzaDAO:
-    def __init__(self):
-        self.conn = Connessione().get_connection()
-        self.cursor = self.conn.cursor()
-
-    def __enter__(self) -> 'LicenzaDAO':
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.conn.close()
-
     def insert(self, codice_licenza: str, tipo: str) -> None:
-        self.cursor.execute("INSERT INTO licenze (codice_licenza, tipo) VALUES (?, ?)", 
+        with Connessione() as con:
+            con.execute("INSERT INTO licenze (codice_licenza, tipo) VALUES (?, ?)", 
                             (codice_licenza, tipo))
-        self.conn.commit()
 
     def update(self, codice_licenza: str, tipo: str, data_attivazione: str, data_scadenza: str) -> None:
-        self.cursor.execute("UPDATE licenze SET tipo = ?, data_attivazione = ?, data_scadenza = ? WHERE codice_licenza = ?", 
+        with Connessione() as con:
+            con.execute("UPDATE licenze SET tipo = ?, data_attivazione = ?, data_scadenza = ? WHERE codice_licenza = ?", 
                             (tipo, data_attivazione, data_scadenza, codice_licenza))
-        self.conn.commit()
 
     def activate_licenza(self, codice_licenza: str) -> bool:
         licenza = self.get(codice_licenza)
@@ -52,27 +41,24 @@ class LicenzaDAO:
             if canale:
                 canale_dao.update_codice_licenza(canale.canale_id, "")
 
-        self.cursor.execute("DELETE FROM licenze WHERE codice_licenza = ?", (codice_licenza,))
-        self.conn.commit()
+        with Connessione() as con:
+            con.execute("DELETE FROM licenze WHERE codice_licenza = ?", (codice_licenza,))
 
-    def get(self, codice_licenza) -> Licenza:
-        self.cursor.execute("SELECT * FROM licenze WHERE codice_licenza = ?", (codice_licenza,))
-        row = self.cursor.fetchone()
-        if row:
-            return Licenza(*row)
-        return None
+    def get(self, codice_licenza) -> Licenza | None:
+        with Connessione() as con:
+            row = con.execute("SELECT * FROM licenze WHERE codice_licenza = ?", (codice_licenza,)).fetchone()
+            return Licenza(*row) if row else None
     
     def get_stato(self, codice_licenza: str) -> bool:
-        self.cursor.execute("""
+        with Connessione() as con:
+            row = con.execute("""
             SELECT data_attivazione, data_scadenza FROM Licenze WHERE codice_licenza = ?
-            """, (codice_licenza,))
-    
-        result = self.cursor.fetchone()
+            """, (codice_licenza,)).fetchone()
 
-        if result is None:
+        if row is None:
             return False
 
-        data_attivazione, data_scadenza = result
+        data_attivazione, data_scadenza = row
 
         if data_attivazione is None:
             return False
@@ -81,12 +67,7 @@ class LicenzaDAO:
 
         return False
 
-    def get_all(self) -> List[Licenza]:
-        self.cursor.execute("SELECT * FROM licenze")
-
-        rows = self.cursor.fetchall()
-
-        return [Licenza(*row) for row in rows] 
-    
-    def close(self) -> None:
-        self.conn.close()
+    def get_all(self) -> list[Licenza]:
+        with Connessione() as con:
+            rows = con.execute("SELECT * FROM licenze").fetchall()
+            return [Licenza(*row) for row in rows] 

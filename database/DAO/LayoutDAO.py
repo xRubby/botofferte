@@ -1,68 +1,27 @@
 from database.Connessione import Connessione
 from database.Entity.Layout import Layout
 
-from typing import List
-
 class LayoutDAO:
-    def __init__(self):
-        self.conn = Connessione().get_connection()
-        self.cursor = self.conn.cursor()
-
-    def __enter__(self) -> 'LayoutDAO':
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.conn.close()
-
     def insert(self, nome_layout: str, messaggio: str, in_uso: bool, canale_id: str) -> None:
-        self.cursor.execute("INSERT INTO Layout (nome_layout, messaggio, in_uso, canale_id) VALUES (?, ?, ?, ?)",
+        with Connessione() as con:
+            con.execute("INSERT INTO Layout (nome_layout, messaggio, in_uso, canale_id) VALUES (?, ?, ?, ?)",
                             (nome_layout, messaggio, in_uso, canale_id))
-        self.conn.commit()
 
     def update(self, layout_id: int, nome_layout: str, messaggio: str, in_uso: bool, canale_id: str) -> None:
-        self.cursor.execute("UPDATE Layout SET nome_layout = ?, messaggio = ?, in_uso = ?, canale_id = ? WHERE layout_id = ?",
+        with Connessione() as con:
+            con.execute("UPDATE Layout SET nome_layout = ?, messaggio = ?, in_uso = ?, canale_id = ? WHERE layout_id = ?",
                             (nome_layout, messaggio, in_uso, canale_id, layout_id))
-        self.conn.commit()
-
-    def update_messaggio(self, messaggio: str, layout_id: int) -> None:
-        self.cursor.execute("UPDATE Layout SET messaggio = ? WHERE layout_id = ?",
-                            (messaggio, layout_id))
-        self.conn.commit()
-
-    def update_stato(self, in_uso: bool, layout_id: int) -> None:
-        self.cursor.execute("UPDATE Layout SET in_uso = ? WHERE layout_id = ?",
-                            (in_uso, layout_id))
-        self.conn.commit()
 
     def delete(self, layout_id: int) -> None:
-        self.cursor.execute("DELETE FROM Layout WHERE layout_id = ?", (layout_id,))
-        self.conn.commit()
+        with Connessione() as con:
+            con.execute("DELETE FROM Layout WHERE layout_id = ?", (layout_id,))
 
-    def get(self, layout_id: int) -> Layout:
-        self.cursor.execute("SELECT * FROM Layout WHERE layout_id = ?", (layout_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return Layout(*row)
-        return None
-    
-    def get_channel_layout_activated(self, canale_id: str) -> Layout:
-        self.cursor.execute("SELECT * FROM Layout WHERE in_uso = ? AND canale_id = ?", (1, canale_id))
-        row = self.cursor.fetchone()
-        if row:
-            return Layout(*row)
-        return None
-    
-    def get_channel_layouts(self, canale_id: str) -> List[Layout]:
-        self.cursor.execute("SELECT * FROM Layout WHERE canale_id = ?", (canale_id,))
-        rows = self.cursor.fetchall()
-        return [Layout(*row) for row in rows]
-    
+    def get(self, layout_id: int) -> Layout | None:
+        with Connessione() as con:
+            row = con.execute("SELECT * FROM Layout WHERE layout_id = ?", (layout_id,)).fetchone()
+            return Layout(*row) if row else None
 
-
-    def get_all(self) -> List[Layout]:
-        self.cursor.execute("SELECT * FROM Layout")
-        rows = self.cursor.fetchall()
-        return [Layout(*row) for row in rows]
-
-    def close(self) -> None:
-        self.conn.close()
+    def get_all(self) -> list[Layout]:
+        with Connessione() as con:
+            rows = con.execute("SELECT * FROM Layout").fetchall()
+            return [Layout(*row) for row in rows]

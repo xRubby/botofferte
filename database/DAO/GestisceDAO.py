@@ -1,54 +1,29 @@
 from database.Connessione import Connessione
 from database.Entity.Gestisce import Gestisce
 
-from typing import List
-
 class GestisceDAO:
-    def __init__(self):
-        self.conn = Connessione().get_connection()
-        self.cursor = self.conn.cursor()
-
-    def __enter__(self) -> 'GestisceDAO':
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.conn.close()
-
     def insert(self, telegram_id: int, canale_id: str, id_affiliato: str, isCreator: bool = 0) -> None:
-        self.cursor.execute(
+        with Connessione() as con:
+            con.execute(
             "INSERT INTO Gestisce (telegram_id, canale_id, id_affiliato, isCreator) VALUES (?, ?, ?, ?)", 
             (telegram_id, canale_id, id_affiliato, isCreator)
         )
-    
-        self.conn.commit()
 
     def update(self, telegram_id: int, canale_id: str, id_affiliato: str, isCreator: bool) -> None:
-        self.cursor.execute("UPDATE Gestisce SET telegram_id = ?, canale_id = ?, id_affiliato = ?, isCreator = ? WHERE telegram_id = ? and canale_id = ?", 
+        with Connessione() as con:
+            con.execute("UPDATE Gestisce SET telegram_id = ?, canale_id = ?, id_affiliato = ?, isCreator = ? WHERE telegram_id = ? and canale_id = ?", 
                             (telegram_id, canale_id, id_affiliato, isCreator, telegram_id, canale_id,))
-        self.conn.commit()
-
-    def update_id_affiliato(self, telegram_id: int, canale_id: str, new_id_affiliato: str) -> None:
-        self.cursor.execute("UPDATE Gestisce SET id_affiliato = ? WHERE telegram_id = ? and canale_id = ?", 
-                            (new_id_affiliato, telegram_id, canale_id,))
-        self.conn.commit()
 
     def delete(self, telegram_id: int, canale_id: str) -> None:
-        self.cursor.execute("DELETE FROM Gestisce WHERE telegram_id = ? AND canale_id = ?", (telegram_id, canale_id,))
-        self.conn.commit()
+        with Connessione() as con:
+            con.execute("DELETE FROM Gestisce WHERE telegram_id = ? AND canale_id = ?", (telegram_id, canale_id,))
 
-    def get(self, telegram_id: int, canale_id: str) -> Gestisce:
-        self.cursor.execute("SELECT * FROM Gestisce WHERE telegram_id = ? AND canale_id = ?", (telegram_id, canale_id,))
-        row = self.cursor.fetchone()
-        if row:
-            return Gestisce(*row)
-        return None
+    def get(self, telegram_id: int, canale_id: str) -> Gestisce | None:
+        with Connessione() as con:
+            row = con.execute("SELECT * FROM Gestisce WHERE telegram_id = ? AND canale_id = ?", (telegram_id, canale_id,)).fetchone()
+            return Gestisce(*row) if row else None
 
-    def get_all(self) -> List[Gestisce]:
-        self.cursor.execute("SELECT * FROM Gestisce")
-        rows = self.cursor.fetchall()
-
-        return [Gestisce(*row) for row in rows] 
-    
-    
-    def close(self) -> None:
-        self.conn.close()
+    def get_all(self) -> list[Gestisce]:
+        with Connessione() as con:
+            rows = con.execute("SELECT * FROM Gestisce").fetchall
+            return [Gestisce(*row) for row in rows] 
