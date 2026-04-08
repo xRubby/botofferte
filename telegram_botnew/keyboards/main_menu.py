@@ -9,7 +9,7 @@ from database.DAO.UtenteDAO import UtenteDAO
 
 TASTIERA_HOME = InlineKeyboardMarkup([
     [InlineKeyboardButton("🔍 Cerca prodotto", callback_data="cerca_prodotto")],
-    [InlineKeyboardButton("🛒 Offerte Canale",  callback_data="offerte_canale")],
+    [InlineKeyboardButton("🛒 Offerte Canale",  callback_data="channeloffers_main")],
     [InlineKeyboardButton("⚙️ Impostazioni",    callback_data="settings")],
 ])
 

@@ -118,3 +118,21 @@ class LicenzaDAO:
             stato = StatoLicenza.ATTIVA
 
         return licenza, stato, canale_id, nome_canale
+    
+    def release_licenza(self, codice_licenza: str) -> None:
+        licenza = self.get(codice_licenza)
+        if not licenza or licenza.data_scadenza is None:
+            return
+
+        now = datetime.now()
+        scadenza = datetime.strptime(licenza.data_scadenza, "%Y-%m-%d %H:%M:%S")
+    
+        giorni_rimanenti = (scadenza - now).days
+        if giorni_rimanenti <= 0:
+            return
+
+        nuovo_tipo = f"{giorni_rimanenti} giorni"
+        self._get_con().execute(
+            "UPDATE licenze SET tipo = ?, data_attivazione = NULL, data_scadenza = NULL WHERE codice_licenza = ?",
+            (nuovo_tipo, codice_licenza)
+    )

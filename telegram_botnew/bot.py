@@ -5,6 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from dotenv import load_dotenv
 
 
+from telegram_botnew.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
 from telegram_botnew.keyboards.main_menu import cmd_start, handler_menu_principale
 from telegram_botnew.keyboards.search_product.search_product_menu import conv_cerca_prodotto
 from telegram_botnew.keyboards.settings.settings_menu import settings_menu
@@ -26,6 +27,7 @@ def start_telegram_bot():
 
     application.add_handler(conv_cerca_prodotto)
     application.add_handler(conv_genera_licenza)
+    application.add_handler(conv_add_channel)
     
     application.add_handler(CommandHandler('start', cmd_start))
 
@@ -39,6 +41,9 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(attiva_licenza_ok, pattern=r"^admin_settings_attivalicenza_.+$"))
     application.add_handler(CallbackQueryHandler(disattiva_licenza_confirm, pattern=r"^admin_settings_disattivalicenza_.+$"))
     application.add_handler(CallbackQueryHandler(disattiva_licenza_ok,      pattern=r"^admin_settings_disattiva_ok_.+$"))
+
+    
+    application.add_handler(CallbackQueryHandler(channeloffers_main, pattern="^channeloffers_main$"))
 
     
 
