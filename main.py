@@ -5,7 +5,7 @@ from database.Connessione import Connessione
 
 def main():
 
-    #Connessione().create_tables()
+    Connessione().create_tables()
 
     start_telegram_bot()
 

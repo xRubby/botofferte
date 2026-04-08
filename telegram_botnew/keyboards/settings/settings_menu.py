@@ -1,6 +1,8 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from database.DAO.UtenteDAO import UtenteDAO
+
 SETTINGS_MSG=(
         "<b>⚙️ Impostazioni</b>"
         "\n\n"
@@ -13,7 +15,11 @@ async def settings_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
         keyboard = []
 
-        keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])
+        userID = update.effective_user.id
+
+        with UtenteDAO() as utenteDAO:
+            if utenteDAO.get(userID).isAdmin:
+                keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])
 
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')])
         reply_markup = InlineKeyboardMarkup(keyboard)

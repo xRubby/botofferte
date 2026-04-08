@@ -6,3 +6,4 @@ class Licenza:
     tipo: str
     data_attivazione: str
     data_scadenza: str
+    attiva: bool

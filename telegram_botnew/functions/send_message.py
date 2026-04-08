@@ -104,23 +104,23 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
     message_id = ctx.user_data.pop("msg_id", None)
 
     if not message_id:
-        return
+        raise ValueError("ID del messaggio non trovato")
 
     if not keyword:
-        return
+        raise ValueError("Errore nella keyword mandata")
     
     expanded_url = expand_url(keyword)
     asin = extract_asin_from_url(expanded_url)
 
     if not asin:
-        return
+        raise ValueError("ASIN non trovato")
         
     risultato = scraping_product(asin)
 
     info_prodotto = creaDizionarioProdotto(risultato)
 
     if not info_prodotto:
-        return
+        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
 
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"

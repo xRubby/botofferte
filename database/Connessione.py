@@ -84,7 +84,8 @@ class Connessione:
                 codice_licenza  TEXT     PRIMARY KEY,
                 tipo            TEXT     NOT NULL,
                 data_attivazione DATETIME,
-                data_scadenza   DATETIME
+                data_scadenza   DATETIME,
+                attiva INTEGER NOT NULL DEFAULT 1
             );
 
             CREATE TABLE IF NOT EXISTS Canali (
@@ -196,6 +197,9 @@ class Connessione:
 
             CREATE INDEX IF NOT EXISTS idx_prodotti_priorita
                 ON Prodotti(priorita);
+                               
+            CREATE INDEX IF NOT EXISTS idx_licenze_attiva
+                ON Licenze(attiva);
 
             -- --------------------------------------------------------
             -- FTS5 per ricerca full-text sui prodotti
