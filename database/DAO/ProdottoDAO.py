@@ -25,13 +25,23 @@ class ProdottoDAO:
                data_preordine: str, isPrime: bool, isWarehouse: bool, condizione: str,
                condizione_descrizione: str, offertaesclusiva: str) -> None:
         self._get_con().execute(
-            "INSERT INTO prodotti VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+             """
+            INSERT INTO prodotti (
+                asin, titolo, prezzo, old_prezzo, valuta, sconto,
+                venditore, spedito_Amazon, link, img_url, brand,
+                preorder, data_preordine, isPrime, isWarehouse,
+                condizione, condizione_descrizione, offertaesclusiva
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (asin, titolo, prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon,
-             link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse,
-             condizione, condizione_descrizione, offertaesclusiva)
+            link, img_url, brand, preorder, data_preordine, isPrime, isWarehouse,
+            condizione, condizione_descrizione, offertaesclusiva)
         )
-        with PrezziStoricoDAO() as ps_dao:
-            ps_dao.insert(asin, prezzo, valuta, venditore)
+        self._get_con().execute(
+            "INSERT INTO PrezziStorico (asin, prezzo, valuta, venditore) VALUES (?, ?, ?, ?)",
+            (asin, prezzo, valuta, venditore)
+        )
 
     def insert_Prodotto(self, prodotto: Prodotto) -> None:
         self._get_con().execute(

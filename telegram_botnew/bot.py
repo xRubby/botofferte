@@ -10,7 +10,8 @@ from telegram_botnew.keyboards.main_menu import cmd_start, handler_menu_principa
 from telegram_botnew.keyboards.search_product.search_product_menu import conv_cerca_prodotto
 from telegram_botnew.keyboards.settings.settings_menu import settings_menu
 from telegram_botnew.keyboards.settings.admin_settings import admin_menu, attiva_licenza_ok, disattiva_licenza_confirm, disattiva_licenza_ok, conv_genera_licenza, visualizza_licenze, dettagli_licenza
-
+from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
+from telegram_botnew.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
@@ -28,6 +29,7 @@ def start_telegram_bot():
     application.add_handler(conv_cerca_prodotto)
     application.add_handler(conv_genera_licenza)
     application.add_handler(conv_add_channel)
+    application.add_handler(conv_insert_link)
     
     application.add_handler(CommandHandler('start', cmd_start))
 
@@ -42,8 +44,9 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(disattiva_licenza_confirm, pattern=r"^admin_settings_disattivalicenza_.+$"))
     application.add_handler(CallbackQueryHandler(disattiva_licenza_ok,      pattern=r"^admin_settings_disattiva_ok_.+$"))
 
-    
     application.add_handler(CallbackQueryHandler(channeloffers_main, pattern="^channeloffers_main$"))
+    application.add_handler(CallbackQueryHandler(channel_info, pattern="^channeloffers_info_.+$"))
+    
 
     
 

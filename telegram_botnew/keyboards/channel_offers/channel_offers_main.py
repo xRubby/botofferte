@@ -15,6 +15,8 @@ async def channeloffers_main(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
     userID = update.effective_user.id
 
+    context.user_data.pop("channel_id", None)
+
     with CanaleDAO() as canaleDAO:
         channels = canaleDAO.get_user_channels(userID)
 
@@ -32,7 +34,7 @@ async def channeloffers_main(update: Update, context: ContextTypes.DEFAULT_TYPE)
             keyboard.append([
                 InlineKeyboardButton(
                     channel_name, 
-                    callback_data=f'edit_channel_{channel_id}'
+                    callback_data=f'channeloffers_info_{channel_id}'
                 )
             ])
 

@@ -44,3 +44,9 @@ class LayoutDAO:
     def get_all(self) -> list[Layout]:
         rows = self._get_con().execute("SELECT * FROM Layout").fetchall()
         return [Layout(*row) for row in rows]
+    
+    def get_in_uso(self, canale_id: str) -> Layout | None:
+        row = self._get_con().execute(
+            "SELECT * FROM Layout WHERE in_uso = 1 AND canale_id = ?", (canale_id,)
+        ).fetchone()
+        return Layout(*row) if row else None

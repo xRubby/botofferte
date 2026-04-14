@@ -4,6 +4,12 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOpti
 from telegram.ext import ContextTypes
 
 from APIs.bitly_api import shorten_url
+from database.DAO.ProdottoDAO import ProdottoDAO
+from database.DAO.PubblicaDAO import PubblicaDAO
+from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO.GestisceDAO import GestisceDAO
+from database.DAO.LayoutDAO import LayoutDAO
+from database.Entity.Layout import Layout
 from database.Entity.Prodotto import Prodotto
 from scraper.amazon_scraper import scraping_product
 
@@ -16,6 +22,31 @@ import os
 
 load_dotenv()
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
+
+def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
+    if not prodotto:
+        return None
+    return {
+        "ASIN": prodotto.asin,
+        "titolo": prodotto.titolo,
+        "prezzo": prodotto.prezzo,
+        "old_prezzo": prodotto.old_prezzo,
+        "valuta": prodotto.valuta,
+        "sconto": prodotto.sconto,
+        "venditore": prodotto.venditore,
+        "spedito_Amazon": prodotto.spedito_Amazon,
+        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
+        "link": prodotto.link,
+        "link_short": shorten_url(prodotto.link),
+        "img_url": prodotto.img_url,
+        "brand": prodotto.brand,
+        "preorder": "Preordine" if prodotto.preorder else "",
+        "data_preordine": prodotto.data_preordine,
+        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
+        "isWarehouse": prodotto.isWarehouse,
+        "condizione": prodotto.condizione,
+        "condizione_commento": prodotto.condizione_descrizione,
+    }
 
 def creaDizionarioProdotto(risultato: dict) -> dict | None:
     if (risultato):
@@ -150,4 +181,115 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         reply_markup=reply_markup,
         link_preview_options=LinkPreviewOptions(url=info_prodotto["img_url"])
     )
+
+
+TEMPLATE_MESSAGE = (
+    "📦 <b>{titolo}</b>\n"
+    "💲 <i>Prezzo vecchio:</i> {old_prezzo}{valuta}\n"
+    "💰 <i>Prezzo nuovo:</i> <b>{prezzo}{valuta}</b>\n"
+    "📉 <i>Sconto:</i> {sconto}%\n\n"
+    "🚚 {spedito}\n\n"
+    "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>"
+)
+
+async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
+    user_id = update.effective_user.id 
+    channel_id = ctx.user_data.get("channel_id", None)
+
+    if not channel_id:
+        raise ValueError("Errore nel ritrovamento dell'id del canale")
+
+    if not keyword:
+        raise ValueError("Errore nella keyword mandata")
+    
+    with GestisceDAO() as gestisceDAO:
+        gestisce = gestisceDAO.get(user_id, channel_id)
+    
+    expanded_url = expand_url(keyword)
+    asin = extract_asin_from_url(expanded_url)
+
+    if not asin:
+        raise ValueError("ASIN non trovato")
+    
+    #with ProdottoDAO() as prodottoDAO:
+    #    prodotto = prodottoDAO.get_by_asin(asin)
+
+    risultato = scraping_product(asin)
+    info_prodotto = creaDizionarioProdotto(risultato)
+
+        
+    """
+            if not info_prodotto:
+                raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+            prodottoDAO.insert(
+                asin=info_prodotto["ASIN"],
+                titolo=info_prodotto["titolo"],
+                prezzo=info_prodotto["prezzo"],
+                old_prezzo=info_prodotto["old_prezzo"],
+                valuta=info_prodotto["valuta"],
+                sconto=info_prodotto["sconto"],
+                venditore=info_prodotto["venditore"],
+                spedito_Amazon=info_prodotto["spedito_Amazon"],
+                link=info_prodotto["link"],
+                img_url=info_prodotto["img_url"],
+                brand=info_prodotto["brand"],
+                preorder=bool(info_prodotto["preorder"]),
+                data_preordine=info_prodotto["data_preordine"],
+                isPrime=bool(info_prodotto["prime"]),
+                isWarehouse=info_prodotto["isWarehouse"],
+                condizione=info_prodotto["condizione"],
+                condizione_descrizione=info_prodotto["condizione_commento"],
+                offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
+            )
+    """
+
+    if not info_prodotto:
+        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+
+    if gestisce and gestisce.id_affiliato:
+        info_prodotto.link+= f"?tag={gestisce.id_affiliato}"
+    else:
+        with CanaleDAO() as canaleDAO:
+            canale = canaleDAO.get(channel_id)
+        if canale and canale.id_affiliato:
+            info_prodotto.link+= f"?tag={canale.id_affiliato}"
+
+    with LayoutDAO() as layoutDAO:
+        layout_in_uso = layoutDAO.get_in_uso(channel_id)
+
+    layout_messaggio = layout_in_uso.messaggio if layout_in_uso else TEMPLATE_MESSAGE
+
+    message = processa_messaggio(layout_messaggio, info_prodotto)
+
+    with PubblicaDAO() as pubblicaDAO:
+        pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message)
+
+async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    
+   
+    keyboard_back = [
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channel_listlinks_{link.id_canale}")]
+    ]
+    reply_markup_back = InlineKeyboardMarkup(keyboard_back)
+        
+    with ProdottoDAO() as prodotto_dao:
+        prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
+                   
+    try:
+        await context.bot.send_photo(
+            chat_id=link.id_canale,
+            photo=prodotto.img_url, 
+            caption=link.messaggio,
+            parse_mode='HTML'
+        )
+
+        
+    except Exception as e:
+        logging.error(f"Errore durante la modifica del messaggio: {e}")
+        raise Exception("Il bot non è un admin del canale") 
+        
+
+
+
 
