@@ -19,7 +19,7 @@ async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await query.answer()
 
-    context.user_data.pop("links")
+    context.user_data.pop("links", None)
 
     keyboard = [
         [InlineKeyboardButton("➕ Inserisci link", callback_data=f'channeloffers_addlink_{channel_id}')],

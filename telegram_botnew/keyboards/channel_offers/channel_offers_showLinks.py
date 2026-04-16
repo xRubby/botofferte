@@ -38,15 +38,15 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(links) > 1:
         keyboard.extend([
             [InlineKeyboardButton("⏮️", callback_data=f'channeloffers_link_0_{channel_id}' if current_index != 0 else f'none'),
-            InlineKeyboardButton("⬅️", callback_data=f'channeloffers_link_{current_index + 1}_{channel_id}'),
-            InlineKeyboardButton("➡️", callback_data=f'channeloffers_link_{current_index - 1}_{channel_id}_{current_index}'),
+            InlineKeyboardButton("⬅️", callback_data=f'channeloffers_link_{(current_index - 1) % len(links)}_{channel_id}'),
+            InlineKeyboardButton("➡️", callback_data=f'channeloffers_link_{(current_index + 1) % len(links)}_{channel_id}'),
             InlineKeyboardButton("⏭️", callback_data=f'channeloffers_link_{len(links)-1}_{channel_id}' if current_index != len(links)-1 else f'none')],
         ]
         )
 
     keyboard.extend( [
         [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
-        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'remove_{channel_id}_{link.id}')]
+        [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'channeloffers_removelink_{link.id}_{channel_id}')]
     ])
 
     
@@ -56,5 +56,38 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode='HTML')
+
+
+async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    channel_id = check_channel_id(query, context)
+    link_id = int(query.data.split("_")[-2])
+
+    with PubblicaDAO() as pubblica_dao:
+        link = pubblica_dao.get_channel_link_by_id(link_id, channel_id)
+
+        if not link:
+            await query.edit_message_text(
+                text="Errore: il link che stai cercando di rimuovere non esiste.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+                ]])
+            )
+            return
+
+        pubblica_dao.delete(link.id, link.id_canale, link.asin_prodotti)
+
+    await query.edit_message_text(
+        text=f"Link rimosso dalla lista.",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+        ]])
+    )
+
+    with PubblicaDAO() as pubblicaDAO:
+            links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+            context.user_data["links"] = links
 
 
