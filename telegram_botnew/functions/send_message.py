@@ -211,16 +211,16 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
     if not asin:
         raise ValueError("ASIN non trovato")
     
-    #with ProdottoDAO() as prodottoDAO:
-    #    prodotto = prodottoDAO.get_by_asin(asin)
 
     risultato = scraping_product(asin)
     info_prodotto = creaDizionarioProdotto(risultato)
 
-        
-    """
-            if not info_prodotto:
-                raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+    if not info_prodotto:
+        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+
+    with ProdottoDAO() as prodottoDAO:
+        prodotto_from_db = prodottoDAO.get_by_asin(asin)
+        if not prodotto_from_db:
             prodottoDAO.insert(
                 asin=info_prodotto["ASIN"],
                 titolo=info_prodotto["titolo"],
@@ -241,10 +241,9 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
                 condizione_descrizione=info_prodotto["condizione_commento"],
                 offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
             )
-    """
-
-    if not info_prodotto:
-        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+        else:
+            prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
+                                    info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
 
     if gestisce and gestisce.id_affiliato:
         info_prodotto.link+= f"?tag={gestisce.id_affiliato}"

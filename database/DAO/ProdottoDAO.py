@@ -78,8 +78,10 @@ class ProdottoDAO:
                WHERE asin = ?''',
             (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, offertaesclusiva, asin)
         )
-        with PrezziStoricoDAO() as ps_dao:
-            ps_dao.insert(asin, prezzo, valuta, venditore)
+        self._get_con().execute(
+            "INSERT INTO PrezziStorico (asin, prezzo, valuta, venditore) VALUES (?, ?, ?, ?)",
+            (asin, prezzo, valuta, venditore)
+        )
 
     def delete(self, asin: str) -> None:
         self._get_con().execute("DELETE FROM prodotti WHERE asin = ?", (asin,))

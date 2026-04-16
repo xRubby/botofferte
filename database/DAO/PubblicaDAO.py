@@ -54,3 +54,17 @@ class PubblicaDAO:
     def get_all(self) -> List[Pubblica]:
         rows = self._get_con().execute("SELECT * FROM Pubblica").fetchall()
         return [Pubblica(*row) for row in rows]
+    
+    def get_channel_link_non_pubblicati(self, id_canale: str) -> List[Pubblica]:
+        rows = self._get_con().execute(
+            "SELECT * FROM Pubblica WHERE id_canale = ? AND isPubblicato = 0 ORDER BY id ASC",
+            (id_canale,)
+        ).fetchall()
+        return [Pubblica(*row) for row in rows]
+ 
+    def get_channel_link_by_id(self, id: int, id_canale: str) -> Pubblica | None:
+        row = self._get_con().execute(
+            "SELECT * FROM Pubblica WHERE id = ? AND id_canale = ?",
+            (id, id_canale)
+        ).fetchone()
+        return Pubblica(*row) if row else None
