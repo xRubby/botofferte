@@ -12,7 +12,7 @@ from telegram_botnew.keyboards.settings.settings_menu import settings_menu
 from telegram_botnew.keyboards.settings.admin_settings import admin_menu, attiva_licenza_ok, disattiva_licenza_confirm, disattiva_licenza_ok, conv_genera_licenza, visualizza_licenze, dettagli_licenza
 from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
 from telegram_botnew.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
-from telegram_botnew.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, remove_link
+from telegram_botnew.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
 
 load_dotenv()
 
@@ -48,6 +48,7 @@ def start_telegram_bot():
 
     application.add_handler(CallbackQueryHandler(channeloffers_main, pattern=r"^channeloffers_main$"))
     application.add_handler(CallbackQueryHandler(insert_link_entry, pattern=r"^channeloffers_link_\d+_-?\d+$"))
+    application.add_handler(CallbackQueryHandler(publish_link, pattern=r"channeloffers_publishlink_\d+_.+$"))
     application.add_handler(CallbackQueryHandler(remove_link, pattern=r"channeloffers_removelink_\d+_.+$"))
     application.add_handler(CallbackQueryHandler(channel_info, pattern="^channeloffers_info_.+$"))
     

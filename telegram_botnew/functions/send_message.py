@@ -11,6 +11,7 @@ from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.LayoutDAO import LayoutDAO
 from database.Entity.Layout import Layout
 from database.Entity.Prodotto import Prodotto
+from database.Entity.Pubblica import Pubblica
 from scraper.amazon_scraper import scraping_product
 
 from utils.amazon_utils import extract_asin_from_url, is_future_date, search_warehouse_seller_id_from_link
@@ -242,7 +243,8 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
                 offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
             )
         else:
-            prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
+            if prodotto_from_db.prezzo != info_prodotto["prezzo"]:
+                prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
                                     info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
 
     if gestisce and gestisce.id_affiliato:
@@ -263,15 +265,8 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
     with PubblicaDAO() as pubblicaDAO:
         pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message)
 
-async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
+async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
     
-   
-    keyboard_back = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channel_listlinks_{link.id_canale}")]
-    ]
-    reply_markup_back = InlineKeyboardMarkup(keyboard_back)
-        
     with ProdottoDAO() as prodotto_dao:
         prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
                    
@@ -282,10 +277,8 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption=link.messaggio,
             parse_mode='HTML'
         )
-
         
     except Exception as e:
-        logging.error(f"Errore durante la modifica del messaggio: {e}")
         raise Exception("Il bot non è un admin del canale") 
         
 

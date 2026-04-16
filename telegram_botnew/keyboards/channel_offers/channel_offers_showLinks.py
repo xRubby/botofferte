@@ -2,6 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from database.DAO.PubblicaDAO import PubblicaDAO
+from telegram_botnew.functions.send_message import publish_offer
 from utils.channel_offers_utils import check_channel_id
 
 
@@ -45,7 +46,7 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     keyboard.extend( [
-        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'publish_{channel_id}_{link.id}')],
+        [InlineKeyboardButton("Pubblica messaggio", callback_data=f'channeloffers_publishlink_{link.id}_{channel_id}')],
         [InlineKeyboardButton("Rimuovi prodotto", callback_data=f'channeloffers_removelink_{link.id}_{channel_id}')]
     ])
 
@@ -57,6 +58,46 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode='HTML')
 
+async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    channel_id = check_channel_id(query, context)
+    link_id = int(query.data.split("_")[-2])
+
+    with PubblicaDAO() as pubblicaDAO:
+        link = pubblicaDAO.get_channel_link_by_id(link_id, channel_id)
+
+    BACK_BTN = InlineKeyboardMarkup([[
+                    InlineKeyboardButton("🔙 Torna indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+                ]])
+
+    if not link:
+        await query.edit_message_text(
+                text=f"Link da pubblicare non trovato.",
+                reply_markup=BACK_BTN
+            )
+        return
+    
+    try:
+        await publish_offer(update, context, link)
+
+        await query.edit_message_text(
+            text=f"Messaggio pubblicato nel canale!",
+            reply_markup=BACK_BTN
+        )
+        with PubblicaDAO() as pubblicaDAO:
+            pubblicaDAO.update_pubblicato(link.id, 1)
+    except Exception as e:
+        await query.edit_message_text(
+            text="Errore durante la pubblicazione del messaggio.",
+            parse_mode='HTML',
+            reply_markup=BACK_BTN
+        )
+
+    with PubblicaDAO() as pubblicaDAO:
+        links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+        context.user_data["links"] = links
 
 async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
