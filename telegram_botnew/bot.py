@@ -13,6 +13,7 @@ from telegram_botnew.keyboards.settings.admin_settings import admin_menu, attiva
 from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
 from telegram_botnew.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
 from telegram_botnew.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
+from telegram_botnew.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ def start_telegram_bot():
     application.add_handler(conv_genera_licenza)
     application.add_handler(conv_add_channel)
     application.add_handler(conv_insert_link)
+    application.add_handler(conv_insert_affiliateID)
     
     application.add_handler(CommandHandler('start', cmd_start))
 

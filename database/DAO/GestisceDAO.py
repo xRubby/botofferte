@@ -30,6 +30,12 @@ class GestisceDAO:
             (id_affiliato, isCreator, telegram_id, canale_id)
         )
 
+    def update_idaffiliato(self, telegram_id: int, canale_id: str, id_affiliato: str,) -> None:
+        self._get_con().execute(
+            "UPDATE Gestisce SET id_affiliato = ? WHERE telegram_id = ? AND canale_id = ?",
+            (id_affiliato, telegram_id, canale_id)
+        )
+
     def delete(self, telegram_id: int, canale_id: str) -> None:
         self._get_con().execute(
             "DELETE FROM Gestisce WHERE telegram_id = ? AND canale_id = ?",
