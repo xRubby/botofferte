@@ -30,6 +30,18 @@ class LayoutDAO:
             (nome_layout, messaggio, in_uso, canale_id, layout_id)
         )
 
+    def update_stato(self, layout_id: int, in_uso: bool) -> None:
+        self._get_con().execute(
+            "UPDATE Layout SET in_uso = ? WHERE layout_id = ?",
+            (in_uso, layout_id,)
+        )
+
+    def update_messaggio(self, layout_id: int, messaggio: str) -> None:
+        self._get_con().execute(
+            "UPDATE Layout SET messaggio = ? WHERE layout_id = ?",
+            (messaggio, layout_id,)
+        )
+
     def delete(self, layout_id: int) -> None:
         self._get_con().execute(
             "DELETE FROM Layout WHERE layout_id = ?", (layout_id,)
@@ -40,6 +52,12 @@ class LayoutDAO:
             "SELECT * FROM Layout WHERE layout_id = ?", (layout_id,)
         ).fetchone()
         return Layout(*row) if row else None
+    
+    def get_channel_layouts(self, canale_id: str) -> Layout | None:
+        rows = self._get_con().execute(
+            "SELECT * FROM Layout WHERE canale_id = ?", (canale_id,)
+        ).fetchall()
+        return [Layout(*row) for row in rows]
 
     def get_all(self) -> list[Layout]:
         rows = self._get_con().execute("SELECT * FROM Layout").fetchall()

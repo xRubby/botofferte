@@ -14,6 +14,7 @@ from telegram_botnew.keyboards.channel_offers.channels_offers_info import channe
 from telegram_botnew.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
 from telegram_botnew.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
 from telegram_botnew.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
+from telegram_botnew.keyboards.channel_offers.channel_offers_layout import activate_layout, confirm_delete_layout, conv_layout, delete_layout, edit_layout, edit_layouts, layout_menu, show_layouts, conv_edit_messaggio_layout
 
 load_dotenv()
 
@@ -34,6 +35,8 @@ def start_telegram_bot():
     application.add_handler(conv_add_channel)
     application.add_handler(conv_insert_link)
     application.add_handler(conv_insert_affiliateID)
+    application.add_handler(conv_layout)
+    application.add_handler(conv_edit_messaggio_layout)
     
     application.add_handler(CommandHandler('start', cmd_start))
 
@@ -53,6 +56,16 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(publish_link, pattern=r"channeloffers_publishlink_\d+_.+$"))
     application.add_handler(CallbackQueryHandler(remove_link, pattern=r"channeloffers_removelink_\d+_.+$"))
     application.add_handler(CallbackQueryHandler(channel_info, pattern="^channeloffers_info_.+$"))
+
+    application.add_handler(CallbackQueryHandler(layout_menu, pattern="^channeloffers_layout_.+$"))
+    application.add_handler(CallbackQueryHandler(show_layouts, pattern="^channeloffers_showlayouts_.+$"))
+    application.add_handler(CallbackQueryHandler(activate_layout, pattern=r'^channeloffers_activatelayout_(-?\d+)_(\d+)$'))
+    application.add_handler(CallbackQueryHandler(edit_layouts, pattern="^channeloffers_editlayouts_.+$"))
+    application.add_handler(CallbackQueryHandler(edit_layout, pattern=r'^channeloffers_editlayout_(-?\d+)_(\d+)$'))
+    application.add_handler(CallbackQueryHandler(delete_layout,         pattern=r'^channeloffers_deletelayout_-?\d+_\d+$'))
+    application.add_handler(CallbackQueryHandler(confirm_delete_layout, pattern=r'^channeloffers_confirmdeletelayout_-?\d+_\d+$'))
+
+    
     
 
     
