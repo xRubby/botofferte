@@ -15,10 +15,13 @@ async def insert_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
     channel_id = check_channel_id(query, context)
     user_id = update.effective_user.id
 
+    id_affiliato = "Nessuno"
+
     with GestisceDAO() as gestisceDAO:
         gestisce_info = gestisceDAO.get(user_id, channel_id)
 
-    id_affiliato = gestisce_info.id_affiliato if gestisce_info.id_affiliato else "Nessuno"
+    if gestisce_info and gestisce_info.id_affiliato:
+        id_affiliato = gestisce_info.id_affiliato
 
     text = f"Inserisci l'ID affiliato che verrà utilizzato al posto dell'ID memorizzato nel canale.\n\nID corrente: {id_affiliato}"
 
