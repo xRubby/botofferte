@@ -5,6 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from dotenv import load_dotenv
 
 
+from telegram_botnew.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
 from telegram_botnew.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
 from telegram_botnew.keyboards.main_menu import cmd_start, handler_menu_principale
 from telegram_botnew.keyboards.search_product.search_product_menu import conv_cerca_prodotto
@@ -37,6 +38,8 @@ def start_telegram_bot():
     application.add_handler(conv_insert_affiliateID)
     application.add_handler(conv_layout)
     application.add_handler(conv_edit_messaggio_layout)
+    application.add_handler(conv_edit_tag_spedito)
+    application.add_handler(conv_edit_tag)
     
     application.add_handler(CommandHandler('start', cmd_start))
 
@@ -64,6 +67,8 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(edit_layout, pattern=r'^channeloffers_editlayout_(-?\d+)_(\d+)$'))
     application.add_handler(CallbackQueryHandler(delete_layout,         pattern=r'^channeloffers_deletelayout_-?\d+_\d+$'))
     application.add_handler(CallbackQueryHandler(confirm_delete_layout, pattern=r'^channeloffers_confirmdeletelayout_-?\d+_\d+$'))
+    application.add_handler(CallbackQueryHandler(edit_tags, pattern=r'^co_edittags_-?\d+$'))
+    application.add_handler(CallbackQueryHandler(edit_tags_spedito, pattern=r'^co_edittags_(-\d+)_sp$'))
 
     
     
