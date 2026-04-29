@@ -28,7 +28,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("Invita membri (WIP)", callback_data='none')],
         [InlineKeyboardButton("Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
-        [InlineKeyboardButton("Cancella canale", callback_data=f'none')],
+        [InlineKeyboardButton("Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
 
@@ -204,6 +204,9 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
         ]
 
         reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.answer()
+
         await query.edit_message_text(
             text=text,
             reply_markup=reply_markup,
@@ -212,3 +215,58 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except Exception as e:
         await query.answer(text="Errore durante il recupero delle informazioni", show_alert=True)
         return
+    
+async def admin_delete_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if(isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+    
+    channel_id = check_channel_id(query, context)
+
+    keyboard = [
+            [InlineKeyboardButton("✅ Conferma", callback_data=f'channeloffers_admindeletechannelconfirm_{channel_id}')],
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
+        ]
+    
+    await query.edit_message_text(
+            text="Sei sicuro di voler cancellare il canale?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
+    
+
+async def admin_delete_channel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if(isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+    
+    channel_id = check_channel_id(query, context)
+
+    try:
+        with CanaleDAO() as canaleDAO:
+            canaleDAO.delete(channel_id)
+        text = "Canale cancellato con successo!"
+    except:
+        text = "Errore nella cancellazione del canale..."
+
+    keyboard = [
+        [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
+    ]
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='HTML'
+    )
