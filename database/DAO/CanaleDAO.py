@@ -43,6 +43,12 @@ class CanaleDAO:
             (amazon_tag, venditoreamazon_tag, venditore_tag, preorder_tag, prime_tag, canale_id)
         )
 
+    def update_id_affiliato(self, canale_id: str, id_affiliato: str) -> None:
+        self._get_con().execute(
+            "UPDATE canali SET id_affiliato = ? WHERE canale_id = ?",
+            (id_affiliato, canale_id)
+        )
+
     def delete(self, canale_id: str) -> None:
         self._get_con().execute(
             "DELETE FROM canali WHERE canale_id = ?", (canale_id,)
