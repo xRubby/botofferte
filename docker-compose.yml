@@ -1,6 +1,6 @@
 services:
   botofferte:
-    build: .
+    image: xrubby/botofferte:latest
     container_name: botofferte
     restart: unless-stopped
     environment:
