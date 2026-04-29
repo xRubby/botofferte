@@ -1,0 +1,135 @@
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+wheels/
+MANIFEST
+**/*.pyc
+
+# ========================
+# Ambienti virtuali
+# ========================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+__pypackages__/
+
+# ========================
+# Package managers
+# ========================
+Pipfile.lock
+poetry.lock
+uv.lock
+pdm.lock
+.pdm.toml
+.pdm-python
+.pdm-build/
+
+# ========================
+# Test & coverage
+# ========================
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+nosetests.xml
+*.cover
+
+# ========================
+# Type checkers & linters
+# ========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+
+# ========================
+# Database & file locali
+# ========================
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.sqlite3-journal
+
+# ========================
+# Secrets & config locali
+# ========================
+.env
+.env.*
+*.pem
+*.key
+.pypirc
+local_settings.py
+
+# ========================
+# Jupyter & IPython
+# ========================
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+*.ipynb
+
+# ========================
+# Editor & OS
+# ========================
+.idea/
+.vscode/
+.spyderproject
+.spyproject
+.ropeproject
+.DS_Store
+Thumbs.db
+
+# ========================
+# Docker stesso
+# ========================
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# ========================
+# VCS & CI
+# ========================
+.git/
+.gitignore
+.github/
+
+# ========================
+# Documentazione & log
+# ========================
+docs/
+*.log
+*.md
+README*
+LICENSE
+
+# ========================
+# Miscellanea
+# ========================
+*.spec
+*.manifest
+pip-log.txt
+pip-delete-this-directory.txt
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+/site

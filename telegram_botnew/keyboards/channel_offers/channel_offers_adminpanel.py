@@ -167,3 +167,48 @@ conv_edit_admin_affiliateid = ConversationHandler(
     per_message=False,
     per_chat=True,
 )
+
+async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    channel_id = check_channel_id(query, context)
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if not isCreator:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+
+    try:
+        with CanaleDAO() as canaleDAO:
+            canale = canaleDAO.get(channel_id)
+
+        if not canale:
+            raise ValueError()
+
+        with LicenzaDAO() as licenzaDAO:
+            licenza = licenzaDAO.get(canale.codice_licenza)
+            stato = licenzaDAO.get_stato(canale.codice_licenza)
+
+        if not licenza:
+            raise ValueError()
+
+        text = f"Licenza: <code>{licenza.codice_licenza}</code>\nTipo: {licenza.tipo.title()}\n"
+
+        if(stato):
+            text += f"Stato: 'Attiva'\n\nData attivazione: {licenza.data_attivazione}\nData scadenza: {licenza.data_scadenza}"
+        else:
+            text += "Stato: 'Non attiva'"
+        
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
+        ]
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+    except Exception as e:
+        await query.answer(text="Errore durante il recupero delle informazioni", show_alert=True)
+        return

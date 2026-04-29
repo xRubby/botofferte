@@ -1,0 +1,20 @@
+services:
+  botofferte:
+    build: .
+    container_name: botofferte
+    restart: unless-stopped
+    environment:
+      # TELEGRAM
+      - TELEGRAM_TOKEN=il_tuo_token
+      - USER_ID_ADMIN=il_tuo_id
+      # AMAZON
+      - ACCESS_KEY=
+      - SECRET_KEY=
+      - ASSOCIATE_TAG=
+      - REGION=
+      # BITLY
+      - BITLY_TOKEN=
+      # DISCORD
+      - DISCORD_TOKEN=
+    volumes:
+      - /DATA/AppData/botofferte/database/amazon_offers.db:/app/database/amazon_offers.db

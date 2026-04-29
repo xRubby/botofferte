@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
 
-from telegram_botnew.keyboards.channel_offers.channel_offers_adminpanel import admin_panel, conv_edit_admin_affiliateid
+from telegram_botnew.keyboards.channel_offers.channel_offers_adminpanel import admin_license_info, admin_panel, conv_edit_admin_affiliateid
 from telegram_botnew.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
 from telegram_botnew.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
 from telegram_botnew.keyboards.main_menu import cmd_start, handler_menu_principale
@@ -72,6 +72,7 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(edit_tags_spedito, pattern=r'^co_edittags_(-\d+)_sp$'))
     
     application.add_handler(CallbackQueryHandler(admin_panel, pattern="^channeloffers_adminpanel_.+$"))
+    application.add_handler(CallbackQueryHandler(admin_license_info, pattern="^channeloffers_adminlicenseinfo_.+$"))
 
     
 
