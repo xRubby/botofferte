@@ -1,8 +1,12 @@
+from datetime import datetime
+import secrets
+
 from telegram import *
 from telegram.ext import *
 
 from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.CanaleDAO import CanaleDAO
+from database.DAO.InvitoDAO import InvitoDAO
 from database.DAO.LicenzaDAO import LicenzaDAO
 from utils.channel_offers_utils import check_channel_id
 
@@ -26,7 +30,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "Benvenuto nel pannello Admin!\n\nAttraverso di esso potrai invitare altri utenti alla gestione del tuo canale oppure inserire il tuo id affiliato che verrà usato durante la pubblicazione dei prodotti"
 
     keyboard = [
-        [InlineKeyboardButton("Invita membri (WIP)", callback_data='none')],
+        [InlineKeyboardButton("Invita membri (WIP)", callback_data=f'channeloffers_invitemember_{channel_id}')],
         [InlineKeyboardButton("Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
         [InlineKeyboardButton("Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
@@ -270,3 +274,92 @@ async def admin_delete_channel_confirm(update: Update, context: ContextTypes.DEF
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode='HTML'
     )
+
+async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if(isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+    
+    channel_id = check_channel_id(query, context)
+    create_link = context.user_data.pop('create_link', None)
+    token = context.user_data.pop('token', None)
+    
+    text = "In questa sezione potrai invitare altri membri nella gestione del tuo canale!"
+
+    keyboard = [
+    ]
+
+    if create_link and token:
+        text += f"\nLink generato: t.me/BubbyOfferteBot?start={token}"
+        keyboard.append([InlineKeyboardButton("Rimuovi membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
+    else:
+        keyboard.append([InlineKeyboardButton("Aggiungi membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
+
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')])
+    
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='HTML'
+    )
+
+async def admin_invite_member_createlink(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if(isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+
+    token = secrets.token_hex(4).upper()
+    channel_id = check_channel_id(query, context)
+
+    try:
+        with InvitoDAO() as invitoDAO:
+            invito_canale = invitoDAO.get_by_canale(channel_id)
+            if invito_canale:
+                invitoDAO.delete(invito_canale.token)
+            
+            invitoDAO.insert(token, datetime.today(), channel_id)
+    except Exception as e:
+        print(e)
+
+    context.user_data['create_link'] = True
+    context.user_data['token'] = token
+
+    await admin_invite_member(update, context)
+
+async def admin_invite_member_removelink(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if(isCreator):
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+    
+    context.user_data['create_link'] = False
+
+    channel_id = check_channel_id(query, context)
+
+    try:
+        with InvitoDAO() as invitoDAO:
+            invito_canale = invitoDAO.get_by_canale(channel_id)
+            if invito_canale:
+                invitoDAO.delete(invito_canale.token)
+    except Exception as e:
+        print(e)
+
+    await admin_invite_member(update, context)

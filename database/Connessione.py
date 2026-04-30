@@ -100,6 +100,13 @@ class Connessione:
                 prime_tag           TEXT NOT NULL DEFAULT 'Spedizione gratuita con Amazon Prime',
                 FOREIGN KEY (codice_licenza) REFERENCES Licenze(codice_licenza) ON DELETE SET NULL
             );
+                               
+            CREATE TABLE IF NOT EXISTS Inviti (
+                token               TEXT PRIMARY KEY NOT NULL,
+                data_creazione      DATETIME NOT NULL,
+                canale_id           TEXT NOT NULL UNIQUE,
+                FOREIGN KEY (canale_id)   REFERENCES Canali(canale_id)   ON DELETE CASCADE                
+            );
 
             CREATE TABLE IF NOT EXISTS Gestisce (
                 telegram_id INTEGER NOT NULL,
