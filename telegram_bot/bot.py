@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_panel, conv_edit_admin_affiliateid
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
 from telegram_bot.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
+from telegram_bot.keyboards.channel_offers.channel_offers_settings import channel_settings_menu, exit_channel, exit_channel_confirm
 from telegram_bot.keyboards.main_menu import cmd_start, handler_menu_principale
 from telegram_bot.keyboards.search_product.search_product_menu import conv_cerca_prodotto
 from telegram_bot.keyboards.settings.settings_menu import settings_menu
@@ -78,6 +79,12 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(admin_invite_member, pattern="^channeloffers_invitemember_.+$"))
     application.add_handler(CallbackQueryHandler(admin_invite_member_createlink, pattern="^channeloffers_admincreatelinkmember_.+$"))
     application.add_handler(CallbackQueryHandler(admin_invite_member_removelink, pattern="^channeloffers_adminremovelinkmember_.+$"))
+
+    application.add_handler(CallbackQueryHandler(channel_settings_menu, pattern="^channeloffers_settings_.+$"))
+    application.add_handler(CallbackQueryHandler(exit_channel, pattern="^channeloffers_exitchannel_.+$"))
+    application.add_handler(CallbackQueryHandler(exit_channel_confirm, pattern="^channeloffers_exitchannelconfirm_.+$"))
+
+    
 
     
 
