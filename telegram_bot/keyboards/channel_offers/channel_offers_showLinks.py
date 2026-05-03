@@ -2,7 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from database.DAO.PubblicaDAO import PubblicaDAO
-from telegram_botnew.functions.send_message import publish_offer
+from telegram_bot.functions.send_message import publish_offer
 from utils.channel_offers_utils import check_channel_id
 
 

@@ -8,8 +8,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from telegram_botnew.functions.send_message import search_and_send_offer
-from telegram_botnew.keyboards.main_menu import handler_menu_principale
+from telegram_bot.functions.send_message import search_and_send_offer
+from telegram_bot.keyboards.main_menu import handler_menu_principale
 
 KEYWORD = range(1)
 

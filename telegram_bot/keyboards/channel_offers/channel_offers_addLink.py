@@ -1,8 +1,8 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
-from telegram_botnew.functions.send_message import search_offer
-from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
+from telegram_bot.functions.send_message import search_offer
+from telegram_bot.keyboards.channel_offers.channels_offers_info import channel_info
 from utils.channel_offers_utils import check_channel_id
 
 ATTESA_KEYWORD = range(1)

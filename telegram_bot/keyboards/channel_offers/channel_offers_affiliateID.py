@@ -2,7 +2,7 @@ from telegram import *
 from telegram.ext import *
 
 from database.DAO.GestisceDAO import GestisceDAO
-from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
+from telegram_bot.keyboards.channel_offers.channels_offers_info import channel_info
 from utils.channel_offers_utils import check_channel_id
 
 ATTESA_ID_AFFILIATO = range(1)

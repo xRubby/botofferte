@@ -4,18 +4,18 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
 
-from telegram_botnew.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_panel, conv_edit_admin_affiliateid
-from telegram_botnew.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
-from telegram_botnew.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
-from telegram_botnew.keyboards.main_menu import cmd_start, handler_menu_principale
-from telegram_botnew.keyboards.search_product.search_product_menu import conv_cerca_prodotto
-from telegram_botnew.keyboards.settings.settings_menu import settings_menu
-from telegram_botnew.keyboards.settings.admin_settings import admin_menu, attiva_licenza_ok, disattiva_licenza_confirm, disattiva_licenza_ok, conv_genera_licenza, visualizza_licenze, dettagli_licenza
-from telegram_botnew.keyboards.channel_offers.channels_offers_info import channel_info
-from telegram_botnew.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
-from telegram_botnew.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
-from telegram_botnew.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
-from telegram_botnew.keyboards.channel_offers.channel_offers_layout import activate_layout, confirm_delete_layout, conv_layout, delete_layout, edit_layout, edit_layouts, layout_menu, show_layouts, conv_edit_messaggio_layout
+from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_panel, conv_edit_admin_affiliateid
+from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
+from telegram_bot.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
+from telegram_bot.keyboards.main_menu import cmd_start, handler_menu_principale
+from telegram_bot.keyboards.search_product.search_product_menu import conv_cerca_prodotto
+from telegram_bot.keyboards.settings.settings_menu import settings_menu
+from telegram_bot.keyboards.settings.admin_settings import admin_menu, attiva_licenza_ok, disattiva_licenza_confirm, disattiva_licenza_ok, conv_genera_licenza, visualizza_licenze, dettagli_licenza
+from telegram_bot.keyboards.channel_offers.channels_offers_info import channel_info
+from telegram_bot.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
+from telegram_bot.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
+from telegram_bot.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
+from telegram_bot.keyboards.channel_offers.channel_offers_layout import activate_layout, confirm_delete_layout, conv_layout, delete_layout, edit_layout, edit_layouts, layout_menu, show_layouts, conv_edit_messaggio_layout
 
 load_dotenv()
 
