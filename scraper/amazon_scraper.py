@@ -82,17 +82,14 @@ def scraping_product(asin: str) -> dict | None:
         spedito        = ""
         spedito_amazon = False
         spedito_div    = soup.find("div", id="fulfillerInfoFeature_feature_div")
-        print(spedito_div)
         if spedito_div:
             span = (
                 spedito_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
                 or spedito_div.find("span", class_="a-size-small offer-display-feature-text-message")
             )
-            print(span)
             if span:
                 spedito        = span.text.strip()
                 spedito_amazon = "Amazon" in spedito
-                print(spedito_amazon, " ", spedito, "Sono qui")
 
         if not spedito and venditore:
             spedito = venditore

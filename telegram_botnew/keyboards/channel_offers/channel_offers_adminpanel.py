@@ -30,7 +30,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "Benvenuto nel pannello Admin!\n\nAttraverso di esso potrai invitare altri utenti alla gestione del tuo canale oppure inserire il tuo id affiliato che verrà usato durante la pubblicazione dei prodotti"
 
     keyboard = [
-        [InlineKeyboardButton("Invita membri (WIP)", callback_data=f'channeloffers_invitemember_{channel_id}')],
+        [InlineKeyboardButton("Invita membri", callback_data=f'channeloffers_invitemember_{channel_id}')],
         [InlineKeyboardButton("Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
         [InlineKeyboardButton("Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
@@ -297,9 +297,9 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if create_link and token:
         text += f"\nLink generato: t.me/BubbyOfferteBot?start={token}"
-        keyboard.append([InlineKeyboardButton("Rimuovi membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
+        keyboard.append([InlineKeyboardButton("Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
     else:
-        keyboard.append([InlineKeyboardButton("Aggiungi membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
+        keyboard.append([InlineKeyboardButton("Aggiungi link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')])
     

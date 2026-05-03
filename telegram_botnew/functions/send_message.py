@@ -49,14 +49,14 @@ def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
         "condizione_commento": prodotto.condizione_descrizione,
     }
 
-def creaDizionarioProdotto(risultato: dict) -> dict | None:
+def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
     if (risultato):
         prodotto = Prodotto(risultato["ASIN"], risultato["titolo"], risultato["prezzo"], risultato["old_prezzo"], risultato["valuta"],
         risultato["sconto"], risultato["venditore"], risultato["spedito_Amazon"], risultato["link"], risultato["img_url"], risultato["brand"],
         risultato["preordine"], risultato["data_preordine"], risultato["isPrime"], risultato["isWarehouse"], risultato["condizione"],
         risultato["condizione_descrizione"], 0, 0, risultato["offertaesclusiva"])
-
-        prodotto.link+= f"?tag={ASSOCIATE_TAG}"
+        if tag:
+            prodotto.link+= f"?tag={tag}"
 
         prodotto_dict = {
             "ASIN": prodotto.asin,
@@ -69,7 +69,6 @@ def creaDizionarioProdotto(risultato: dict) -> dict | None:
             "spedito_Amazon": prodotto.spedito_Amazon,
             "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
             "link": prodotto.link,
-            "link_short": shorten_url(prodotto.link),
             "img_url": prodotto.img_url,
             "brand": prodotto.brand,
             "preorder": "Preordine" if prodotto.preorder else "",
@@ -149,10 +148,13 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         
     risultato = scraping_product(asin)
 
-    info_prodotto = creaDizionarioProdotto(risultato)
+    info_prodotto = creaDizionarioProdotto(risultato, ASSOCIATE_TAG)
 
     if not info_prodotto:
         raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+    
+    info_prodotto["link"]+= f"?tag={ASSOCIATE_TAG}"
+    info_prodotto["link_short"] = shorten_url(info_prodotto["link"])
 
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"
@@ -248,12 +250,14 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
                                     info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
 
     if gestisce and gestisce.id_affiliato:
-        info_prodotto.link+= f"?tag={gestisce.id_affiliato}"
+        info_prodotto["link"]+= f"?tag={gestisce.id_affiliato}"
     else:
         with CanaleDAO() as canaleDAO:
             canale = canaleDAO.get(channel_id)
         if canale and canale.id_affiliato:
-            info_prodotto.link+= f"?tag={canale.id_affiliato}"
+            info_prodotto["link"]+= f"?tag={canale.id_affiliato}"
+
+    info_prodotto["link_short"] = shorten_url(info_prodotto["link"])
 
     with LayoutDAO() as layoutDAO:
         layout_in_uso = layoutDAO.get_in_uso(channel_id)
