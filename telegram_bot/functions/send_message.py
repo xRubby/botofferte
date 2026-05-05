@@ -40,7 +40,7 @@ def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
         "link": prodotto.link,
         "img_url": prodotto.img_url,
         "brand": prodotto.brand,
-        "data_preordine": prodotto.data_preordine,
+        "data_preordine": prodotto.data_preordine or "",
         "isWarehouse": prodotto.isWarehouse,
         "condizione": prodotto.condizione,
         "condizione_commento": prodotto.condizione_descrizione,
@@ -62,7 +62,7 @@ def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
             "link": risultato["link"],
             "img_url": risultato["img_url"],
             "brand": risultato["brand"],
-            "data_preordine": risultato["data_preordine"],
+            "data_preordine": risultato["data_preordine"] or "",
             "isWarehouse": risultato["isWarehouse"],
             "condizione": risultato["condizione"],
             "condizione_commento": risultato["condizione_descrizione"],
@@ -141,6 +141,7 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
 def get_prodotto_dizionario(asin: str) -> dict | None:
     with ProdottoDAO() as prodottoDAO:
         prodotto = prodottoDAO.get_by_asin(asin)
+        prodotto.sconto = round(prodotto.sconto)
 
     if not prodotto:
         risultato = scraping_product(asin)
@@ -307,7 +308,7 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"], canale)
 
-    info_prodotto["isPrime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto, canale)
+    info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto, canale)
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 

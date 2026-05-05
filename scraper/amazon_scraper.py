@@ -159,7 +159,7 @@ def scraping_product(asin: str) -> dict | None:
 
         # ── Preordine ─────────────────────────────────────────────
         preorder       = False
-        data_preordine = None
+        data_preordine = ""
         preorder_div   = soup.find("div", id="availability")
         if preorder_div:
             testo = preorder_div.get_text(strip=True)

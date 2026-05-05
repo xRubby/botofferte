@@ -24,10 +24,9 @@ RESET_LAYOUT_MSG=(
 
 def _tag_disponibili_text() -> str:
     tags = [
-        "titolo", "prezzo_nuovo", "prezzo_vecchio", "sconto",
-        "link", "linkfull", "valuta", "spedito", "prime",
-        "preorder", "preorderdate", "warehouse",
-        "condition", "conditioncomm", "minimo"
+        "titolo", "prezzo", "old_prezzo", "valuta", "sconto",
+        "link", "link_short", "brand", "spedito", "prime",
+        "preorder", "data_preordine"
     ]
     return "\n".join(f"- <code>{{{tag}}}</code>" for tag in tags)
 
