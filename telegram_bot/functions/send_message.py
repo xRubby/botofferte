@@ -77,12 +77,19 @@ def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
     
     return None
 
-def venduto_e_spedito(venditore: str, spedito_Amazon: bool, canale: Canale) -> str:
-        if("Amazon" in venditore and spedito_Amazon):
-            return canale.amazon_tag if canale.amazon_tag else "Venduto e spedito da Amazon"
-        elif("Amazon" not in venditore and spedito_Amazon):
-            return canale.venditoreamazon_tag.replace("{venditore}", venditore) if canale.venditoreamazon_tag else f"Venduto da {venditore} e spedito da Amazon"
-        return canale.venditore_tag.replace("{venditore}", venditore)  if canale.venditore_tag else f"Venduto e spedito da {venditore}"
+def venduto_e_spedito(venditore: str, spedito_Amazon: bool, canale: Canale = None) -> str:
+        if canale:
+            if("Amazon" in venditore and spedito_Amazon):
+                return canale.amazon_tag if canale.amazon_tag else ""
+            elif("Amazon" not in venditore and spedito_Amazon):
+                return canale.venditoreamazon_tag.replace("{venditore}", venditore) if canale.venditoreamazon_tag else f""
+            return canale.venditore_tag.replace("{venditore}", venditore)  if canale.venditore_tag else f""
+        else:
+            if("Amazon" in venditore and spedito_Amazon):
+                return "Venduto e spedito da Amazon"
+            elif("Amazon" not in venditore and spedito_Amazon):
+                return f"Venduto da {venditore} e spedito da Amazon"
+            return f"Venduto e spedito da {venditore}"
 
 def clean_text(text):
     lines = text.split("\n")
@@ -195,21 +202,20 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
     if not keyword:
         raise ValueError("Errore nella keyword mandata")
     
-    expanded_url = expand_url(keyword)
-    asin = extract_asin_from_url(expanded_url)
-
-    if not asin:
-        raise ValueError("ASIN non trovato")
-        
-    risultato = scraping_product(asin)
-
-    info_prodotto = creaDizionarioProdotto(risultato, ASSOCIATE_TAG)
+    try:
+        asin = extract_asin(keyword)
+    except ValueError as ve:
+        raise ValueError("ASIN non trovato") from ve
+    
+    info_prodotto = get_prodotto_dizionario(asin)
 
     if not info_prodotto:
-        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+        raise ValueError("Errore nella ricerca del prodotto")
     
     info_prodotto["link"]+= f"?tag={ASSOCIATE_TAG}"
     info_prodotto["link_short"] = shorten_url(info_prodotto["link"])
+    info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"])
+    info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto)
 
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"
@@ -240,7 +246,7 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         link_preview_options=LinkPreviewOptions(url=info_prodotto["img_url"])
     )
 
-def aggiungi_informazioni_dizionario(info_prodotto: dict, canale: Canale = None):
+def get_prime_preorder_tags(info_prodotto: dict, canale: Canale = None):
     if canale:
         prime = canale.prime_tag if info_prodotto["isPrime"] else ""
         preorder = canale.preorder_tag if info_prodotto["preorder"] else ""
@@ -301,7 +307,7 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"], canale)
 
-    info_prodotto["isPrime"], info_prodotto["preorder"] = aggiungi_informazioni_dizionario(info_prodotto, canale)
+    info_prodotto["isPrime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto, canale)
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 

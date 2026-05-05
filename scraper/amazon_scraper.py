@@ -180,7 +180,7 @@ def scraping_product(asin: str) -> dict | None:
             "prezzo":                 format_price(price_val),
             "old_prezzo":             format_price(old_price_val),
             "valuta":                 currency,
-            "sconto":                 discount,
+            "sconto":                 round(discount),
             "venditore":              venditore,
             "spedito_Amazon":         spedito_amazon,
             "link":                   url,
@@ -204,4 +204,4 @@ def scraping_product(asin: str) -> dict | None:
 
 
 if __name__ == "__main__":
-    print(scraping_product("B0GS6CXWS2"))
+    print(scraping_product("B0CHFJ7V3J"))

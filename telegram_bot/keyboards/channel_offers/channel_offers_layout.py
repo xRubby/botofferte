@@ -22,6 +22,15 @@ RESET_LAYOUT_MSG=(
     "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>"
 )
 
+def _tag_disponibili_text() -> str:
+    tags = [
+        "titolo", "prezzo_nuovo", "prezzo_vecchio", "sconto",
+        "link", "linkfull", "valuta", "spedito", "prime",
+        "preorder", "preorderdate", "warehouse",
+        "condition", "conditioncomm", "minimo"
+    ]
+    return "\n".join(f"- <code>{{{tag}}}</code>" for tag in tags)
+
 async def layout_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
@@ -131,15 +140,6 @@ async def annulla_layout(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await layout_menu(update, context)
     return ConversationHandler.END
-
-def _tag_disponibili_text() -> str:
-    tags = [
-        "titolo", "prezzo_nuovo", "prezzo_vecchio", "sconto",
-        "link", "linkfull", "valuta", "spedito", "prime",
-        "preorder", "preorderdate", "warehouse",
-        "condition", "conditioncomm", "minimo"
-    ]
-    return "\n".join(f"- <code>{{{tag}}}</code>" for tag in tags)
 
 async def show_layouts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
