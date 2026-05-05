@@ -51,7 +51,7 @@ async def ricevi_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     try:
-        await search_offer(update, context, keyword)
+        search_offer(update, context, keyword)
         testo = "Link aggiunto con successo."
     except ValueError as ve:
         testo = f"<b>Errore durante l'elaborazione del prodotto</b>\n\nErrore: {ve}"

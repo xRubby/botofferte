@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from database.Connessione import Connessione
 from database.Entity.Prodotto import Prodotto
 from database.DAO.PrezziStoricoDAO import PrezziStoricoDAO
@@ -74,13 +76,19 @@ class ProdottoDAO:
                      venditore: str, spedito_Amazon: bool, offertaesclusiva: str) -> None:
         self._get_con().execute(
             '''UPDATE prodotti SET prezzo = ?, old_prezzo = ?, valuta = ?,
-               sconto = ?, venditore = ?, spedito_Amazon = ?, offertaesclusiva = ?
+               sconto = ?, venditore = ?, spedito_Amazon = ?, last_check = ?, offertaesclusiva = ?
                WHERE asin = ?''',
-            (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, offertaesclusiva, asin)
+            (prezzo, old_prezzo, valuta, sconto, venditore, spedito_Amazon, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), offertaesclusiva, asin)
         )
         self._get_con().execute(
             "INSERT INTO PrezziStorico (asin, prezzo, valuta, venditore) VALUES (?, ?, ?, ?)",
             (asin, prezzo, valuta, venditore)
+        )
+
+    def update_last_check(self, asin: str) -> None:
+        self._get_con().execute(
+            '''UPDATE prodotti SET last_check = ? WHERE asin = ?''',
+            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), asin)
         )
 
     def delete(self, asin: str) -> None:

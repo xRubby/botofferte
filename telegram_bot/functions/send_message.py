@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import re
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update
@@ -9,6 +10,7 @@ from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.LayoutDAO import LayoutDAO
+from database.Entity.Canale import Canale
 from database.Entity.Layout import Layout
 from database.Entity.Prodotto import Prodotto
 from database.Entity.Pubblica import Pubblica
@@ -16,7 +18,6 @@ from scraper.amazon_scraper import scraping_product
 
 from utils.amazon_utils import extract_asin_from_url, is_future_date, search_warehouse_seller_id_from_link
 from utils.expand_link import expand_url
-from utils.send_message_utils import venduto_e_spedito
 
 from dotenv import load_dotenv
 import os
@@ -36,52 +37,52 @@ def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
         "sconto": prodotto.sconto,
         "venditore": prodotto.venditore,
         "spedito_Amazon": prodotto.spedito_Amazon,
-        "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
         "link": prodotto.link,
-        "link_short": shorten_url(prodotto.link),
         "img_url": prodotto.img_url,
         "brand": prodotto.brand,
-        "preorder": "Preordine" if prodotto.preorder else "",
         "data_preordine": prodotto.data_preordine,
-        "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
         "isWarehouse": prodotto.isWarehouse,
         "condizione": prodotto.condizione,
         "condizione_commento": prodotto.condizione_descrizione,
+        "preorder": prodotto.preorder,
+        "isPrime": prodotto.isPrime
     }
 
 def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
     if (risultato):
-        prodotto = Prodotto(risultato["ASIN"], risultato["titolo"], risultato["prezzo"], risultato["old_prezzo"], risultato["valuta"],
-        risultato["sconto"], risultato["venditore"], risultato["spedito_Amazon"], risultato["link"], risultato["img_url"], risultato["brand"],
-        risultato["preordine"], risultato["data_preordine"], risultato["isPrime"], risultato["isWarehouse"], risultato["condizione"],
-        risultato["condizione_descrizione"], 0, 0, risultato["offertaesclusiva"])
-        if tag:
-            prodotto.link+= f"?tag={tag}"
-
         prodotto_dict = {
-            "ASIN": prodotto.asin,
-            "titolo": prodotto.titolo,
-            "prezzo": prodotto.prezzo,
-            "old_prezzo": prodotto.old_prezzo,
-            "valuta": prodotto.valuta,
-            "sconto": prodotto.sconto,
-            "venditore": prodotto.venditore,
-            "spedito_Amazon": prodotto.spedito_Amazon,
-            "spedito": venduto_e_spedito(prodotto.venditore, prodotto.spedito_Amazon),
-            "link": prodotto.link,
-            "img_url": prodotto.img_url,
-            "brand": prodotto.brand,
-            "preorder": "Preordine" if prodotto.preorder else "",
-            "data_preordine": prodotto.data_preordine,
-            "prime": "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if prodotto.isPrime else "",
-            "isWarehouse": prodotto.isWarehouse,
-            "condizione": prodotto.condizione,
-            "condizione_commento": prodotto.condizione_descrizione
+            "ASIN": risultato["ASIN"],
+            "titolo": risultato["titolo"],
+            "prezzo": risultato["prezzo"],
+            "old_prezzo": risultato["old_prezzo"],
+            "valuta": risultato["valuta"],
+            "sconto": risultato["sconto"],
+            "venditore": risultato["venditore"],
+            "spedito_Amazon": risultato["spedito_Amazon"],
+            "link": risultato["link"],
+            "img_url": risultato["img_url"],
+            "brand": risultato["brand"],
+            "data_preordine": risultato["data_preordine"],
+            "isWarehouse": risultato["isWarehouse"],
+            "condizione": risultato["condizione"],
+            "condizione_commento": risultato["condizione_descrizione"],
+            "preorder": bool(risultato["preordine"]),
+            "isPrime": bool(risultato["spedito_Amazon"])
             }
+        
+        if tag:
+            prodotto_dict["link"]+= f"?tag={tag}"
         
         return prodotto_dict
     
     return None
+
+def venduto_e_spedito(venditore: str, spedito_Amazon: bool, canale: Canale) -> str:
+        if("Amazon" in venditore and spedito_Amazon):
+            return canale.amazon_tag if canale.amazon_tag else "Venduto e spedito da Amazon"
+        elif("Amazon" not in venditore and spedito_Amazon):
+            return canale.venditoreamazon_tag.replace("{venditore}", venditore) if canale.venditoreamazon_tag else f"Venduto da {venditore} e spedito da Amazon"
+        return canale.venditore_tag.replace("{venditore}", venditore)  if canale.venditore_tag else f"Venduto e spedito da {venditore}"
 
 def clean_text(text):
     lines = text.split("\n")
@@ -129,6 +130,60 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
             prodotto.preorder = False
             prodotto.data_preordine = None
     return prodotto
+
+def get_prodotto_dizionario(asin: str) -> dict | None:
+    with ProdottoDAO() as prodottoDAO:
+        prodotto = prodottoDAO.get_by_asin(asin)
+
+    if not prodotto:
+        risultato = scraping_product(asin)
+        info_prodotto = creaDizionarioProdotto(risultato)
+        with ProdottoDAO() as prodottoDAO:
+            prodottoDAO.insert(
+                asin=info_prodotto["ASIN"],
+                titolo=info_prodotto["titolo"],
+                prezzo=info_prodotto["prezzo"],
+                old_prezzo=info_prodotto["old_prezzo"],
+                valuta=info_prodotto["valuta"],
+                sconto=info_prodotto["sconto"],
+                venditore=info_prodotto["venditore"],
+                spedito_Amazon=info_prodotto["spedito_Amazon"],
+                link=info_prodotto["link"],
+                img_url=info_prodotto["img_url"],
+                brand=info_prodotto["brand"],
+                preorder=bool(info_prodotto["preorder"]),
+                data_preordine=info_prodotto["data_preordine"],
+                isPrime=bool(info_prodotto["isPrime"]),
+                isWarehouse=info_prodotto["isWarehouse"],
+                condizione=info_prodotto["condizione"],
+                condizione_descrizione=info_prodotto["condizione_commento"],
+                offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
+            )
+        return info_prodotto
+
+    if datetime.now() > datetime.strptime(prodotto.last_check, "%Y-%m-%d %H:%M:%S") + timedelta(hours=1):
+        risultato = scraping_product(asin)
+        info_prodotto = creaDizionarioProdotto(risultato)
+        with ProdottoDAO() as prodottoDAO:
+            if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
+                    prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
+                        info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
+            elif info_prodotto:
+                prodottoDAO.update_last_check(info_prodotto["ASIN"])
+
+        return info_prodotto
+
+    
+    return prodotto_to_dict(prodotto)
+
+def extract_asin(keyword: str):
+    expanded_url = expand_url(keyword)
+    asin = extract_asin_from_url(expanded_url)
+
+    if not asin:
+        raise ValueError
+    
+    return asin
 
 
 async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
@@ -185,6 +240,16 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         link_preview_options=LinkPreviewOptions(url=info_prodotto["img_url"])
     )
 
+def aggiungi_informazioni_dizionario(info_prodotto: dict, canale: Canale = None):
+    if canale:
+        prime = canale.prime_tag if info_prodotto["isPrime"] else ""
+        preorder = canale.preorder_tag if info_prodotto["preorder"] else ""
+    else:
+        prime = "Spedizione gratuita e veloce con <b><a href='https://amzn.to/4eFvUvQ'>Amazon Prime</a></b>" if info_prodotto["isPrime"] else ""
+        preorder = "Preordine" if info_prodotto["preorder"] else ""
+
+    return prime, preorder
+
 
 TEMPLATE_MESSAGE = (
     "📦 <b>{titolo}</b>\n"
@@ -195,7 +260,7 @@ TEMPLATE_MESSAGE = (
     "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>"
 )
 
-async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
+def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
     user_id = update.effective_user.id 
     channel_id = ctx.user_data.get("channel_id", None)
 
@@ -205,55 +270,25 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
     if not keyword:
         raise ValueError("Errore nella keyword mandata")
     
-    with GestisceDAO() as gestisceDAO:
-        gestisce = gestisceDAO.get(user_id, channel_id)
+    try:
+        asin = extract_asin(keyword)
+    except ValueError as ve:
+        raise ValueError("ASIN non trovato") from ve
     
-    expanded_url = expand_url(keyword)
-    asin = extract_asin_from_url(expanded_url)
-
-    if not asin:
-        raise ValueError("ASIN non trovato")
-    
-
-    risultato = scraping_product(asin)
-    info_prodotto = creaDizionarioProdotto(risultato)
+    info_prodotto = get_prodotto_dizionario(asin)
 
     if not info_prodotto:
-        raise ValueError("Errore durante l'elaborazione delle informazioni del prodotto")
+        raise ValueError("Errore nella ricerca del prodotto")
 
-    with ProdottoDAO() as prodottoDAO:
-        prodotto_from_db = prodottoDAO.get_by_asin(asin)
-        if not prodotto_from_db:
-            prodottoDAO.insert(
-                asin=info_prodotto["ASIN"],
-                titolo=info_prodotto["titolo"],
-                prezzo=info_prodotto["prezzo"],
-                old_prezzo=info_prodotto["old_prezzo"],
-                valuta=info_prodotto["valuta"],
-                sconto=info_prodotto["sconto"],
-                venditore=info_prodotto["venditore"],
-                spedito_Amazon=info_prodotto["spedito_Amazon"],
-                link=info_prodotto["link"],
-                img_url=info_prodotto["img_url"],
-                brand=info_prodotto["brand"],
-                preorder=bool(info_prodotto["preorder"]),
-                data_preordine=info_prodotto["data_preordine"],
-                isPrime=bool(info_prodotto["prime"]),
-                isWarehouse=info_prodotto["isWarehouse"],
-                condizione=info_prodotto["condizione"],
-                condizione_descrizione=info_prodotto["condizione_commento"],
-                offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
-            )
-        else:
-            if prodotto_from_db.prezzo != info_prodotto["prezzo"]:
-                prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
-                                    info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
+    with GestisceDAO() as gestisceDAO:
+        gestisce = gestisceDAO.get(user_id, channel_id)
+
+    with CanaleDAO() as canaleDAO:
+        canale = canaleDAO.get(channel_id)
 
     if gestisce and gestisce.id_affiliato:
         info_prodotto["link"]+= f"?tag={gestisce.id_affiliato}"
     else:
-        with CanaleDAO() as canaleDAO:
-            canale = canaleDAO.get(channel_id)
         if canale and canale.id_affiliato:
             info_prodotto["link"]+= f"?tag={canale.id_affiliato}"
 
@@ -263,6 +298,10 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
         layout_in_uso = layoutDAO.get_in_uso(channel_id)
 
     layout_messaggio = layout_in_uso.messaggio if layout_in_uso else TEMPLATE_MESSAGE
+
+    info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"], canale)
+
+    info_prodotto["isPrime"], info_prodotto["preorder"] = aggiungi_informazioni_dizionario(info_prodotto, canale)
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 
@@ -284,8 +323,3 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
         
     except Exception as e:
         raise Exception("Il bot non è un admin del canale") 
-        
-
-
-
-
