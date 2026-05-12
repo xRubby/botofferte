@@ -175,3 +175,5 @@ amazon_offers.db
 test.py
 *.db-shm
 *.db-wal
+
+.DS_Store
