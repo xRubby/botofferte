@@ -204,4 +204,4 @@ def scraping_product(asin: str) -> dict | None:
 
 
 if __name__ == "__main__":
-    print(scraping_product("B0CHFJ7V3J"))
+    print(scraping_product("B0FMJD288B"))

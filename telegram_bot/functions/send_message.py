@@ -5,6 +5,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOpti
 from telegram.ext import ContextTypes
 
 from APIs.bitly_api import shorten_url
+from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
 from database.DAO.ProdottoDAO import ProdottoDAO
 from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.CanaleDAO import CanaleDAO
@@ -141,7 +142,6 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
 def get_prodotto_dizionario(asin: str) -> dict | None:
     with ProdottoDAO() as prodottoDAO:
         prodotto = prodottoDAO.get_by_asin(asin)
-        prodotto.sconto = round(prodotto.sconto)
 
     if not prodotto:
         risultato = scraping_product(asin)
@@ -168,6 +168,8 @@ def get_prodotto_dizionario(asin: str) -> dict | None:
                 offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
             )
         return info_prodotto
+    
+    prodotto.sconto = round(prodotto.sconto)
 
     if datetime.now() > datetime.strptime(prodotto.last_check, "%Y-%m-%d %H:%M:%S") + timedelta(hours=1):
         risultato = scraping_product(asin)
@@ -314,19 +316,36 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     with PubblicaDAO() as pubblicaDAO:
         pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message)
-
-async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
     
+async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
     with ProdottoDAO() as prodotto_dao:
         prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
-                   
+
+    with LayoutImmagineDAO() as imgDAO:
+        layout_img = imgDAO.get_in_uso(link.id_canale)
+
+    if layout_img:
+        from utils.image_composer import componi_immagine
+        try:
+            foto = componi_immagine(
+                layout_img.template_img,
+                prodotto.img_url,
+                layout_img.prod_x,
+                layout_img.prod_y,
+                layout_img.prod_w_pct,
+                layout_img.prod_h_pct
+            )
+        except Exception:
+            foto = prodotto.img_url
+    else:
+        foto = prodotto.img_url
+
     try:
         await context.bot.send_photo(
             chat_id=link.id_canale,
-            photo=prodotto.img_url, 
+            photo=foto,
             caption=link.messaggio,
             parse_mode='HTML'
         )
-        
-    except Exception as e:
-        raise Exception("Il bot non è un admin del canale") 
+    except Exception:
+        raise Exception("Il bot non è un admin del canale")

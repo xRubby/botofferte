@@ -127,6 +127,21 @@ class Connessione:
                 FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS LayoutImmagini (
+                immagine_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+                canale_id    TEXT    NOT NULL,
+                nome         TEXT    NOT NULL,
+                template_img BLOB    NOT NULL,
+                template_w   INTEGER NOT NULL,
+                template_h   INTEGER NOT NULL,
+                prod_x       INTEGER NOT NULL DEFAULT 50,
+                prod_y       INTEGER NOT NULL DEFAULT 50,
+                prod_w_pct   INTEGER NOT NULL DEFAULT 40,
+                prod_h_pct   INTEGER NOT NULL DEFAULT 40,
+                in_uso       INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
+            );
+
             CREATE TABLE IF NOT EXISTS Prodotti (
                 asin                  TEXT    PRIMARY KEY NOT NULL,
                 titolo                TEXT    NOT NULL,
