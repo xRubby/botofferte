@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class Connessione:
-    def __init__(self, db_name: str = 'amazon_offers.db'):
+    def __init__(self, db_name: str = './data/amazon_offers.db'):
         self.db_name = db_name
 
     # ------------------------------------------------------------------
