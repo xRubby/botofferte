@@ -1,6 +1,7 @@
 from telegram import *
 from telegram.ext import *
 
+from DTO.ProductConfig import ProductConfig
 from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
 from utils.channel_offers_utils import check_channel_id
 from utils.image_composer import componi_immagine, leggi_dimensioni_template
@@ -287,10 +288,10 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Manda la preview come messaggio separato
     preview_url = "https://m.media-amazon.com/images/I/81XMD4tmSkL._AC_SL1500_.jpg"
     try:
-        preview_bytes = componi_immagine(
-            img.template_img, preview_url,
-            img.prod_x, img.prod_y, img.prod_w_pct, img.prod_h_pct
-        )
+
+        prodotto = ProductConfig(preview_url, img.prod_x, img.prod_y, img.prod_w_pct, img.prod_h_pct)
+        preview_bytes = componi_immagine(img.template_img, prodotto)
+        
         preview_msg = await context.bot.send_photo(
             chat_id=update.effective_chat.id,
             photo=preview_bytes,
