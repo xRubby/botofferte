@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import requests
@@ -76,7 +78,7 @@ def scrivi_testo(
     box_w_pct: int,
     box_h_pct: int,
     colore: str = "black",
-    font_path: str = "arial.ttf"
+    font_path: str =  "./fonts/Inter.ttc"
 ) -> None:
 
     tw, th = template.size
@@ -122,7 +124,7 @@ def scrivi_testo(
 
     # Coordinate centrate nel box
     x = box_x + (box_w - text_w) // 2
-    y = box_y + (box_h - text_h) // 2
+    y = box_y + (box_h - text_h) // 2 - bbox[1]
 
     draw.text(
         (x, y),

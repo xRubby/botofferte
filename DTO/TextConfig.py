@@ -8,4 +8,4 @@ class TextConfig:
     box_w_pct: int
     box_h_pct: int
     color: str = "black"
-    font_path: str = "arial.ttf"
+    font_path: str = "./fonts/Inter.ttc"
