@@ -79,7 +79,9 @@ def scrivi_testo(
     box_h_pct: int,
     colore: str = "black",
     font_path: str = "./fonts/Inter.ttc",
-    align: str = "center"  # left | center | right
+    align: str = "center",  # left | center | right
+    barrato: bool = False,
+    spessore_linea: int = 10
 ) -> None:
 
     tw, th = template.size
@@ -139,6 +141,29 @@ def scrivi_testo(
         font=font,
         anchor=anchor
     )
+    # -------------------------
+    # LINEA BARRATA
+    # -------------------------
+    if barrato:
+
+        # bbox del testo reale centrato
+        bbox = draw.textbbox(
+            (center_x, center_y),
+            testo,
+            font=font,
+            anchor=anchor
+        )
+
+        x1, y1, x2, y2 = bbox
+
+        # posizione verticale della barra
+        y_line = y1 + (y2 - y1) * 0.42
+
+        draw.line(
+            [(x1, y_line), (x2, y_line)],
+            fill=colore,
+            width=spessore_linea
+        )
 
 def componi_immagine(
     template_bytes: bytes,
@@ -186,7 +211,8 @@ def componi_immagine(
             box_w_pct=oldprice.box_w_pct,
             box_h_pct=oldprice.box_h_pct,
             colore=oldprice.color,
-            font_path=oldprice.font_path
+            font_path=oldprice.font_path,
+            barrato=True
         )
     
     if discount and discount.active:
