@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from dotenv import load_dotenv
 
 from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_panel, conv_edit_admin_affiliateid
-from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import activate_attr_img, activate_immagine, confirm_delete_immagine, delete_immagine, edit_immagine, edit_immagini, immagine_menu, conv_add_immagine, show_immagini, conv_set_pos, conv_set_size
+from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import activate_attr_img, activate_immagine, confirm_delete_immagine, delete_immagine, edit_immagine, edit_immagini, immagine_menu, conv_add_immagine, layoutimg_attr_menu, layoutimg_prodotto_menu, show_immagini, conv_set_pos, conv_set_size
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
 from telegram_bot.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
 from telegram_bot.keyboards.channel_offers.channel_offers_settings import channel_settings_menu, exit_channel, exit_channel_confirm
@@ -96,6 +96,8 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(delete_immagine,         pattern=r'^layoutimg_delete_-?\d+_\d+$'))
     application.add_handler(CallbackQueryHandler(confirm_delete_immagine, pattern=r'^layoutimg_confirmdelete_-?\d+_\d+$'))
     application.add_handler(CallbackQueryHandler(activate_attr_img, pattern=r'^layoutimg_activateattr_-?\d+_\d+_[a-zA-Z]+$'))
+    application.add_handler(CallbackQueryHandler(layoutimg_prodotto_menu, pattern=r'^layoutimg_prodottomenu_-?\d+_\d+$'))
+    application.add_handler(CallbackQueryHandler(layoutimg_attr_menu, pattern=r'^layoutimg_(prezzomenu|prezzooldmenu|scontomenu)_-?\d+_\d+$'))
 
     
 

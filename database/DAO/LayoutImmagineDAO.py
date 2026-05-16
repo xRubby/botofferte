@@ -61,6 +61,30 @@ class LayoutImmagineDAO:
             (immagine_id,)
         )
 
+    def attiva_prezzo_old(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_old_active = 1 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
+    def disattiva_prezzo_old(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_old_active = 0 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
+    def attiva_sconto(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET sconto_active = 1 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
+    def disattiva_sconto(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET sconto_active = 0 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
     def update_posizione_prodotto(self, immagine_id: int, prod_x: int, prod_y: int) -> None:
         self._get_con().execute(
             "UPDATE LayoutImmagini SET prod_x = ?, prod_y = ? WHERE immagine_id = ?",

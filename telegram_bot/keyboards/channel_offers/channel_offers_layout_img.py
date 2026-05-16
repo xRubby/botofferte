@@ -1,9 +1,21 @@
-from telegram import *
-from telegram.ext import *
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+
+from telegram.ext import (
+    ContextTypes,
+    CallbackQueryHandler,
+    MessageHandler,
+    ConversationHandler,
+    filters,
+)
 
 from DTO.ProductConfig import ProductConfig
 from DTO.TextConfig import TextConfig
 from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
+from database.Entity.LayoutImmagine import LayoutImmagine
 from utils.channel_offers_utils import check_channel_id
 from utils.image_composer import componi_immagine, leggi_dimensioni_template
 
@@ -264,20 +276,16 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Template non trovato.")
         return
     
+    context.user_data["img"] = img
+
     text = (
         f"✏️ <b>{img.nome}</b>\n"
         f"Dimensioni template: <b>{img.template_w}x{img.template_h}px</b>\n\n"
-        f"Posizione prodotto: <b>{img.prod_x}% x {img.prod_y}%</b>\n"
-        f"Dimensioni prodotto: <b>{img.prod_w_pct}% x {img.prod_h_pct}%</b>\n\n"
-        f"Prezzo: <b>{'Attivo' if img.prezzo_active else 'Non attivo'}</b>\n"
-        f"Posizione prezzo: <b>{img.prezzo_x}% x {img.prezzo_y}%</b>\n"
-        f"Dimensioni prezzo: <b>{img.prezzo_w_pct}% x {img.prezzo_h_pct}%</b>"
     )
 
     keyboard = [
-        [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prodotto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prodotto')],
-        [InlineKeyboardButton("Disattiva prezzo" if img.prezzo_active else "Attiva prezzo", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzo")],
-                [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzo'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzo')],
+        [InlineKeyboardButton("📦 Prodotto", callback_data=f"layoutimg_prodottomenu_{channel_id}_{immagine_id}"), InlineKeyboardButton("💰 Prezzo", callback_data=f"layoutimg_prezzomenu_{channel_id}_{immagine_id}")],
+        [InlineKeyboardButton("💶 Prezzo consigliato", callback_data=f"layoutimg_prezzooldmenu_{channel_id}_{immagine_id}"), InlineKeyboardButton("🛍️ Sconto", callback_data=f"layoutimg_scontomenu_{channel_id}_{immagine_id}")],
         [InlineKeyboardButton("🗑️ Elimina", callback_data=f'layoutimg_delete_{channel_id}_{immagine_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_edit_{channel_id}')]
     ]
@@ -296,16 +304,129 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         prodotto = ProductConfig(preview_url, img.prod_x, img.prod_y, img.prod_w_pct, img.prod_h_pct)
         prezzo = TextConfig("19,99€", img.prezzo_x, img.prezzo_y, img.prezzo_w_pct, img.prezzo_h_pct, img.prezzo_active)
-        preview_bytes = componi_immagine(img.template_img, prodotto, prezzo)
+        prezzo_old = TextConfig("59,99€", img.prezzo_old_x, img.prezzo_old_y, img.prezzo_old_w_pct, img.prezzo_old_h_pct, img.prezzo_old_active)
+        sconto = TextConfig("-67%", img.sconto_x, img.sconto_y, img.sconto_w_pct, img.sconto_h_pct, img.sconto_active)
+        preview_bytes = componi_immagine(img.template_img, prodotto, prezzo, prezzo_old, sconto)
         
-        preview_msg = await context.bot.send_photo(
-            chat_id=update.effective_chat.id,
-            photo=preview_bytes,
-            caption="👆 Anteprima composizione"
-        )
-        context.user_data["preview_msg_id"] = preview_msg.message_id
+        if not context.user_data.get("preview_msg_id"):
+            preview_msg = await context.bot.send_photo(
+                chat_id=update.effective_chat.id,
+                photo=preview_bytes,
+                caption="👆 Anteprima composizione"
+            )
+            context.user_data["preview_msg_id"] = preview_msg.message_id
     except Exception:
         context.user_data.pop("preview_msg_id", None)
+
+
+async def layoutimg_prodotto_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    parts = query.data.split("_")
+    immagine_id = int(parts[3])
+    channel_id = parts[2]
+
+    tasto_indietro = [[
+        InlineKeyboardButton(
+            "⬅️ Indietro",
+            callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}'
+        )
+    ]]
+
+    with LayoutImmagineDAO() as imgDAO:
+        img = imgDAO.get(immagine_id)
+    if not img:
+        await query.edit_message_text("Template non trovato.", reply_markup=InlineKeyboardMarkup(tasto_indietro))
+        return
+
+    text = (
+        "Modifica prodotto!\n\n"
+        f"Posizione prodotto: <b>{img.prod_x}% x {img.prod_y}%</b>\n"
+        f"Dimensioni prodotto: <b>{img.prod_w_pct}% x {img.prod_h_pct}%</b>\n\n"
+    )
+    keyboard = [
+        [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prodotto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prodotto')],
+    ]
+    keyboard.extend(tasto_indietro)
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
+
+async def layoutimg_attr_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    parts = query.data.split("_")
+    immagine_id = int(parts[3])
+    channel_id = parts[2]
+    tipo = parts[1]
+
+    tasto_indietro = [[
+        InlineKeyboardButton(
+            "⬅️ Indietro",
+            callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}'
+        )
+    ]]
+
+    with LayoutImmagineDAO() as imgDAO:
+        img = imgDAO.get(immagine_id)
+    if not img:
+        await query.edit_message_text("Template non trovato.", reply_markup=InlineKeyboardMarkup(tasto_indietro))
+        return
+    
+    keyboard = []
+
+    if tipo == "prezzomenu":
+        text = (
+            "Modifica prezzo\n\n"
+            f"Stato: <b>{'Attivo' if img.prezzo_active else 'Non attivo'}</b>\n"
+            f"Posizione: <b>{img.prezzo_x}% x {img.prezzo_y}%</b>\n"
+            f"Dimensioni: <b>{img.prezzo_w_pct}% x {img.prezzo_h_pct}%</b>"
+        )
+
+        keyboard = [[InlineKeyboardButton("Disattiva prezzo" if img.prezzo_active else "Attiva prezzo", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzo")],
+            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzo'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzo')]
+        ]
+    elif tipo == "prezzooldmenu":
+        text = (
+            "Modifica prezzo consigliato\n\n"
+            f"Stato: <b>{'Attivo' if img.prezzo_old_active else 'Non attivo'}</b>\n"
+            f"Posizione: <b>{img.prezzo_old_x}% x {img.prezzo_old_y}%</b>\n"
+            f"Dimensioni: <b>{img.prezzo_old_w_pct}% x {img.prezzo_old_h_pct}%</b>\n\n"
+        )
+
+        keyboard = [
+            [InlineKeyboardButton("Disattiva prezzo consigliato" if img.prezzo_old_active else "Attiva prezzo consigliato", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzoold")],
+            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzoold'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzoold')]
+        ]
+
+    elif tipo == "scontomenu":
+        text = (
+            "Modifica sconto\n\n"
+            f"Stato: <b>{'Attivo' if img.sconto_active else 'Non attivo'}</b>\n"
+            f"Posizione prezzo: <b>{img.sconto_x}% x {img.sconto_y}%</b>\n"
+            f"Dimensioni prezzo: <b>{img.sconto_w_pct}% x {img.sconto_h_pct}%</b>"
+        )
+
+        keyboard = [
+            [InlineKeyboardButton("Disattiva sconto" if img.sconto_active else "Attiva sconto", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_sconto")],
+            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_sconto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_sconto')],
+        ]
+    else:
+        await query.edit_message_text("Tipo non trovato", reply_markup=InlineKeyboardMarkup(tasto_indietro))
+        return
+    
+    keyboard.extend(tasto_indietro)
+
+    await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
 
 # ──────────────────────────────────────────────
 # SET POSIZIONE
@@ -526,7 +647,6 @@ async def activate_attr_img(update: Update, context: ContextTypes.DEFAULT_TYPE):
     parts = query.data.split("_")
     immagine_id = int(parts[3])
     tipo = parts[4]
-
     with LayoutImmagineDAO() as imgDAO:
         img = imgDAO.get(immagine_id)
         if not img:
@@ -536,10 +656,24 @@ async def activate_attr_img(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if tipo == "prezzo":
             if img.prezzo_active:
                 imgDAO.disattiva_prezzo(immagine_id)
-                testo_risposta = "Attributo disattivato!"
+                testo_risposta = "Prezzo disattivato!"
             else:
                 imgDAO.attiva_prezzo(immagine_id)
-                testo_risposta = "Attributo attivato!"
+                testo_risposta = "Prezzo attivato!"
+        elif tipo == "prezzoold":
+            if img.prezzo_old_active:
+                imgDAO.disattiva_prezzo_old(immagine_id)
+                testo_risposta = "Prezzo consigliato disattivato!"
+            else:
+                imgDAO.attiva_prezzo_old(immagine_id)
+                testo_risposta = "Prezzo consigliato attivato!"
+        elif tipo == "sconto":
+            if img.sconto_active:
+                imgDAO.disattiva_sconto(immagine_id)
+                testo_risposta = "Sconto disattivato!"
+            else:
+                imgDAO.attiva_sconto(immagine_id)
+                testo_risposta = "Sconto attivato!"
         else:
             testo_risposta = "Attributo non trovato."
 

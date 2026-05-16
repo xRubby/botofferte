@@ -334,7 +334,10 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
             prezzo_old_img = None
             sconto_img = None
 
-            foto = componi_immagine(layout_img.template_img, prodotto_img, prezzo_img)
+            if(prodotto.prezzo < prodotto.old_prezzo):
+                prezzo_old_img = TextConfig(str(prodotto.old_prezzo) + prodotto.valuta, layout_img.prezzo_old_x, layout_img.prezzo_old_y, layout_img.prezzo_old_w_pct, layout_img.prezzo_old_h_pct, layout_img.prezzo_old_active)
+                sconto_img = TextConfig("-" + str(prodotto.sconto)+"%", layout_img.sconto_x, layout_img.sconto_y, layout_img.sconto_w_pct, layout_img.sconto_h_pct, layout_img.sconto_active)
+            foto = componi_immagine(layout_img.template_img, prodotto_img, prezzo_img, prezzo_old_img, sconto_img)
         except Exception:
             foto = prodotto.img_url
     else:

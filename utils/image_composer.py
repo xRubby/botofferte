@@ -143,12 +143,15 @@ def scrivi_testo(
 def componi_immagine(
     template_bytes: bytes,
     product: ProductConfig,
-    price: TextConfig | None = None
+    price: TextConfig | None = None,
+    oldprice: TextConfig | None = None,
+    discount: TextConfig | None = None,
 ) -> BytesIO:
 
     template = Image.open(BytesIO(template_bytes)).convert("RGBA")
 
-    disegna_croce_centrale(template)
+    #PER DEBUG
+    #disegna_croce_centrale(template)
 
     prodotto = scarica_immagine(product.image_url)
 
@@ -172,6 +175,30 @@ def componi_immagine(
             box_h_pct=price.box_h_pct,
             colore=price.color,
             font_path=price.font_path
+        )
+    
+    if oldprice and oldprice.active:
+        scrivi_testo(
+            template=template,
+            testo=oldprice.text,
+            x_pct=oldprice.x_pct,
+            y_pct=oldprice.y_pct,
+            box_w_pct=oldprice.box_w_pct,
+            box_h_pct=oldprice.box_h_pct,
+            colore=oldprice.color,
+            font_path=oldprice.font_path
+        )
+    
+    if discount and discount.active:
+        scrivi_testo(
+            template=template,
+            testo=discount.text,
+            x_pct=discount.x_pct,
+            y_pct=discount.y_pct,
+            box_w_pct=discount.box_w_pct,
+            box_h_pct=discount.box_h_pct,
+            colore=discount.color,
+            font_path=discount.font_path
         )
 
     output = BytesIO()
