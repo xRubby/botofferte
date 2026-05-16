@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from APIs.bitly_api import shorten_url
 from DTO.ProductConfig import ProductConfig
+from DTO.TextConfig import TextConfig
 from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
 from database.DAO.ProdottoDAO import ProdottoDAO
 from database.DAO.PubblicaDAO import PubblicaDAO
@@ -328,8 +329,12 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
     if layout_img:
         from utils.image_composer import componi_immagine
         try:
-            prodotto = ProductConfig(prodotto.img_url, layout_img.prod_x, layout_img.prod_y, layout_img.prod_w_pct, layout_img.prod_h_pct)
-            foto = componi_immagine(layout_img.template_img, prodotto)
+            prodotto_img = ProductConfig(prodotto.img_url, layout_img.prod_x, layout_img.prod_y, layout_img.prod_w_pct, layout_img.prod_h_pct)
+            prezzo_img = TextConfig(str(prodotto.prezzo) + prodotto.valuta, layout_img.prezzo_x, layout_img.prezzo_y, layout_img.prezzo_w_pct, layout_img.prezzo_h_pct, layout_img.prezzo_active)
+            prezzo_old_img = None
+            sconto_img = None
+
+            foto = componi_immagine(layout_img.template_img, prodotto_img, prezzo_img)
         except Exception:
             foto = prodotto.img_url
     else:
