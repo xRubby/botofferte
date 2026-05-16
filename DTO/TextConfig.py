@@ -7,5 +7,6 @@ class TextConfig:
     y_pct: int
     box_w_pct: int
     box_h_pct: int
+    active: bool
     color: str = "black"
     font_path: str = "./fonts/Inter.ttc"

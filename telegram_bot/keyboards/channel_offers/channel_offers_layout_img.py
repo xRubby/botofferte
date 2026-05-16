@@ -2,6 +2,7 @@ from telegram import *
 from telegram.ext import *
 
 from DTO.ProductConfig import ProductConfig
+from DTO.TextConfig import TextConfig
 from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
 from utils.channel_offers_utils import check_channel_id
 from utils.image_composer import componi_immagine, leggi_dimensioni_template
@@ -250,8 +251,8 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     parts = query.data.split("_")
-    immagine_id = int(parts[-1])
-    channel_id = parts[-2]
+    immagine_id = int(parts[3])
+    channel_id = parts[2]
 
     context.user_data["immagine_id"] = immagine_id
     context.user_data["channel_id"] = channel_id
@@ -262,17 +263,21 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not img:
         await query.edit_message_text("Template non trovato.")
         return
-
+    
     text = (
-        f"✏️ <b>{img.nome}</b>\n\n"
-        f"Dimensioni template: <b>{img.template_w}x{img.template_h}px</b>\n"
+        f"✏️ <b>{img.nome}</b>\n"
+        f"Dimensioni template: <b>{img.template_w}x{img.template_h}px</b>\n\n"
         f"Posizione prodotto: <b>{img.prod_x}% x {img.prod_y}%</b>\n"
-        f"Dimensioni prodotto: <b>{img.prod_w_pct}% x {img.prod_h_pct}%</b>"
+        f"Dimensioni prodotto: <b>{img.prod_w_pct}% x {img.prod_h_pct}%</b>\n\n"
+        f"Prezzo: <b>{'Attivo' if img.prezzo_active else 'Non attivo'}</b>\n"
+        f"Posizione prezzo: <b>{img.prezzo_x}% x {img.prezzo_y}%</b>\n"
+        f"Dimensioni prezzo: <b>{img.prezzo_w_pct}% x {img.prezzo_h_pct}%</b>"
     )
 
     keyboard = [
-        [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}')],
-        [InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}')],
+        [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prodotto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prodotto')],
+        [InlineKeyboardButton("Disattiva prezzo" if img.prezzo_active else "Attiva prezzo", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzo")],
+                [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzo'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzo')],
         [InlineKeyboardButton("🗑️ Elimina", callback_data=f'layoutimg_delete_{channel_id}_{immagine_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_edit_{channel_id}')]
     ]
@@ -290,7 +295,8 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
 
         prodotto = ProductConfig(preview_url, img.prod_x, img.prod_y, img.prod_w_pct, img.prod_h_pct)
-        preview_bytes = componi_immagine(img.template_img, prodotto)
+        prezzo = TextConfig("19,99€", img.prezzo_x, img.prezzo_y, img.prezzo_w_pct, img.prezzo_h_pct, img.prezzo_active)
+        preview_bytes = componi_immagine(img.template_img, prodotto, prezzo)
         
         preview_msg = await context.bot.send_photo(
             chat_id=update.effective_chat.id,
@@ -317,11 +323,13 @@ async def set_pos_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     parts = query.data.split("_")
-    immagine_id = int(parts[-1])
-    channel_id = parts[-2]
+    tipo = parts[4]
+    immagine_id = int(parts[3])
+    channel_id = parts[2]
 
     context.user_data["immagine_id"] = immagine_id
     context.user_data["channel_id"] = channel_id
+    context.user_data["tipo"] = tipo
 
     keyboard = [[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
 
@@ -344,13 +352,14 @@ async def ricevi_set_pos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     immagine_id = context.user_data.get("immagine_id")
     channel_id  = context.user_data.get("channel_id")
     message_id  = context.user_data.get("msg_id")
+    tipo = context.user_data.get("tipo")
 
     await update.message.delete()
 
     try:
         parts = update.message.text.strip().split()
-        prod_x, prod_y = int(parts[0]), int(parts[1])
-        assert 0 <= prod_x <= 100 and 0 <= prod_y <= 100
+        x_pct, y_pct = int(parts[0]), int(parts[1])
+        assert 0 <= x_pct <= 100 and 0 <= y_pct <= 100
     except (IndexError, ValueError, AssertionError):
         await context.bot.edit_message_text(
             chat_id=update.effective_chat.id,
@@ -362,9 +371,21 @@ async def ricevi_set_pos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ATTESA_SET_POS
 
     try:
+        mapping = {
+            "prodotto": "update_posizione_prodotto",
+            "prezzo": "update_posizione_prezzo",
+            "prezzoold": "update_posizione_prezzoold",
+            "sconto": "update_posizione_sconto",
+        }
+
+        metodo = mapping.get(tipo)
+        if not metodo:
+            raise ValueError(f"Tipo non valido: {tipo}")
+
         with LayoutImmagineDAO() as imgDAO:
-            imgDAO.update_posizione(immagine_id, prod_x, prod_y)
-        text = f"✅ Posizione aggiornata: <b>{prod_x}% x {prod_y}%</b>"
+            getattr(imgDAO, metodo)(immagine_id, x_pct, y_pct)
+
+        text = f"✅ Dimensioni aggiornate: <b>{x_pct}% x {y_pct}%</b>"
     except Exception:
         text = "❌ Errore durante l'aggiornamento della posizione."
 
@@ -403,17 +424,20 @@ async def set_size_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     parts = query.data.split("_")
-    immagine_id = int(parts[-1])
-    channel_id = parts[-2]
+    tipo = parts[4]
+    immagine_id = int(parts[3])
+    channel_id = parts[2]
+
 
     context.user_data["immagine_id"] = immagine_id
     context.user_data["channel_id"] = channel_id
+    context.user_data["tipo"] = tipo
 
     keyboard = [[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
 
     msg = await query.edit_message_text(
         text=(
-            "📐 <b>Modifica dimensioni prodotto</b>\n\n"
+            "📐 <b>Modifica dimensioni</b>\n\n"
             "Invia le dimensioni nel formato: <code>larghezza altezza</code>\n"
             "I valori sono percentuali (1–100) rispetto alle dimensioni del template.\n\n"
             "Es: <code>40 40</code> → il prodotto occupa il 40% in larghezza e il 40% in altezza"
@@ -430,13 +454,14 @@ async def ricevi_set_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     immagine_id = context.user_data.get("immagine_id")
     channel_id  = context.user_data.get("channel_id")
     message_id  = context.user_data.get("msg_id")
+    tipo = context.user_data.get("tipo")
 
     await update.message.delete()
 
     try:
         parts = update.message.text.strip().split()
-        prod_w_pct, prod_h_pct = int(parts[0]), int(parts[1])
-        assert 0 < prod_w_pct <= 100 and 0 < prod_h_pct <= 100
+        w_pct, h_pct = int(parts[0]), int(parts[1])
+        assert 0 < w_pct <= 100 and 0 < h_pct <= 100
     except (IndexError, ValueError, AssertionError):
         await context.bot.edit_message_text(
             chat_id=update.effective_chat.id,
@@ -448,9 +473,21 @@ async def ricevi_set_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ATTESA_SET_SIZE
 
     try:
+        mapping = {
+            "prodotto": "update_dimensioni_prodotto",
+            "prezzo": "update_dimensioni_prezzo",
+            "prezzoold": "update_dimensioni_prezzoold",
+            "sconto": "update_dimensioni_sconto",
+        }
+
+        metodo = mapping.get(tipo)
+        if not metodo:
+            raise ValueError(f"Tipo non valido: {tipo}")
+
         with LayoutImmagineDAO() as imgDAO:
-            imgDAO.update_dimensioni(immagine_id, prod_w_pct, prod_h_pct)
-        text = f"✅ Dimensioni aggiornate: <b>{prod_w_pct}% x {prod_h_pct}%</b>"
+            getattr(imgDAO, metodo)(immagine_id, w_pct, h_pct)
+
+        text = f"✅ Dimensioni aggiornate: <b>{w_pct}% x {h_pct}%</b>"
     except Exception:
         text = "❌ Errore durante l'aggiornamento delle dimensioni."
 
@@ -472,6 +509,42 @@ async def _annulla_set_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await edit_immagine(update, context)
     return ConversationHandler.END
 
+
+# ──────────────────────────────────────────────
+# ATTIVA/DISATTIVA ATTRIBUTI IMMAGINE
+# ──────────────────────────────────────────────
+async def activate_attr_img(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    preview_msg_id = context.user_data.pop("preview_msg_id", None)
+    if preview_msg_id:
+        try:
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=preview_msg_id)
+        except Exception:
+            pass
+
+    parts = query.data.split("_")
+    immagine_id = int(parts[3])
+    tipo = parts[4]
+
+    with LayoutImmagineDAO() as imgDAO:
+        img = imgDAO.get(immagine_id)
+        if not img:
+            await query.answer("Attributo non trovato.", show_alert=True)
+            return
+
+        if tipo == "prezzo":
+            if img.prezzo_active:
+                imgDAO.disattiva_prezzo(immagine_id)
+                testo_risposta = "Attributo disattivato!"
+            else:
+                imgDAO.attiva_prezzo(immagine_id)
+                testo_risposta = "Attributo attivato!"
+        else:
+            testo_risposta = "Attributo non trovato."
+
+    await query.answer(testo_risposta, show_alert=True)
+    await edit_immagine(update, context)
 
 # ──────────────────────────────────────────────
 # ELIMINA IMMAGINE
@@ -547,7 +620,7 @@ conv_add_immagine = ConversationHandler(
 
 conv_set_pos = ConversationHandler(
     entry_points=[
-        CallbackQueryHandler(set_pos_start, pattern=r'^layoutimg_setpos_-?\d+_\d+$'),
+        CallbackQueryHandler(set_pos_start, pattern=r'^layoutimg_setpos_-?\d+_\d+_[a-zA-Z]+$'),
     ],
     states={
         ATTESA_SET_POS: [
@@ -564,7 +637,7 @@ conv_set_pos = ConversationHandler(
 
 conv_set_size = ConversationHandler(
     entry_points=[
-        CallbackQueryHandler(set_size_start, pattern=r'^layoutimg_setsize_-?\d+_\d+$'),
+        CallbackQueryHandler(set_size_start, pattern=r'^layoutimg_setsize_-?\d+_\d+_[a-zA-Z]+$'),
     ],
     states={
         ATTESA_SET_SIZE: [

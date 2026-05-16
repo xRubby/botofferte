@@ -129,17 +129,47 @@ class Connessione:
 
             CREATE TABLE IF NOT EXISTS LayoutImmagini (
                 immagine_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+
                 canale_id    TEXT    NOT NULL,
                 nome         TEXT    NOT NULL,
+
                 template_img BLOB    NOT NULL,
                 template_w   INTEGER NOT NULL,
                 template_h   INTEGER NOT NULL,
+
+                -- Prodotto
                 prod_x       INTEGER NOT NULL DEFAULT 50,
                 prod_y       INTEGER NOT NULL DEFAULT 50,
                 prod_w_pct   INTEGER NOT NULL DEFAULT 40,
                 prod_h_pct   INTEGER NOT NULL DEFAULT 40,
-                in_uso       INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
+
+                -- Prezzo
+                prezzo_x       INTEGER NOT NULL DEFAULT 50,
+                prezzo_y       INTEGER NOT NULL DEFAULT 50,
+                prezzo_w_pct   INTEGER NOT NULL DEFAULT 40,
+                prezzo_h_pct   INTEGER NOT NULL DEFAULT 40,
+                prezzo_active  INTEGER NOT NULL DEFAULT 0 CHECK(prezzo_active IN (0,1)),
+
+                -- Prezzo vecchio
+                prezzo_old_x       INTEGER NOT NULL DEFAULT 50,
+                prezzo_old_y       INTEGER NOT NULL DEFAULT 50,
+                prezzo_old_w_pct   INTEGER NOT NULL DEFAULT 40,
+                prezzo_old_h_pct   INTEGER NOT NULL DEFAULT 40,
+                prezzo_old_active  INTEGER NOT NULL DEFAULT 0 CHECK(prezzo_old_active IN (0,1)),
+
+                -- Sconto
+                sconto_x       INTEGER NOT NULL DEFAULT 50,
+                sconto_y       INTEGER NOT NULL DEFAULT 50,
+                sconto_w_pct   INTEGER NOT NULL DEFAULT 40,
+                sconto_h_pct   INTEGER NOT NULL DEFAULT 40,
+                sconto_active  INTEGER NOT NULL DEFAULT 0 CHECK(sconto_active IN (0,1)),
+
+                -- Utilizzo
+                in_uso INTEGER NOT NULL DEFAULT 0 CHECK(in_uso IN (0,1)),
+
+                FOREIGN KEY (canale_id)
+                    REFERENCES Canali(canale_id)
+                    ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS Prodotti (

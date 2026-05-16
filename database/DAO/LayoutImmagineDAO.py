@@ -49,16 +49,64 @@ class LayoutImmagineDAO:
             (canale_id,)
         )
 
-    def update_posizione(self, immagine_id: int, prod_x: int, prod_y: int) -> None:
+    def attiva_prezzo(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_active = 1 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
+    def disattiva_prezzo(self, immagine_id: str) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_active = 0 WHERE immagine_id = ?",
+            (immagine_id,)
+        )
+
+    def update_posizione_prodotto(self, immagine_id: int, prod_x: int, prod_y: int) -> None:
         self._get_con().execute(
             "UPDATE LayoutImmagini SET prod_x = ?, prod_y = ? WHERE immagine_id = ?",
             (prod_x, prod_y, immagine_id)
         )
 
-    def update_dimensioni(self, immagine_id: int, prod_w_pct: int, prod_h_pct: int) -> None:
+    def update_posizione_prezzo(self, immagine_id: int, prezzo_x: int, prezzo_y: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_x = ?, prezzo_y = ? WHERE immagine_id = ?",
+            (prezzo_x, prezzo_y, immagine_id)
+        )
+
+    def update_posizione_prezzoold(self, immagine_id: int, prezzoold_x: int, prezzoold_y: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_old_x = ?, prezzo_old_y = ? WHERE immagine_id = ?",
+            (prezzoold_x, prezzoold_y, immagine_id)
+        )
+
+    def update_posizione_sconto(self, immagine_id: int, sconto_x: int, sconto_y: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET sconto_x = ?, sconto_y = ? WHERE immagine_id = ?",
+            (sconto_x, sconto_y, immagine_id)
+        )
+
+    def update_dimensioni_prodotto(self, immagine_id: int, prod_w_pct: int, prod_h_pct: int) -> None:
         self._get_con().execute(
             "UPDATE LayoutImmagini SET prod_w_pct = ?, prod_h_pct = ? WHERE immagine_id = ?",
             (prod_w_pct, prod_h_pct, immagine_id)
+        )
+
+    def update_dimensioni_prezzo(self, immagine_id: int, prezzo_w_pct: int, prezzo_h_pct: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_w_pct = ?, prezzo_h_pct = ? WHERE immagine_id = ?",
+            (prezzo_w_pct, prezzo_h_pct, immagine_id)
+        )
+
+    def update_dimensioni_prezzoold(self, immagine_id: int, prezzoold_w_pct: int, prezzoold_h_pct: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET prezzo_old_w_pct = ?, prezzo_old_h_pct = ? WHERE immagine_id = ?",
+            (prezzoold_w_pct, prezzoold_h_pct, immagine_id)
+        )
+
+    def update_dimensioni_sconto(self, immagine_id: int, sconto_w_pct: int, sconto_h_pct: int) -> None:
+        self._get_con().execute(
+            "UPDATE LayoutImmagini SET sconto_w_pct = ?, sconto_h_pct = ? WHERE immagine_id = ?",
+            (sconto_w_pct, sconto_h_pct, immagine_id)
         )
 
     def delete(self, immagine_id: int) -> None:

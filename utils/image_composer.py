@@ -78,7 +78,8 @@ def scrivi_testo(
     box_w_pct: int,
     box_h_pct: int,
     colore: str = "black",
-    font_path: str =  "./fonts/Inter.ttc"
+    font_path: str = "./fonts/Inter.ttc",
+    align: str = "center"  # left | center | right
 ) -> None:
 
     tw, th = template.size
@@ -91,21 +92,15 @@ def scrivi_testo(
     center_x = int(tw * x_pct / 100)
     center_y = int(th * y_pct / 100)
 
-    # Top-left box
-    box_x = center_x - box_w // 2
-    box_y = center_y - box_h // 2
-
     draw = ImageDraw.Draw(template)
 
     # Font iniziale
     font_size = box_h
+    font = None
 
     while font_size > 1:
 
-        font = ImageFont.truetype(
-            font_path,
-            font_size
-        )
+        font = ImageFont.truetype(font_path, font_size)
 
         bbox = draw.textbbox(
             (0, 0),
@@ -116,21 +111,33 @@ def scrivi_testo(
         text_w = bbox[2] - bbox[0]
         text_h = bbox[3] - bbox[1]
 
-        # Se il testo entra nel box -> stop
+        # Se entra nel box -> stop
         if text_w <= box_w and text_h <= box_h:
             break
 
         font_size -= 1
 
-    # Coordinate centrate nel box
-    x = box_x + (box_w - text_w) // 2
-    y = box_y + (box_h - text_h) // 2 - bbox[1]
+    if font is None:
+        return
+    
+        # Anchor orizzontale
+    anchor_map = {
+        "left": "ls",
+        "center": "mm",
+        "right": "rs"
+    }
+
+    anchor = anchor_map.get(
+        align,
+        "mm"
+    )
 
     draw.text(
-        (x, y),
+        (center_x, center_y),
         testo,
         fill=colore,
-        font=font
+        font=font,
+        anchor=anchor
     )
 
 def componi_immagine(
@@ -140,6 +147,8 @@ def componi_immagine(
 ) -> BytesIO:
 
     template = Image.open(BytesIO(template_bytes)).convert("RGBA")
+
+    disegna_croce_centrale(template)
 
     prodotto = scarica_immagine(product.image_url)
 
@@ -153,10 +162,7 @@ def componi_immagine(
         box_h_pct=product.h_pct
     )
 
-    if not price:
-        price = TextConfig("PREZZO", 50, 50, 100, 100)
-
-    if price:
+    if price and price.active:
         scrivi_testo(
             template=template,
             testo=price.text,
@@ -178,6 +184,37 @@ def componi_immagine(
 
     output.seek(0)
     return output
+
+def disegna_croce_centrale(
+    template: Image.Image,
+    colore: str = "red",
+    spessore: int = 2
+) -> None:
+    """
+    Disegna una croce centrata sull'immagine:
+    - linea orizzontale
+    - linea verticale
+    """
+    draw = ImageDraw.Draw(template)
+
+    w, h = template.size
+
+    cx = w // 2
+    cy = h // 2
+
+    # Linea orizzontale
+    draw.line(
+        [(0, cy), (w, cy)],
+        fill=colore,
+        width=spessore
+    )
+
+    # Linea verticale
+    draw.line(
+        [(cx, 0), (cx, h)],
+        fill=colore,
+        width=spessore
+    )
 
 def leggi_dimensioni_template(template_bytes: bytes) -> tuple[int, int]:
     """Ritorna (width, height) del template."""
