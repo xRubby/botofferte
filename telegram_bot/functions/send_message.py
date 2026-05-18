@@ -13,6 +13,7 @@ from database.DAO.PubblicaDAO import PubblicaDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.LayoutDAO import LayoutDAO
+from database.DAO.TastieraDAO import TastieraDAO
 from database.Entity.Canale import Canale
 from database.Entity.Layout import Layout
 from database.Entity.Prodotto import Prodotto
@@ -318,6 +319,56 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     with PubblicaDAO() as pubblicaDAO:
         pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message)
+
+def parse_keyboard(text):
+    pattern = r'(.*?)\s*-\s*\{(.*?)\}'
+    result = []
+
+    for line in text.strip().splitlines():
+        matches = re.findall(pattern, line)
+
+        parsed = [
+            {
+                "messaggio": msg,
+                "comando": cmd
+            }
+            for msg, cmd in matches
+        ]
+
+        if not parsed:
+            continue
+
+        result.append(parsed if "||" in line else parsed[0])
+
+    return result
+
+
+def generate_keyboard(text, prodotto: Prodotto):
+    parsed = parse_keyboard(text)
+    keyboard = []
+
+    for row in parsed:
+
+        # Uniformiamo in lista
+        buttons_data = row if isinstance(row, list) else [row]
+        row_buttons = []
+
+        for btn in buttons_data:
+            msg = btn["messaggio"]
+            cmd = btn["comando"]
+
+            # Placeholder dinamici
+            if cmd == "url":
+                row_buttons.append(
+                    InlineKeyboardButton(
+                        text=msg,
+                        url=prodotto.link
+                    )
+                )
+
+        keyboard.append(row_buttons)
+
+    return InlineKeyboardMarkup(keyboard)
     
 async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
     with ProdottoDAO() as prodotto_dao:
@@ -343,12 +394,20 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
     else:
         foto = prodotto.img_url
 
+    with TastieraDAO() as tastieraDAO:
+        tastiera = tastieraDAO.get_in_uso(link.id_canale)
+
+    reply_markup = None
+    if tastiera:
+        reply_markup = generate_keyboard(tastiera.messaggio, prodotto)
+
     try:
         await context.bot.send_photo(
             chat_id=link.id_canale,
             photo=foto,
             caption=link.messaggio,
-            parse_mode='HTML'
+            parse_mode='HTML',
+            reply_markup=reply_markup
         )
     except Exception:
         raise Exception("Il bot non è un admin del canale")
