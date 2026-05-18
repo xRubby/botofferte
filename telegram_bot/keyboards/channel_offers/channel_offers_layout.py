@@ -41,6 +41,7 @@ async def layout_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Aggiungi layout", callback_data=f'channeloffers_addlayout_{channel_id}')],
         [InlineKeyboardButton("Seleziona layout", callback_data=f'channeloffers_showlayouts_{channel_id}'), InlineKeyboardButton("Modifica Layout", callback_data=f'channeloffers_editlayouts_{channel_id}')],
         [InlineKeyboardButton("Modifica Tag", callback_data=f'co_edittags_{channel_id}'), InlineKeyboardButton("🖼️ Immagine Template", callback_data=f'layoutimg_menu_{channel_id}')],
+        [InlineKeyboardButton("Tastiera Post", callback_data=f"channeloffers_keyboards_{channel_id}")],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
 

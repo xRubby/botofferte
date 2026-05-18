@@ -126,6 +126,15 @@ class Connessione:
                 canale_id   TEXT    NOT NULL,
                 FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
             );
+                               
+            CREATE TABLE IF NOT EXISTS Tastiere (
+                tastiera_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome_tastiera TEXT    NOT NULL,
+                messaggio   TEXT    NOT NULL,
+                in_uso      INTEGER NOT NULL DEFAULT 0,
+                canale_id   TEXT    NOT NULL,
+                FOREIGN KEY (canale_id) REFERENCES Canali(canale_id) ON DELETE CASCADE
+            );
 
             CREATE TABLE IF NOT EXISTS LayoutImmagini (
                 immagine_id  INTEGER PRIMARY KEY AUTOINCREMENT,
