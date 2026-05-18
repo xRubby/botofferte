@@ -299,13 +299,13 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     # Manda la preview come messaggio separato
-    preview_url = "https://m.media-amazon.com/images/I/81XMD4tmSkL._AC_SL1500_.jpg"
+    preview_url = "https://m.media-amazon.com/images/I/61Xd7yu2MnL._AC_SL1500_.jpg"
     try:
 
         prodotto = ProductConfig(preview_url, img.prod_x, img.prod_y, img.prod_w_pct, img.prod_h_pct)
-        prezzo = TextConfig("19,99€", img.prezzo_x, img.prezzo_y, img.prezzo_w_pct, img.prezzo_h_pct, img.prezzo_active)
-        prezzo_old = TextConfig("59,99€", img.prezzo_old_x, img.prezzo_old_y, img.prezzo_old_w_pct, img.prezzo_old_h_pct, img.prezzo_old_active)
-        sconto = TextConfig("-67%", img.sconto_x, img.sconto_y, img.sconto_w_pct, img.sconto_h_pct, img.sconto_active)
+        prezzo = TextConfig("122,99€", img.prezzo_x, img.prezzo_y, img.prezzo_w_pct, img.prezzo_h_pct, img.prezzo_active)
+        prezzo_old = TextConfig("149,98€", img.prezzo_old_x, img.prezzo_old_y, img.prezzo_old_w_pct, img.prezzo_old_h_pct, img.prezzo_old_active)
+        sconto = TextConfig("-18%", img.sconto_x, img.sconto_y, img.sconto_w_pct, img.sconto_h_pct, img.sconto_active)
         preview_bytes = componi_immagine(img.template_img, prodotto, prezzo, prezzo_old, sconto)
         
         if not context.user_data.get("preview_msg_id"):
