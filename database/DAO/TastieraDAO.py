@@ -53,9 +53,9 @@ class TastieraDAO:
         ).fetchone()
         return Tastiera(*row) if row else None
     
-    def get_channel_layouts(self, tastiera_id: str) -> Tastiera | None:
+    def get_channel_keyboards(self, canale_id: str) -> Tastiera | None:
         rows = self._get_con().execute(
-            "SELECT * FROM Tastiere WHERE tastiera_id = ?", (tastiera_id,)
+            "SELECT * FROM Tastiere WHERE canale_id = ?", (canale_id,)
         ).fetchall()
         return [Tastiera(*row) for row in rows]
 

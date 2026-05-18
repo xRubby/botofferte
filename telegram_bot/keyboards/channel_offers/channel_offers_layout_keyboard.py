@@ -115,6 +115,64 @@ async def annulla_add_tastiera(update: Update, context: ContextTypes.DEFAULT_TYP
     await keyboard_menu(update, context)
     return ConversationHandler.END
 
+async def show_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    channel_id = check_channel_id(query, context)
+
+    keyboard = []
+
+    with TastieraDAO() as tastieraDAO:
+        tastiere = tastieraDAO.get_channel_keyboards(channel_id)
+        if tastiere:
+            text=f"Le tue tastiere\n\nTastiere totali: {len(tastiere)}"
+            for tastiera in tastiere:
+                emoji_stato = "🟢" if tastiera.in_uso else "🔴"
+
+                keyboard.append([InlineKeyboardButton(f"{tastiera.nome_tastiera}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channeloffers_activatekeyboard_{channel_id}_{tastiera.tastiera_id}')])
+
+        else:
+            text = "Nessun layout presente"
+
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+    )
+
+async def activate_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    parts = query.data.split("_")
+    keyboard_id = parts[-1]
+    context.user_data["channel_id"] = parts[-2]
+
+    with TastieraDAO() as tastieraDAO:
+        tastiera = tastieraDAO.get(keyboard_id)
+
+        if not  tastiera:
+            text = "Errore durante l'attivazione della tastiera"
+        else:   
+            id_canale = tastiera.canale_id
+
+            if( tastiera.in_uso):
+                tastieraDAO.update_stato(tastiera.tastiera_id, 0)
+                text="Tastiera disattivata!"
+            else:
+                tastiera_old = tastieraDAO.get_in_uso(id_canale)
+                if tastiera_old:
+                    tastieraDAO.update_stato(tastiera_old.tastiera_id, 0)
+                tastieraDAO.update_stato( tastiera.tastiera_id, 1)
+                text="Tastiera selezionata!"
+    
+    await query.answer(text=text, show_alert=True)
+
+    await show_keyboards(update, context)
+
 conv_keyboard = ConversationHandler(
     entry_points=[
         CallbackQueryHandler(keyboard_menu_add_nome, pattern=r'^channeloffers_addkeyboard_-?\d+$'),
