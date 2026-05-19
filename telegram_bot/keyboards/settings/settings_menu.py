@@ -4,10 +4,10 @@ from telegram.ext import ContextTypes
 from database.DAO.UtenteDAO import UtenteDAO
 
 SETTINGS_MSG=(
-        "<b>⚙️ Impostazioni</b>"
-        "\n\n"
-        "<b>IN LAVORAZIONE</b> 🏗️"
-    )
+    "⚙️ <b>Impostazioni</b>\n\n"
+    "🏗️ <b>In sviluppo</b>\n"
+)
+
 
 async def settings_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query

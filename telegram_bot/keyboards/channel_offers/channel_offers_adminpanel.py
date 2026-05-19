@@ -27,19 +27,23 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
             return
         
-    text = "Benvenuto nel pannello Admin!\n\nAttraverso di esso potrai invitare altri utenti alla gestione del tuo canale oppure inserire il tuo id affiliato che verrà usato durante la pubblicazione dei prodotti"
-
+    text = (
+        "🛠️ <b>Pannello Admin</b>\n\n"
+        "📊 Gestisci le impostazioni del tuo canale.\n\n"
+        "Seleziona un’opzione qui sotto 👇"
+    )
     keyboard = [
-        [InlineKeyboardButton("Invita membri", callback_data=f'channeloffers_invitemember_{channel_id}')],
-        [InlineKeyboardButton("Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
-        [InlineKeyboardButton("Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
+        [InlineKeyboardButton("👥 Invita membri", callback_data=f'channeloffers_invitemember_{channel_id}')],
+        [InlineKeyboardButton("🏷️ Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("📄 Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
+        [InlineKeyboardButton("🗑️ Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
         text=text,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        parse_mode="HTML"
     )
 
 async def admin_edit_affiliateid(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,17 +63,23 @@ async def admin_edit_affiliateid(update: Update, context: ContextTypes.DEFAULT_T
         
     id_affiliato = canale.id_affiliato if canale.id_affiliato else "Nessuno"
         
-    text= f"Inserisci l'ID Affiliato che verrà usato di default durante la pubblicazione dei prodotti.\n\nID Attuale: {id_affiliato}"
+    text = (
+        "🏷️ <b>Configurazione ID Affiliato</b>\n\n"
+        "ℹ️ Questo ID verrà utilizzato automaticamente come predefinito durante la pubblicazione dei prodotti.\n\n"
+        f"🔑 <b>ID attuale:</b> <code>{id_affiliato}</code>\n\n"
+        "✏️ Invia un nuovo ID per aggiornarlo."
+    )
 
     keyboard = [
-        [InlineKeyboardButton("Rimuovi ID Affiliato", callback_data=f'channeloffers_adminremoveaffiliateid_{channel_id}')],
+        [InlineKeyboardButton("❌ Rimuovi ID Affiliato", callback_data=f'channeloffers_adminremoveaffiliateid_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     msg = await query.edit_message_text(
         text=text,
-        reply_markup=reply_markup
+        reply_markup=reply_markup,
+        parse_mode="HTML"
     )
 
     context.user_data["msg_id"] = msg.id
@@ -87,9 +97,14 @@ async def admin_ricevi_affiliate_id(update: Update, context: ContextTypes.DEFAUL
         with CanaleDAO() as canaleDAO:
             canaleDAO.update_id_affiliato(channel_id, affiliate_id)
 
-        text = f"ID Affiliato aggiornato in: <b>{affiliate_id}</b>"
+        text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
+        text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
     except Exception as e:
-        text = f"Errore durante l'aggiornamento dell'ID Affiliato..."
+        text = (
+            "❌ <b>Errore durante l'aggiornamento</b>\n\n"
+            "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
+            "Riprova più tardi o verifica i dati inseriti."
+        )
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
@@ -138,9 +153,15 @@ async def admin_remove_affiliate_id(update: Update, context: ContextTypes.DEFAUL
         with CanaleDAO() as canaleDAO:
             canaleDAO.update_id_affiliato(channel_id, "")
 
-        text = f"ID Affiliato rimosso"
+        text = (
+            "🗑️ <b>ID Affiliato rimosso con successo</b>"
+        )
     except Exception as e:
-        text = f"Errore durante la rimozione dell'ID Affiliato..."
+        text = (
+            "❌ <b>Errore durante la rimozione</b>\n\n"
+            "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
+            "Riprova più tardi."
+        )
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
@@ -196,12 +217,20 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not licenza:
             raise ValueError()
 
-        text = f"Licenza: <code>{licenza.codice_licenza}</code>\nTipo: {licenza.tipo.title()}\n"
+        text = (
+            f"📄 <b>Informazioni Licenza</b>\n\n"
+            f"🔑 <b>Codice:</b> <code>{licenza.codice_licenza}</code>\n"
+            f"📦 <b>Tipo:</b> {licenza.tipo.title()}\n\n"
+        )
 
-        if(stato):
-            text += f"Stato: 'Attiva'\n\nData attivazione: {licenza.data_attivazione}\nData scadenza: {licenza.data_scadenza}"
+        if stato:
+            text += (
+                f"🟢 <b>Stato:</b> Attiva\n"
+                f"📅 <b>Attivazione:</b> {licenza.data_attivazione}\n"
+                f"⏳ <b>Scadenza:</b> {"Mai" if not licenza.data_scadenza else licenza.data_scadenza}"
+            )
         else:
-            text += "Stato: 'Non attiva'"
+            text += "🔴 <b>Stato:</b> Non attiva"
         
         keyboard = [
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
@@ -238,8 +267,14 @@ async def admin_delete_channel(update: Update, context: ContextTypes.DEFAULT_TYP
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
         ]
     
+    text = (
+        "⚠️ <b>Conferma eliminazione canale</b>\n\n"
+        "Sei sicuro di voler <b>cancellare definitivamente</b> questo canale?\n"
+        "Questa azione è <b>irreversibile</b>."
+    )
+    
     await query.edit_message_text(
-            text="Sei sicuro di voler cancellare il canale?",
+            text=text,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='HTML'
         )
@@ -261,9 +296,16 @@ async def admin_delete_channel_confirm(update: Update, context: ContextTypes.DEF
     try:
         with CanaleDAO() as canaleDAO:
             canaleDAO.delete(channel_id)
-        text = "Canale cancellato con successo!"
+        text = (
+            "🗑️ <b>Canale eliminato con successo</b>\n\n"
+            "ℹ️ Il canale è stato rimosso definitivamente."
+        )
     except:
-        text = "Errore nella cancellazione del canale..."
+        text = (
+            "❌ <b>Errore durante la cancellazione</b>\n\n"
+            "⚠️ Non è stato possibile eliminare il canale.\n"
+            "Riprova più tardi o verifica i permessi."
+        )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
@@ -290,16 +332,22 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
     create_link = context.user_data.pop('create_link', None)
     token = context.user_data.pop('token', None)
     
-    text = "In questa sezione potrai invitare altri membri nella gestione del tuo canale!"
+    text = (
+        "👥 <b>Gestione Inviti Canale</b>\n\n"
+        "ℹ️ In questa sezione puoi invitare altri membri a collaborare nella gestione del tuo canale.\n"
+    )
 
     keyboard = [
     ]
 
     if create_link and token:
-        text += f"\nLink generato: t.me/BubbyOfferteBot?start={token}"
-        keyboard.append([InlineKeyboardButton("Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
+        text += (
+            "\n🔗 <b>Link di invito generato:</b>\n"
+            f"<code>t.me/BubbyOfferteBot?start={token}</code>"
+        )
+        keyboard.append([InlineKeyboardButton("🗑️ Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
     else:
-        keyboard.append([InlineKeyboardButton("Aggiungi link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
+        keyboard.append([InlineKeyboardButton("🔗 Genera link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')])
     

@@ -29,9 +29,15 @@ async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⬅️ Indietro", callback_data='channeloffers_main')]
     ]
 
+    text = (
+        "⚙️ <b>Gestione canale</b>\n\n"
+        f"📢 <b>{canale.nome_canale}</b>\n\n"
+        "Scegli una sezione per gestire il tuo canale 👇"
+    )
+
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text=f"Gestisci il canale <b>{canale.nome_canale}</b>",
+        text=text,
         parse_mode="HTML",
         reply_markup=reply_markup
     )

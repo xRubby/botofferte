@@ -20,10 +20,12 @@ TASTIERA_HOME = InlineKeyboardMarkup([
 def get_benvenuto(utente: User) -> str:
     user_link = f"<a href='tg://user?id={utente.id}'>{utente.first_name}</a>"
     return (
-        f"🔸 <b>Benvenuto</b> {user_link}\n\n"
+        f"📌 <b>Benvenuto</b> {user_link}\n\n"
         "Scegli ciò di cui hai bisogno dai tasti in basso ⤵️\n\n"
         "🔍 <b>Cerca prodotto</b> ti permette di ottenere il prodotto "
         "desiderato da Amazon e scoprire se è in sconto.\n\n"
+        "📢 <b>Offerte Canale</b> ti permette di pubblicare "
+        "offerte <b>Amazon</b> nei tuoi canali Telegram.\n\n"
         "⚙️ <b>Impostazioni</b> ti permette di modificare le impostazioni "
         "di questa chat <b>(IN LAVORAZIONE)</b>."
     )

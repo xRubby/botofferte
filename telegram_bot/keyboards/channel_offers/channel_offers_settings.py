@@ -10,10 +10,13 @@ async def channel_settings_menu(update: Update, context: ContextTypes.DEFAULT_TY
 
     channel_id = check_channel_id(query, context)
 
-    text = "Benvenuto nelle impostazioni di questo canale!"
+    text = (
+        "⚙️ <b>Impostazioni canale</b>\n\n"
+        "Gestisci le opzioni del tuo canale da questa sezione."
+    )
 
     keyboard = [
-        [InlineKeyboardButton("Esci dal canale", callback_data=f'channeloffers_exitchannel_{channel_id}')],
+        [InlineKeyboardButton("🚪 Esci dal canale", callback_data=f'channeloffers_exitchannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
 
@@ -30,7 +33,11 @@ async def exit_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     channel_id = check_channel_id(query, context)
 
-    text = "Sei sicuro di voler uscire da questo canale?"
+    text = (
+        "⚠️ <b>Conferma uscita canale</b>\n\n"
+        "Sei sicuro di voler uscire da questo canale?\n"
+        "Dopo l’uscita non avrai più accesso ai contenuti."
+    )
 
     keyboard = [
         [InlineKeyboardButton("✅ Conferma", callback_data=f'channeloffers_exitchannelconfirm_{channel_id}'), InlineKeyboardButton("❌ Annulla", callback_data=f'channeloffers_settings_{channel_id}')]
@@ -58,14 +65,24 @@ async def exit_channel_confirm(update: Update, context: ContextTypes.DEFAULT_TYP
         gestisce = gestisceDAO.get(user_id, channel_id)
         if gestisce and not gestisce.isCreator:
             gestisceDAO.delete(user_id, channel_id)
-            text = "Sei stato rimosso dal canale!"
+            text = (
+                "🚪 <b>Rimozione completata</b>\n\n"
+                "Sei stato rimosso dal canale."
+            )
         elif gestisce.isCreator:
-            text = "Non puoi essere rimosso dal canale in quanto sei il creatore!"
+            text = (
+                "⚠️ <b>Operazione non consentita</b>\n\n"
+                "Non puoi essere rimosso dal canale perché sei il creatore."
+            )
             keyboard = [
-                [InlineKeyboardButton("Indietro", callback_data=f'channeloffers_settings_{channel_id}')]
+                [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_settings_{channel_id}')]
             ]
         else:
-            text = "Errore nella rimozione dal canale"
+            text = (
+                "❌ <b>Errore nella rimozione</b>\n\n"
+                "Non è stato possibile completare l’operazione.\n"
+                "Riprova più tardi."
+            )
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(

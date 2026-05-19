@@ -25,7 +25,7 @@ async def channeloffers_main(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not channels:
         text = "Non hai canali. Aggiungi un canale per iniziare!"
     else:
-        text = "I tuoi canali:\n"
+        text = "📢 <b>I tuoi canali</b>\n\nScegli un canale per gestirlo 👇\n"
         for channel in channels:
             channel_id = channel.canale_id
             channel_name = channel.nome_canale
@@ -38,11 +38,11 @@ async def channeloffers_main(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 )
             ])
 
-    keyboard.append([InlineKeyboardButton("Aggiungi Canale", callback_data='channeloffers_addchannel')]),
+    keyboard.append([InlineKeyboardButton("➕ Aggiungi Canale", callback_data='channeloffers_addchannel')]),
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await query.edit_message_text(text=text, reply_markup=reply_markup)
+    await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode="HTML")
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
