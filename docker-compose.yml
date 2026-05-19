@@ -17,4 +17,4 @@ services:
       # DISCORD
       - DISCORD_TOKEN=
     volumes:
-      - /DATA/AppData/botofferte/database/amazon_offers.db:/app/data/amazon_offers.db
+      - /DATA/AppData/botofferte/database/:/app/data/
