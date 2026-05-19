@@ -6,5 +6,8 @@ class Pubblica:
     id_canale: str
     asin_prodotti: str
     messaggio: str
+    link: str
+    link_short: str
+    img_bytes: bytes
     isPubblicato: bool = 0
     data_pubblicazione: str = None

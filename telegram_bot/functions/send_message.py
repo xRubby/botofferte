@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from io import BytesIO
 import re
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update
@@ -317,39 +318,70 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 
+    with LayoutImmagineDAO() as imgDAO:
+        layout_img = imgDAO.get_in_uso(channel_id)
+
+    if layout_img:
+        from utils.image_composer import componi_immagine
+        try:
+            prodotto_img = ProductConfig(info_prodotto["img_url"], layout_img.prod_x, layout_img.prod_y, layout_img.prod_w_pct, layout_img.prod_h_pct)
+            prezzo_img = TextConfig(str(info_prodotto["prezzo"]) + info_prodotto["valuta"], layout_img.prezzo_x, layout_img.prezzo_y, layout_img.prezzo_w_pct, layout_img.prezzo_h_pct, layout_img.prezzo_active)
+            prezzo_old_img = None
+            sconto_img = None
+
+            if(info_prodotto["prezzo"] < info_prodotto["old_prezzo"]):
+                prezzo_old_img = TextConfig(str(info_prodotto["old_prezzo"]) + info_prodotto["valuta"], layout_img.prezzo_old_x, layout_img.prezzo_old_y, layout_img.prezzo_old_w_pct, layout_img.prezzo_old_h_pct, layout_img.prezzo_old_active)
+                sconto_img = TextConfig("-" + str(round(info_prodotto["sconto"]))+"%", layout_img.sconto_x, layout_img.sconto_y, layout_img.sconto_w_pct, layout_img.sconto_h_pct, layout_img.sconto_active)
+            foto = componi_immagine(layout_img.template_img, prodotto_img, prezzo_img, prezzo_old_img, sconto_img)
+        except Exception:
+            foto = None
+
     with PubblicaDAO() as pubblicaDAO:
-        pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message)
+        pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message, info_prodotto["link"], info_prodotto["link_short"], foto)
 
 def parse_keyboard(text):
-    pattern = r'(.*?)\s*-\s*\{(.*?)\}'
     result = []
 
     for line in text.strip().splitlines():
-        matches = re.findall(pattern, line)
 
-        parsed = [
-            {
-                "messaggio": msg,
-                "comando": cmd
-            }
-            for msg, cmd in matches
-        ]
+        parts = line.split("||")
 
-        if not parsed:
-            continue
+        row = []
 
-        result.append(parsed if "||" in line else parsed[0])
+        for part in parts:
+            match = re.findall(r'(.*?)\s*-\s*(\{.*?\}|.+)', part)
+
+            for msg, cmd in match:
+                msg = msg.strip()
+                cmd = cmd.strip()
+
+                if cmd.startswith("{") and cmd.endswith("}"):
+                    cmd = cmd[1:-1].strip()
+
+                row.append({
+                    "messaggio": msg,
+                    "comando": cmd
+                })
+
+        if row:
+            result.append(row)
 
     return result
 
+def normalize_url(url: str) -> str:
+    url = url.strip()
 
-def generate_keyboard(text, prodotto: Prodotto):
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+
+    return "https://" + url
+
+def generate_keyboard(text, link: Pubblica):
     parsed = parse_keyboard(text)
     keyboard = []
 
     for row in parsed:
 
-        # Uniformiamo in lista
         buttons_data = row if isinstance(row, list) else [row]
         row_buttons = []
 
@@ -357,12 +389,18 @@ def generate_keyboard(text, prodotto: Prodotto):
             msg = btn["messaggio"]
             cmd = btn["comando"]
 
-            # Placeholder dinamici
-            if cmd == "url":
+            if cmd == "url" and link.link:
                 row_buttons.append(
                     InlineKeyboardButton(
                         text=msg,
-                        url=prodotto.link
+                        url=link.link
+                    )
+                )
+            elif cmd: 
+                row_buttons.append(
+                    InlineKeyboardButton(
+                        text=msg,
+                        url=normalize_url(cmd)
                     )
                 )
 
@@ -374,23 +412,8 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
     with ProdottoDAO() as prodotto_dao:
         prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
 
-    with LayoutImmagineDAO() as imgDAO:
-        layout_img = imgDAO.get_in_uso(link.id_canale)
-
-    if layout_img:
-        from utils.image_composer import componi_immagine
-        try:
-            prodotto_img = ProductConfig(prodotto.img_url, layout_img.prod_x, layout_img.prod_y, layout_img.prod_w_pct, layout_img.prod_h_pct)
-            prezzo_img = TextConfig(str(prodotto.prezzo) + prodotto.valuta, layout_img.prezzo_x, layout_img.prezzo_y, layout_img.prezzo_w_pct, layout_img.prezzo_h_pct, layout_img.prezzo_active)
-            prezzo_old_img = None
-            sconto_img = None
-
-            if(prodotto.prezzo < prodotto.old_prezzo):
-                prezzo_old_img = TextConfig(str(prodotto.old_prezzo) + prodotto.valuta, layout_img.prezzo_old_x, layout_img.prezzo_old_y, layout_img.prezzo_old_w_pct, layout_img.prezzo_old_h_pct, layout_img.prezzo_old_active)
-                sconto_img = TextConfig("-" + str(round(prodotto.sconto))+"%", layout_img.sconto_x, layout_img.sconto_y, layout_img.sconto_w_pct, layout_img.sconto_h_pct, layout_img.sconto_active)
-            foto = componi_immagine(layout_img.template_img, prodotto_img, prezzo_img, prezzo_old_img, sconto_img)
-        except Exception:
-            foto = prodotto.img_url
+    if link.img_bytes:
+        foto = BytesIO(link.img_bytes)
     else:
         foto = prodotto.img_url
 
@@ -399,7 +422,7 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
 
     reply_markup = None
     if tastiera:
-        reply_markup = generate_keyboard(tastiera.messaggio, prodotto)
+        reply_markup = generate_keyboard(tastiera.messaggio, link)
 
     try:
         await context.bot.send_photo(
@@ -409,5 +432,5 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
             parse_mode='HTML',
             reply_markup=reply_markup
         )
-    except Exception:
+    except Exception as e:
         raise Exception("Il bot non è un admin del canale")

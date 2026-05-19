@@ -1,3 +1,5 @@
+import traceback
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
@@ -94,6 +96,7 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML',
             reply_markup=BACK_BTN
         )
+        traceback.print_exc()
 
     with PubblicaDAO() as pubblicaDAO:
         links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
@@ -130,5 +133,3 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with PubblicaDAO() as pubblicaDAO:
             links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
             context.user_data["links"] = links
-
-

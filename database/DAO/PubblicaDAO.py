@@ -20,10 +20,10 @@ class PubblicaDAO:
             return self._con
         raise RuntimeError("PubblicaDAO deve essere usato dentro un blocco 'with'")
 
-    def insert(self, id_canale: str, asin_prodotti: str, messaggio: str, is_pubblicato: bool = False) -> None:
+    def insert(self, id_canale: str, asin_prodotti: str, messaggio: str, link: str, link_short: str, img_bytes: bytes, is_pubblicato: bool = False) -> None:
         self._get_con().execute(
-            "INSERT INTO Pubblica (id_canale, asin_prodotti, messaggio, isPubblicato) VALUES (?, ?, ?, ?)",
-            (id_canale, asin_prodotti, messaggio, is_pubblicato)
+            "INSERT INTO Pubblica (id_canale, asin_prodotti, messaggio, isPubblicato, link, link_short, img_bytes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (id_canale, asin_prodotti, messaggio, is_pubblicato, link, link_short, img_bytes.getvalue())
         )
 
     def update(self, id: int, id_canale: str, asin_prodotti: str, messaggio: str, is_pubblicato: bool) -> None:
