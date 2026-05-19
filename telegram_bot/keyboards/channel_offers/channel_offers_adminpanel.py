@@ -1,5 +1,7 @@
 from datetime import datetime
+import os
 import secrets
+from dotenv import load_dotenv
 
 from telegram import *
 from telegram.ext import *
@@ -10,7 +12,11 @@ from database.DAO.InvitoDAO import InvitoDAO
 from database.DAO.LicenzaDAO import LicenzaDAO
 from utils.channel_offers_utils import check_channel_id
 
+load_dotenv()
+
 ATTESA_ID_AFFILIATO = "ATTESA_ID_AFFILIATO"
+
+BOT_USERNAME = os.getenv("BOT_USERNAME")
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -343,7 +349,7 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
     if create_link and token:
         text += (
             "\n🔗 <b>Link di invito generato:</b>\n"
-            f"<code>t.me/BubbyOfferteBot?start={token}</code>"
+            f"<code>t.me/{BOT_USERNAME}?start={token}</code>"
         )
         keyboard.append([InlineKeyboardButton("🗑️ Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
     else:

@@ -7,6 +7,7 @@ services:
       # TELEGRAM
       - TELEGRAM_TOKEN=il_tuo_token
       - USER_ID_ADMIN=il_tuo_id
+      - BOT_USERNAME=username_del_bot
       # AMAZON
       - ACCESS_KEY=
       - SECRET_KEY=
