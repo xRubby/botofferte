@@ -19,7 +19,7 @@ async def settings_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
         with UtenteDAO() as utenteDAO:
             if utenteDAO.get(userID).isAdmin:
-                keyboard.append([InlineKeyboardButton("Pannello admin", callback_data='admin_settings')])
+                keyboard.append([InlineKeyboardButton("🛠️ Pannello admin", callback_data='admin_settings')])
 
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data='back_to_main')])
         reply_markup = InlineKeyboardMarkup(keyboard)

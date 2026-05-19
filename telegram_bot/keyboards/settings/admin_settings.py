@@ -7,8 +7,14 @@ from database.DAO.LicenzaDAO import LicenzaDAO
 from utils.StatoLicenza import StatoLicenza
 from utils.generate_license import calcola_tipo_scadenza, generate_license
 
-ADMIN_MENU_MSG = "PANNELLO ADMIN"
-LICENZE_GENERATE_MSG = "📋 *Lista licenze*"
+ADMIN_MENU_MSG = (
+    "🛠️ <b>Pannello admin</b>\n\n"
+    "Gestisci licenze e impostazioni avanzate del sistema."
+)
+LICENZE_GENERATE_MSG = (
+    "🔑 <b>Gestione licenze</b>\n\n"
+    "Qui trovi tutte le licenze generate nel sistema."
+)
 
 LICENZE_PER_PAGINA = 5
 
@@ -19,8 +25,8 @@ async def admin_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     keyboard = [
-        [InlineKeyboardButton("Genera Licenza", callback_data='generate_license')],
-        [InlineKeyboardButton("Vedi Licenze", callback_data='admin_settings_visualizzalicenze_0')],
+        [InlineKeyboardButton("🔑 Genera licenza", callback_data='generate_license')],
+        [InlineKeyboardButton("📄 Visualizza licenze", callback_data='admin_settings_visualizzalicenze_0')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data='settings')],
     ]
     await query.edit_message_text(
@@ -44,8 +50,11 @@ async def generate_new_license(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
     keyboard = [
         [
-            InlineKeyboardButton("1 Settimana", callback_data='admin_settings_generatelicense_7'),
-            InlineKeyboardButton("30 Giorni", callback_data='admin_settings_generatelicense_30')
+        InlineKeyboardButton("⏳ 1 settimana", callback_data='admin_settings_generatelicense_7'),
+        InlineKeyboardButton("📅 30 giorni", callback_data='admin_settings_generatelicense_30')
+        ],
+        [
+        InlineKeyboardButton("♾️ Senza Scadenza", callback_data='admin_settings_generatelicense_999'),
         ],
         [InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]
     ]
@@ -75,7 +84,7 @@ async def generate_license_days(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     days = int(query.data.split("_")[-1])
-    tipo_licenza_map = {7: "1 settimana", 30: "30 giorni"}
+    tipo_licenza_map = {7: "1 settimana", 30: "30 giorni", 999: "senza scadenza"}
     tipo_licenza = tipo_licenza_map.get(days)
     if not tipo_licenza:
         await query.answer("Tipo non valido", show_alert=True)
@@ -143,7 +152,8 @@ async def visualizza_licenze(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("🔙 Indietro", callback_data="admin_settings")],
         ])
         await query.edit_message_text(
-            "📋 *Lista licenze*\n\nNessuna licenza disponibile",
+            text = ("🔑 <b>Gestione licenze</b>\n\n"
+            "📋 Nessuna licenza disponibile al momento."),
             parse_mode="Markdown",
             reply_markup=tastiera,
         )
@@ -171,7 +181,7 @@ async def visualizza_licenze(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_text(
         text=LICENZE_GENERATE_MSG,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(tastiera)
     )
 

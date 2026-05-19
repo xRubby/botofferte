@@ -42,8 +42,14 @@ async def immagine_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')]
     ]
 
+    text = (
+        "🖼️ <b>Immagini template</b>\n\n"
+        "Gestisci i template grafici utilizzati nei post delle offerte.\n\n"
+        "Scegli un’azione 👇"
+    )
+
     await query.edit_message_text(
-        text="🖼️ <b>Gestione Immagini Template</b>",
+        text=text,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
     )
@@ -59,13 +65,14 @@ async def add_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = check_channel_id(query, context)
     context.user_data["channel_id"] = channel_id
 
-    keyboard = [[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]
+    keyboard = [[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]
 
     msg = await query.edit_message_text(
-        text=(
-            "Invia il template come <b>documento</b> per mantenere la qualità originale.\n\n"
-            "Puoi aggiungere un nome al template scrivendolo nella didascalia dell'immagine, "
-            "altrimenti verrà usata la dimensione come nome."
+        text = (
+            "🖼️ <b>Nuovo template</b>\n\n"
+            "📤 Carica il template come <b>documento</b> per evitare perdita di qualità.\n\n"
+            "🏷️ Aggiungi un nome nella didascalia (opzionale).\n"
+            "Se non specificato, verrà usata la dimensione come nome."
         ),
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
@@ -88,8 +95,11 @@ async def ricevi_template_img(update: Update, context: ContextTypes.DEFAULT_TYPE
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
                 message_id=message_id,
-                text="⚠️ Formato non supportato. Invia solo immagini <b>JPG</b> o <b>PNG</b>.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]),
+                text=(
+                    "⚠️ <b>Formato non supportato</b>\n\n"
+                    "Invia un’immagine nei formati <b>JPG</b> o <b>PNG</b>."
+                ),
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]),
                 parse_mode="HTML"
             )
             return ATTESA_TEMPLATE_IMG
@@ -100,8 +110,11 @@ async def ricevi_template_img(update: Update, context: ContextTypes.DEFAULT_TYPE
         await context.bot.edit_message_text(
             chat_id=update.effective_chat.id,
             message_id=message_id,
-            text="⚠️ Invia un'immagine JPG o PNG come documento.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]),
+            text=(
+                "⚠️ <b>Formato non valido</b>\n\n"
+                "Invia un’immagine in formato <b>JPG</b> o <b>PNG</b> come <b>documento</b>."
+            ),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]]),
             parse_mode="HTML"
         )
         return ATTESA_TEMPLATE_IMG
@@ -114,8 +127,12 @@ async def ricevi_template_img(update: Update, context: ContextTypes.DEFAULT_TYPE
         await context.bot.edit_message_text(
             chat_id=update.effective_chat.id,
             message_id=message_id,
-            text="❌ Impossibile leggere l'immagine. Riprova con un file valido.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]])
+            text=(
+                "❌ <b>Errore di elaborazione</b>\n\n"
+                "Non è stato possibile leggere l’immagine.\n"
+                "Assicurati che il file sia valido e riprova."
+            ),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_menu_{channel_id}')]])
         )
         return ATTESA_TEMPLATE_IMG
 
@@ -126,10 +143,13 @@ async def ricevi_template_img(update: Update, context: ContextTypes.DEFAULT_TYPE
             immagine_id = imgDAO.insert(channel_id, nome, template_bytes, tw, th)
         context.user_data["immagine_id"] = immagine_id
         text = (
-            f"✅ Template <b>{nome}</b> salvato ({tw}x{th}px)\n\n"
-            f"Posizione prodotto: <b>50% x 50%</b>\n"
-            f"Dimensioni prodotto: <b>50% x 50%</b>\n\n"
-            "Puoi modificare posizione e dimensioni dal menu <b>Modifica immagine</b>."
+            f"🖼️ <b>Template salvato</b>\n\n"
+            f"🏷️ Nome: <b>{nome}</b>\n"
+            f"📐 Dimensioni: <b>{tw}x{th}px</b>\n\n"
+            "📦 <b>Prodotto</b>\n"
+            "• Posizione: <b>50% x 50%</b>\n"
+            "• Dimensioni: <b>50% x 50%</b>\n\n"
+            "⚙️ Puoi modificare questi parametri dal menu <b>Modifica immagine</b>."
         )
     except Exception:
         text = "❌ Errore durante il salvataggio del template."
@@ -170,7 +190,11 @@ async def show_immagini(update: Update, context: ContextTypes.DEFAULT_TYPE):
         immagini = imgDAO.get_by_canale(channel_id)
 
     if immagini:
-        text = f"🖼️ <b>Template disponibili</b> — totali: {len(immagini)}"
+        text = (
+            "🖼️ <b>Template disponibili</b>\n\n"
+            f"📊 Totale: <b>{len(immagini)}</b>\n\n"
+            "Scegli un template per attivarlo 👇"
+        )
         for img in immagini:
             emoji = "🟢" if img.in_uso else "🔴"
             keyboard.append([
@@ -178,7 +202,12 @@ async def show_immagini(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton(emoji, callback_data=f'layoutimg_activate_{channel_id}_{img.immagine_id}')
             ])
     else:
-        text = "Nessun template presente. Aggiungine uno prima."
+        text = (
+            "🖼️ <b>Nessun template disponibile</b>\n\n"
+            "Non hai ancora caricato alcun template.\n\n"
+            "➕ Aggiungine uno per iniziare."
+        )
+        keyboard.append([InlineKeyboardButton("➕ Aggiungi immagine", callback_data=f'layoutimg_add_{channel_id}')])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_menu_{channel_id}')])
 
@@ -198,15 +227,15 @@ async def activate_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with LayoutImmagineDAO() as imgDAO:
         img = imgDAO.get(immagine_id)
         if not img:
-            await query.answer("Template non trovato.", show_alert=True)
+            await query.answer("⚠️ Template non trovato.", show_alert=True)
             return
 
         if img.in_uso:
             imgDAO.disattiva(channel_id)
-            testo_risposta = "Template disattivato!"
+            testo_risposta = "🔴 Template disattivato!"
         else:
             imgDAO.set_in_uso(immagine_id, channel_id)
-            testo_risposta = "Template attivato!"
+            testo_risposta = "🟢 Template attivato!"
 
     await query.answer(testo_risposta, show_alert=True)
     await show_immagini(update, context)
@@ -237,13 +266,21 @@ async def edit_immagini(update: Update, context: ContextTypes.DEFAULT_TYPE):
         immagini = imgDAO.get_by_canale(channel_id)
 
     if immagini:
-        text = "Seleziona un template da modificare"
+        text = (
+            "🖼️ <b>Modifica template</b>\n\n"
+            "Seleziona un template da modificare 👇"
+        )
         for img in immagini:
             keyboard.append([
                 InlineKeyboardButton(img.nome, callback_data=f'layoutimg_editone_{channel_id}_{img.immagine_id}')
             ])
     else:
-        text = "Nessun template presente."
+        text = (
+            "🖼️ <b>Nessun template disponibile</b>\n\n"
+            "Non hai ancora caricato alcun template.\n\n"
+            "➕ Aggiungine uno per iniziare."
+        )
+        keyboard.append([InlineKeyboardButton("➕ Aggiungi immagine", callback_data=f'layoutimg_add_{channel_id}')])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_menu_{channel_id}')])
 
@@ -273,14 +310,15 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
         img = imgDAO.get(immagine_id)
 
     if not img:
-        await query.edit_message_text("Template non trovato.")
+        await query.edit_message_text("⚠️ Template non trovato.")
         return
     
     context.user_data["img"] = img
 
     text = (
-        f"✏️ <b>{img.nome}</b>\n"
-        f"Dimensioni template: <b>{img.template_w}x{img.template_h}px</b>\n\n"
+        "🖼️ <b>Editor template</b>\n\n"
+        f"🏷️ <b>{img.nome}</b>\n\n"
+        f"📐 {img.template_w} x {img.template_h}px"
     )
 
     keyboard = [
@@ -341,12 +379,14 @@ async def layoutimg_prodotto_menu(update: Update, context: ContextTypes.DEFAULT_
         return
 
     text = (
-        "Modifica prodotto!\n\n"
-        f"Posizione prodotto: <b>{img.prod_x}% x {img.prod_y}%</b>\n"
-        f"Dimensioni prodotto: <b>{img.prod_w_pct}% x {img.prod_h_pct}%</b>\n\n"
+        "🖼️ <b>Modifica prodotto</b>\n\n"
+        "📍 <b>Posizione</b>\n"
+        f"{img.prod_x}% x {img.prod_y}%\n\n"
+        "📐 <b>Dimensioni</b>\n"
+        f"{img.prod_w_pct}% x {img.prod_h_pct}%\n"
     )
     keyboard = [
-        [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prodotto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prodotto')],
+        [InlineKeyboardButton("📍 Modifica Posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prodotto'), InlineKeyboardButton("📐 Modifica Dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prodotto')],
     ]
     keyboard.extend(tasto_indietro)
 
@@ -382,39 +422,45 @@ async def layoutimg_attr_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if tipo == "prezzomenu":
         text = (
-            "Modifica prezzo\n\n"
-            f"Stato: <b>{'Attivo' if img.prezzo_active else 'Non attivo'}</b>\n"
-            f"Posizione: <b>{img.prezzo_x}% x {img.prezzo_y}%</b>\n"
-            f"Dimensioni: <b>{img.prezzo_w_pct}% x {img.prezzo_h_pct}%</b>"
+            "💰 <b>Modifica prezzo</b>\n\n"
+            f"⚙️ Stato: <b>{'Attivo' if img.prezzo_active else 'Non attivo'}</b>\n\n"
+            "📍 <b>Posizione</b>\n"
+            f"{img.prezzo_x}% x {img.prezzo_y}%\n\n"
+            "📐 <b>Dimensioni</b>\n"
+            f"{img.prezzo_w_pct}% x {img.prezzo_h_pct}%"
         )
 
-        keyboard = [[InlineKeyboardButton("Disattiva prezzo" if img.prezzo_active else "Attiva prezzo", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzo")],
-            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzo'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzo')]
+        keyboard = [[InlineKeyboardButton("🔴 Disattiva Prezzo" if img.prezzo_active else "🟢 Attiva Prezzo", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzo")],
+            [InlineKeyboardButton("📍 Modifica Posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzo'), InlineKeyboardButton("📐 Modifica Dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzo')]
         ]
     elif tipo == "prezzooldmenu":
         text = (
-            "Modifica prezzo consigliato\n\n"
-            f"Stato: <b>{'Attivo' if img.prezzo_old_active else 'Non attivo'}</b>\n"
-            f"Posizione: <b>{img.prezzo_old_x}% x {img.prezzo_old_y}%</b>\n"
-            f"Dimensioni: <b>{img.prezzo_old_w_pct}% x {img.prezzo_old_h_pct}%</b>\n\n"
+            "💸 <b>Modifica prezzo consigliato</b>\n\n"
+            f"⚙️ Stato: <b>{'Attivo' if img.prezzo_old_active else 'Non attivo'}</b>\n\n"
+            "📍 <b>Posizione</b>\n"
+            f"{img.prezzo_old_x}% x {img.prezzo_old_y}%\n\n"
+            "📐 <b>Dimensioni</b>\n"
+            f"{img.prezzo_old_w_pct}% x {img.prezzo_old_h_pct}%"
         )
 
         keyboard = [
-            [InlineKeyboardButton("Disattiva prezzo consigliato" if img.prezzo_old_active else "Attiva prezzo consigliato", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzoold")],
-            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzoold'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzoold')]
+            [InlineKeyboardButton("🔴 Disattiva Prezzo Consigliato" if img.prezzo_old_active else "🟢 Attiva Prezzo Consigliato", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_prezzoold")],
+            [InlineKeyboardButton("📍 Modifica Posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_prezzoold'), InlineKeyboardButton("📐 Modifica Dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_prezzoold')]
         ]
 
     elif tipo == "scontomenu":
         text = (
-            "Modifica sconto\n\n"
-            f"Stato: <b>{'Attivo' if img.sconto_active else 'Non attivo'}</b>\n"
-            f"Posizione prezzo: <b>{img.sconto_x}% x {img.sconto_y}%</b>\n"
-            f"Dimensioni prezzo: <b>{img.sconto_w_pct}% x {img.sconto_h_pct}%</b>"
+            "🔥 <b>Modifica sconto</b>\n\n"
+            f"⚙️ Stato: <b>{'Attivo' if img.sconto_active else 'Non attivo'}</b>\n\n"
+            "📍 <b>Posizione</b>\n"
+            f"{img.sconto_x}% x {img.sconto_y}%\n\n"
+            "📐 <b>Dimensioni</b>\n"
+            f"{img.sconto_w_pct}% x {img.sconto_h_pct}%"
         )
 
         keyboard = [
-            [InlineKeyboardButton("Disattiva sconto" if img.sconto_active else "Attiva sconto", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_sconto")],
-            [InlineKeyboardButton("📍 Modifica posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_sconto'), InlineKeyboardButton("📐 Modifica dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_sconto')],
+            [InlineKeyboardButton("🔴 Disattiva Sconto" if img.sconto_active else "🟢 Attiva Sconto", callback_data=f"layoutimg_activateattr_{channel_id}_{immagine_id}_sconto")],
+            [InlineKeyboardButton("📍 Modifica Posizione", callback_data=f'layoutimg_setpos_{channel_id}_{immagine_id}_sconto'), InlineKeyboardButton("📐 Modifica Dimensioni", callback_data=f'layoutimg_setsize_{channel_id}_{immagine_id}_sconto')],
         ]
     else:
         await query.edit_message_text("Tipo non trovato", reply_markup=InlineKeyboardMarkup(tasto_indietro))
@@ -452,14 +498,17 @@ async def set_pos_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["channel_id"] = channel_id
     context.user_data["tipo"] = tipo
 
-    keyboard = [[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
+    keyboard = [[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
 
     msg = await query.edit_message_text(
-        text=(
+        text = (
             "📍 <b>Modifica posizione</b>\n\n"
-            "Invia la posizione nel formato: <code>x y</code>\n"
-            "I valori sono percentuali (0–100) rispetto alle dimensioni del template.\n\n"
-            "Es: <code>50 30</code> → centro orizzontale, 30% dall'alto"
+            "✏️ Invia la nuova posizione nel formato:\n"
+            "<code>x y</code>\n\n"
+            "📊 Valori in percentuale (0–100)\n"
+            "Rispetto alle dimensioni del template\n\n"
+            "💡 Esempio:\n"
+            "<code>50 30</code> → centro orizzontale, 30% dall’alto"
         ),
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
@@ -486,7 +535,7 @@ async def ricevi_set_pos(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id,
             message_id=message_id,
             text="⚠️ Formato non valido. Invia due numeri tra 0 e 100, es: <code>50 30</code>",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]),
             parse_mode="HTML"
         )
         return ATTESA_SET_POS
@@ -554,14 +603,17 @@ async def set_size_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["channel_id"] = channel_id
     context.user_data["tipo"] = tipo
 
-    keyboard = [[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
+    keyboard = [[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]
 
     msg = await query.edit_message_text(
-        text=(
+        text = (
             "📐 <b>Modifica dimensioni</b>\n\n"
-            "Invia le dimensioni nel formato: <code>larghezza altezza</code>\n"
-            "I valori sono percentuali (1–100) rispetto alle dimensioni del template.\n\n"
-            "Es: <code>40 40</code> → il prodotto occupa il 40% in larghezza e il 40% in altezza"
+            "✏️ Invia le nuove dimensioni nel formato:\n"
+            "<code>larghezza altezza</code>\n\n"
+            "📊 Valori in percentuale (1–100)\n"
+            "Rispetto alle dimensioni del template\n\n"
+            "💡 Esempio:\n"
+            "<code>40 40</code> → 40% larghezza e 40% altezza"
         ),
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML"
@@ -588,7 +640,7 @@ async def ricevi_set_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=update.effective_chat.id,
             message_id=message_id,
             text="⚠️ Formato non valido. Invia due numeri tra 1 e 100, es: <code>40 40</code>",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Annulla", callback_data=f'layoutimg_editone_{channel_id}_{immagine_id}')]]),
             parse_mode="HTML"
         )
         return ATTESA_SET_SIZE
@@ -650,32 +702,32 @@ async def activate_attr_img(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with LayoutImmagineDAO() as imgDAO:
         img = imgDAO.get(immagine_id)
         if not img:
-            await query.answer("Attributo non trovato.", show_alert=True)
+            await query.answer("⚠️ Layout immagine non trovata.", show_alert=True)
             return
 
         if tipo == "prezzo":
             if img.prezzo_active:
                 imgDAO.disattiva_prezzo(immagine_id)
-                testo_risposta = "Prezzo disattivato!"
+                testo_risposta = "🔴 Prezzo disattivato!"
             else:
                 imgDAO.attiva_prezzo(immagine_id)
-                testo_risposta = "Prezzo attivato!"
+                testo_risposta = "🟢 Prezzo attivato!"
         elif tipo == "prezzoold":
             if img.prezzo_old_active:
                 imgDAO.disattiva_prezzo_old(immagine_id)
-                testo_risposta = "Prezzo consigliato disattivato!"
+                testo_risposta = "🔴 Prezzo consigliato disattivato!"
             else:
                 imgDAO.attiva_prezzo_old(immagine_id)
-                testo_risposta = "Prezzo consigliato attivato!"
+                testo_risposta = "🟢 Prezzo consigliato attivato!"
         elif tipo == "sconto":
             if img.sconto_active:
                 imgDAO.disattiva_sconto(immagine_id)
-                testo_risposta = "Sconto disattivato!"
+                testo_risposta = "🔴 Sconto disattivato!"
             else:
                 imgDAO.attiva_sconto(immagine_id)
-                testo_risposta = "Sconto attivato!"
+                testo_risposta = "🟢 Sconto attivato!"
         else:
-            testo_risposta = "Attributo non trovato."
+            testo_risposta = "⚠️ Attributo non trovato."
 
     await query.answer(testo_risposta, show_alert=True)
     await edit_immagine(update, context)
@@ -707,8 +759,13 @@ async def delete_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await query.edit_message_text(
-        text="Sei sicuro di voler eliminare questo template?\n\n⚠️ L'operazione è irreversibile.",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        text = (
+            "🖼️ <b>Elimina template</b>\n\n"
+            "Sei sicuro di voler eliminare questo template?\n\n"
+            "⚠️ <b>Attenzione:</b> l’operazione è irreversibile."
+        ),
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
     )
 
 
@@ -723,15 +780,23 @@ async def confirm_delete_immagine(update: Update, context: ContextTypes.DEFAULT_
     try:
         with LayoutImmagineDAO() as imgDAO:
             imgDAO.delete(immagine_id)
-        text = "✅ Template eliminato con successo."
+        text = (
+            "🗑️ <b>Template eliminato</b>\n\n"
+            "Il template è stato rimosso con successo."
+        )
     except Exception:
-        text = "❌ Errore durante l'eliminazione."
+        text = (
+            "❌ <b>Eliminazione fallita</b>\n\n"
+            "Non è stato possibile eliminare il template.\n"
+            "Riprova più tardi."
+        )
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_edit_{channel_id}')]]
 
     await query.edit_message_text(
         text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
     )
 
 

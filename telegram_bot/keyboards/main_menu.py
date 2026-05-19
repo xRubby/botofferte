@@ -24,7 +24,7 @@ def get_benvenuto(utente: User) -> str:
         "Scegli ciò di cui hai bisogno dai tasti in basso ⤵️\n\n"
         "🔍 <b>Cerca prodotto</b> ti permette di ottenere il prodotto "
         "desiderato da Amazon e scoprire se è in sconto.\n\n"
-        "📢 <b>Offerte Canale</b> ti permette di pubblicare "
+        "🛒 <b>Offerte Canale</b> ti permette di pubblicare "
         "offerte <b>Amazon</b> nei tuoi canali Telegram.\n\n"
         "⚙️ <b>Impostazioni</b> ti permette di modificare le impostazioni "
         "di questa chat <b>(IN LAVORAZIONE)</b>."
@@ -42,9 +42,6 @@ def aggiungiUtente(userID, first_name):
 
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
-    print(f"[DEBUG] update.message.text: {update.message.text}")
-    print(f"[DEBUG] ctx.args: {ctx.args}")
-    print(f"[DEBUG] ctx.args type: {type(ctx.args)}")
     utente = update.effective_user
 
     aggiungiUtente(utente.id, utente.first_name)
@@ -55,7 +52,6 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
 
     if ctx.args:
         token = ctx.args[0]
-        print("Token ricevuto")
         with InvitoDAO() as invitoDAO:
             invito = invitoDAO.get(token)
 

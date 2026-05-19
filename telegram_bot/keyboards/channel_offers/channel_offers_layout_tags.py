@@ -34,10 +34,16 @@ async def edit_tags(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')]
     ]
 
+    text = (
+        "🏷️ <b>Modifica tag</b>\n\n"
+        "Qui puoi aggiornare le informazioni dei tag."
+    )
+
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text="Qui puoi modificare le informazioni dei tag.",
-        reply_markup=reply_markup
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode="HTML"
     )
 
 
@@ -49,14 +55,19 @@ async def edit_tags_spedito(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = match.group(1)
 
     keyboard = [
-        [InlineKeyboardButton("Venduto e spedito da Amazon", callback_data=f'co_edittags_{channel_id}_sp_amazon')],
-        [InlineKeyboardButton("Venduto da VENDITORE e spedito da Amazon", callback_data=f'co_edittags_{channel_id}_sp_vndamazon')],
-        [InlineKeyboardButton("Venduto e spedito da VENDITORE", callback_data=f'co_edittags_{channel_id}_sp_vnd')],
+        [InlineKeyboardButton("🏪 Amazon", callback_data=f'co_edittags_{channel_id}_sp_amazon')],
+        [InlineKeyboardButton("🏪 Venditore + 📦 Amazon", callback_data=f'co_edittags_{channel_id}_sp_vndamazon')],
+        [InlineKeyboardButton("🏪 Venditore", callback_data=f'co_edittags_{channel_id}_sp_vnd')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}')]
     ]
 
+    text = (
+        "🚚 <b>Tipo di spedizione</b>\n\n"
+        "Seleziona il tipo di vendita e spedizione da associare al tag 👇"
+    )
+
     await query.edit_message_text(
-        text="Seleziona il tipo di spedizione:",
+        text=text,
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -84,13 +95,14 @@ async def edit_tags_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
         label = "Preorder"
 
     text = (
-        f"Hai selezionato il tag <b>{label}</b>\n\n"
-        f"<b>Messaggio corrente</b>: {current}\n\n"
-        f"Invia il nuovo testo per il tag:"
+        f"🏷️ <b>Tag selezionato:</b> {label}\n\n"
+        "📝 <b>Messaggio corrente</b>\n\n"
+        f"<code>{current}</code>\n\n"
+        "✏️ Invia il nuovo testo per aggiornare il tag:"
     )
 
     keyboard = [
-        [InlineKeyboardButton("🔄 Reset default", callback_data=f'co_edittags_{channel_id}_reset_{tag_type}')],
+        [InlineKeyboardButton("🔄 Ripristina default", callback_data=f'co_edittags_{channel_id}_reset_{tag_type}')],
         [InlineKeyboardButton("❌ Annulla", callback_data=f'co_edittags_{channel_id}')]
     ]
     msg = await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -125,14 +137,19 @@ async def ricevi_nuovo_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}')]]
 
+    text = (
+        "✅ <b>Tag aggiornato</b>\n\n"
+        f"🏷️ <b>{tag_type.capitalize()}</b> è stato aggiornato con successo."
+    )
+
     if not message_id:
         await update.message.reply_text(
-            f"✅ Tag <b>{tag_type.capitalize()}</b> aggiornato con successo!",
+            text,
             parse_mode="HTML"
         )
     else:
         await context.bot.edit_message_text(
-            f"✅ Tag <b>{tag_type.capitalize()}</b> aggiornato con successo!",
+            text,
             chat_id=update.effective_chat.id,
             message_id=message_id,
             parse_mode="HTML",
@@ -174,7 +191,8 @@ async def reset_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     await query.edit_message_text(
-        f"✅ Tag <b>{tag_type.capitalize()}</b> ripristinato al valore di default!",
+        "🔄 <b>Tag ripristinato</b>\n\n"
+        f"🏷️ <b>{tag_type.capitalize()}</b> è stato riportato al valore predefinito.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}')]
@@ -206,13 +224,14 @@ async def edit_tags_spedito_type(update: Update, context: ContextTypes.DEFAULT_T
     label, current = labels[spedito_type]
 
     text = (
-        f"Hai selezionato il tag <b>{label}</b>\n\n"
-        f"<b>Messaggio corrente</b>: {current}\n\n"
-        f"Invia il nuovo testo per il tag:"
+        f"🏷️ <b>Tag selezionato:</b> {label}\n\n"
+        "📝 <b>Messaggio corrente</b>\n\n"
+        f"<code>{current}</code>\n\n"
+        "✏️ Invia il nuovo testo per aggiornare il tag:"
     )
 
     keyboard = [
-        [InlineKeyboardButton("🔄 Reset default", callback_data=f'co_edittags_{channel_id}_reset_sp_{spedito_type}')],
+        [InlineKeyboardButton("🔄 Ripristina default", callback_data=f'co_edittags_{channel_id}_reset_sp_{spedito_type}')],
         [InlineKeyboardButton("❌ Annulla", callback_data=f'co_edittags_{channel_id}_sp')]
     ]
     msg = await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -249,14 +268,19 @@ async def ricevi_nuovo_tag_spedito(update: Update, context: ContextTypes.DEFAULT
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}_sp')]]
 
+    text = (
+        "✅ <b>Tag aggiornato</b>\n\n"
+        f"🏷️ Il tag è stato aggiornato con successo."
+    )
+
     if not message_id:
         await update.message.reply_text(
-            "✅ Tag aggiornato con successo!",
+            text,
             parse_mode="HTML"
         )
     else:
         await context.bot.edit_message_text(
-            "✅ Tag aggiornato con successo!",
+            text,
             chat_id=update.effective_chat.id,
             message_id=message_id,
             parse_mode="HTML",
@@ -300,7 +324,8 @@ async def reset_tag_spedito(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     await query.edit_message_text(
-        "✅ Tag ripristinato al valore di default!",
+        "🔄 <b>Tag ripristinato</b>\n\n"
+        f"🏷️ <b>Il tag è stato riportato al valore predefinito.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}_sp')]

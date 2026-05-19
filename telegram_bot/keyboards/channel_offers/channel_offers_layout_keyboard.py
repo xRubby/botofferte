@@ -14,17 +14,29 @@ async def keyboard_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     channel_id = check_channel_id(query, context)
 
-    text = "Tastiera post\n\nFunzionalità che riguardano la tastiera che verrà utilizzata nella pubblicazione delle offerte" 
+    text = (
+        "⌨️ <b>Tastiera post</b>\n\n"
+        "Gestisci la tastiera utilizzata nelle pubblicazioni delle offerte.\n\n"
+        "Seleziona un’opzione per continuare 👇"
+    )
 
     keyboard = [
-        [InlineKeyboardButton("Aggiungi Tastiera", callback_data=f'channeloffers_addkeyboard_{channel_id}')],
-        [InlineKeyboardButton("Seleziona Tastiera", callback_data=f'channeloffers_showkeyboards_{channel_id}'), InlineKeyboardButton("Modifica Tastiera", callback_data=f'channeloffers_editkeyboards_{channel_id}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')]
+        [
+            InlineKeyboardButton("➕ Nuova tastiera", callback_data=f'channeloffers_addkeyboard_{channel_id}')
+        ],
+        [
+            InlineKeyboardButton("📋 Seleziona tastiera", callback_data=f'channeloffers_showkeyboards_{channel_id}'),
+            InlineKeyboardButton("✏️ Modifica tastiera", callback_data=f'channeloffers_editkeyboards_{channel_id}')
+        ],
+        [
+            InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')
+        ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
         text=text,
+        parse_mode="HTML",
         reply_markup=reply_markup
     )
 
@@ -37,15 +49,19 @@ async def keyboard_menu_add_nome(update: Update, context: ContextTypes.DEFAULT_T
 
     channel_id = check_channel_id(query, context)
 
-    text = "Tastiera post\n\nInserisci nome" 
+    text = (
+        "⌨️ <b>Nuova tastiera</b>\n\n"
+        "✏️ Inserisci il nome da assegnare alla tastiera:"
+    )
 
     keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')]
+        [InlineKeyboardButton("❌ Annulla", callback_data=f'channeloffers_keyboards_{channel_id}')]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     msg = await query.edit_message_text(
         text=text,
+        parse_mode="HTML",
         reply_markup=reply_markup
     )
     context.user_data["msg_id"] = msg.message_id
@@ -61,10 +77,17 @@ async def keyboard_menu_add_msg(update: Update, context: ContextTypes.DEFAULT_TY
     await update.message.delete()
     context.user_data["nome_tastiera"] = nome_tastiera
 
-    text = "Tastiera post\n\nInserisci messaggio" 
+    text = (
+        "⌨️ <b>Nuova tastiera</b>\n\n"
+        "📝 Inserisci il contenuto della tastiera.\n\n"
+        "📌 <b>Formato richiesto:</b>\n"
+        "<code>messaggio1 - url1 || messaggio2 - url2</code>\n"
+        "<code>messaggio3 - url3</code>\n\n"
+        "🔗 Tag disponibile:\n<code>{url}</code> → link prodotto automatico"
+    )
 
     keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')]
+        [InlineKeyboardButton("❌ Annulla", callback_data=f'channeloffers_keyboards_{channel_id}')]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -72,6 +95,7 @@ async def keyboard_menu_add_msg(update: Update, context: ContextTypes.DEFAULT_TY
         chat_id=update.effective_chat.id,
         message_id=message_id,
         text=text,
+        parse_mode="HTML",
         reply_markup=reply_markup
     )
 
@@ -90,18 +114,26 @@ async def keyboard_menu_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')]
     ]
 
-    text = "Tastiera post\n\nInserimento avvenuto correttamente" 
+    text = (
+        "⌨️ <b>Nuova tastiera creata</b>\n\n"
+        "La tastiera è stata salvata correttamente."
+    )
 
     try:
         with TastieraDAO() as tastieraDAO:
             tastieraDAO.insert(nome_tastiera, messaggio_tastiera, 0, channel_id)
     except Exception:
-        text = "Errore nell'inserimento della tastiera"
+        text = (
+            "❌ <b>Errore tastiera</b>\n\n"
+            "Non è stato possibile inserire la tastiera.\n"
+            "Riprova più tardi."
+        )
 
     await context.bot.edit_message_text(
         chat_id=update.effective_chat.id,
         message_id=message_id,
         text=text,
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -127,14 +159,23 @@ async def show_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with TastieraDAO() as tastieraDAO:
         tastiere = tastieraDAO.get_channel_keyboards(channel_id)
         if tastiere:
-            text=f"Le tue tastiere\n\nTastiere totali: {len(tastiere)}"
+            text = (
+                "⌨️ <b>Le tue tastiere</b>\n\n"
+                f"📊 Tastiere totali: <b>{len(tastiere)}</b>\n\n"
+                "Scegli una tastiera per attivarla 👇"
+            )
             for tastiera in tastiere:
                 emoji_stato = "🟢" if tastiera.in_uso else "🔴"
 
                 keyboard.append([InlineKeyboardButton(f"{tastiera.nome_tastiera}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channeloffers_activatekeyboard_{channel_id}_{tastiera.tastiera_id}')])
 
         else:
-            text = "Nessuna tastiera presente"
+            text = (
+                "⌨️ <b>Nessuna tastiera presente</b>\n\n"
+                "Non hai ancora creato alcuna tastiera.\n\n"
+                "➕ Creane una per iniziare."
+            )
+            keyboard.append([InlineKeyboardButton("➕ Nuova tastiera", callback_data=f'channeloffers_addkeyboard_{channel_id}')])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -156,19 +197,19 @@ async def activate_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         tastiera = tastieraDAO.get(keyboard_id)
 
         if not  tastiera:
-            text = "Errore durante l'attivazione della tastiera"
+            text = "⚠️ Errore durante l'attivazione della tastiera"
         else:   
             id_canale = tastiera.canale_id
 
             if( tastiera.in_uso):
                 tastieraDAO.update_stato(tastiera.tastiera_id, 0)
-                text="Tastiera disattivata!"
+                text="🔴 Tastiera disattivata!"
             else:
                 tastiera_old = tastieraDAO.get_in_uso(id_canale)
                 if tastiera_old:
                     tastieraDAO.update_stato(tastiera_old.tastiera_id, 0)
                 tastieraDAO.update_stato( tastiera.tastiera_id, 1)
-                text="Tastiera selezionata!"
+                text="🟢 Tastiera selezionata!"
     
     await query.answer(text=text, show_alert=True)
 
@@ -186,12 +227,20 @@ async def edit_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with TastieraDAO() as tastieraDAO:
         tastiere = tastieraDAO.get_channel_keyboards(channel_id)
         if tastiere:
-            text=f"Seleziona una tastiera da modificare"
+            text = (
+                "⌨️ <b>Modifica tastiera</b>\n\n"
+                "Seleziona una tastiera da modificare 👇"
+            )
             for tastiera in tastiere:
                 keyboard.append([InlineKeyboardButton(f"{tastiera.nome_tastiera}", callback_data=f'channeloffers_editkeyboard_{channel_id}_{tastiera.tastiera_id}')])
 
         else:
-            text = "Nessuna tastiera presente"
+            text = (
+                "⌨️ <b>Nessuna tastiera presente</b>\n\n"
+                "Non hai ancora creato alcuna tastiera.\n\n"
+                "➕ Creane una per iniziare."
+            )
+            keyboard.append([InlineKeyboardButton("➕ Nuova tastiera", callback_data=f'channeloffers_addkeyboard_{channel_id}')])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_keyboards_{channel_id}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -214,11 +263,15 @@ async def edit_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with TastieraDAO() as tastieraDAO:
         tastiera = tastieraDAO.get(tastiera_id)
     
-    text = (f"Tastiera selezionata: {tastiera.nome_tastiera}\n\n"
-            f"Messaggio attuale\n\n{tastiera.messaggio}")
+    text = (
+        f"⌨️ <b>Tastiera selezionata</b>\n\n"
+        f"🏷️ <b>{tastiera.nome_tastiera}</b>\n\n"
+        "📝 <b>Contenuto della tastiera</b>\n\n"
+        f"<code>{tastiera.messaggio}</code>"
+    )
 
     keyboard = [
-        [InlineKeyboardButton("Modifica messaggio", callback_data=f'channeloffers_editmessagekeyboard_{tastiera.canale_id}_{tastiera_id}'),InlineKeyboardButton("Cancella Tastiera", callback_data=f'channeloffers_deletekeyboard_{tastiera.canale_id}_{tastiera.tastiera_id}')],
+        [InlineKeyboardButton("✏️ Modifica Contenuto", callback_data=f'channeloffers_editmessagekeyboard_{tastiera.canale_id}_{tastiera_id}'),InlineKeyboardButton("🗑️ Elimina Tastiera", callback_data=f'channeloffers_deletekeyboard_{tastiera.canale_id}_{tastiera.tastiera_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editkeyboards_{tastiera.canale_id}')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -226,6 +279,7 @@ async def edit_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
             text=text,
             reply_markup=reply_markup,
+            parse_mode="HTML"
     )
 
 async def edit_keyboard_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -240,8 +294,12 @@ async def edit_keyboard_message(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data["channel_id"] = channel_id
 
     text = (
-        "Modifica Tastiera\n\n"
-        "Inserisci il nuovo messaggio"
+        "⌨️ <b>Modifica tastiera</b>\n\n"
+        "📝 Inserisci il nuovo contenuto della tastiera.\n\n"
+        "📌 <b>Formato richiesto:</b>\n"
+        "<code>messaggio1 - url1 || messaggio2 - url2</code>\n"
+        "<code>messaggio3 - url3</code>\n\n"
+        "🔗 <b>Tag disponibile:</b> <code>{url}</code> → link prodotto automatico"
     )
 
     keyboard = [
@@ -269,9 +327,15 @@ async def ricevi_nuovo_messaggio_keyboard(update: Update, context: ContextTypes.
     try:
         with TastieraDAO() as tastieraDAO:
             tastieraDAO.update_messaggio(tastiera_id, nuovo_messaggio)
-        text = "Messaggio della tastiera aggiornato con successo!"
+        text = (
+        "⌨️ <b>Tastiera aggiornata</b>\n\n"
+        "Il contenuto è stato salvato con successo."
+    )
     except Exception as e:
-        text = "Errore durante l'aggiornamento del messaggio."
+        text = (
+            "❌ <b>Aggiornamento fallito</b>\n\n"
+            "Non è stato possibile salvare le modifiche alla tastiera."
+        )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editkeyboard_{channel_id}_{tastiera_id}')]
@@ -317,8 +381,15 @@ async def delete_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
 
+    text = (
+        "🗑️ <b>Elimina tastiera</b>\n\n"
+        "Sei sicuro di voler eliminare questa tastiera?\n\n"
+        "⚠️ <b>Attenzione:</b> questa operazione è irreversibile."
+    )
+
     await query.edit_message_text(
-        text="Sei sicuro di voler eliminare questa tastiera?\n\n⚠️ L'operazione è irreversibile.",
+        text=text,
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -334,9 +405,16 @@ async def confirm_delete_keyboard(update: Update, context: ContextTypes.DEFAULT_
     try:
         with TastieraDAO() as tastieraDAO:
             tastieraDAO.delete(tastiera_id)
-        text = "Tastiera eliminata con successo."
+        text = (
+            "🗑️ <b>Tastiera eliminata</b>\n\n"
+            "La tastiera è stata rimossa con successo."
+        )
     except Exception as e:
-        text = "Errore durante l'eliminazione della tastiera."
+        text = (
+            "❌ <b>Eliminazione fallita</b>\n\n"
+            "Non è stato possibile eliminare la tastiera.\n"
+            "Riprova più tardi."
+        )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editkeyboards_{channel_id}')]
@@ -344,6 +422,7 @@ async def confirm_delete_keyboard(update: Update, context: ContextTypes.DEFAULT_
 
     await query.edit_message_text(
         text=text,
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
