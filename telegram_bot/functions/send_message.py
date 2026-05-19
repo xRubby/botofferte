@@ -331,6 +331,8 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
     with LayoutImmagineDAO() as imgDAO:
         layout_img = imgDAO.get_in_uso(channel_id)
 
+    foto = None
+
     if layout_img:
         await update_step(ctx, chat_id, msg_id, "🖼️ <b>Elaborazione immagine</b>\n\nSto elaborando l’immagine del prodotto.")
         from utils.image_composer import componi_immagine
