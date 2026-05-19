@@ -23,16 +23,19 @@ async def insert_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
     if gestisce_info and gestisce_info.id_affiliato:
         id_affiliato = gestisce_info.id_affiliato
 
-    text = f"Inserisci l'ID affiliato che verrà utilizzato al posto dell'ID memorizzato nel canale.\n\nID corrente: {id_affiliato}"
+    text = (f"🏷️ <b>Configurazione ID Affiliato</b>\n\n"
+        f"🔑 <b>ID corrente:</b> <code>{id_affiliato}</code>\n\n"
+        "✏️ Invia il nuovo ID affiliato per aggiornarlo.")
 
     keyboard = [
-        [InlineKeyboardButton("Rimuovi ID Affiliato", callback_data=f'channel_removeaffiliateid_{channel_id}')],
+        [InlineKeyboardButton("❌ Rimuovi ID Affiliato", callback_data=f'channel_removeaffiliateid_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     msg = await query.edit_message_text(
         text=text,
+        parse_mode="HTML",
         reply_markup=reply_markup
     )
 
@@ -52,9 +55,11 @@ async def remove_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
         with GestisceDAO() as gestisce_dao:     
             gestisce_dao.update_idaffiliato(user_id, channel_id, "")
         
-        text = "ID Affiliato rimosso con successo!"
+        text = "🗑️ <b>ID Affiliato rimosso con successo</b>"
     except Exception as e:
-        text = f"Errore durante la rimozione dell'ID Affiliato..."
+        text = ("❌ <b>Errore durante la rimozione</b>\n\n"
+            "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
+            "Riprova più tardi.")
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_affiliateid_{channel_id}')]
@@ -80,9 +85,14 @@ async def ricevi_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
         with GestisceDAO() as gestisceDAO:
             gestisceDAO.update_idaffiliato(user_id, channel_id, affiliate_id)
 
-        text = f"ID Affiliato aggiornato in: <b>{affiliate_id}</b>"
+        text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
+        text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
     except Exception as e:
-        text = f"Errore durante l'aggiornamento dell'ID Affiliato..."
+        text = (
+            "❌ <b>Errore durante l'aggiornamento</b>\n\n"
+            "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
+            "Riprova più tardi o verifica i dati inseriti."
+        )
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_affiliateid_{channel_id}')]

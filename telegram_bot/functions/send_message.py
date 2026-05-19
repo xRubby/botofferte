@@ -273,7 +273,15 @@ TEMPLATE_MESSAGE = (
     "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>"
 )
 
-def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
+async def update_step(context, chat_id, message_id, text):
+    await context.bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=message_id,
+        text=text,
+        parse_mode="HTML"
+    )
+
+async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int):
     user_id = update.effective_user.id 
     channel_id = ctx.user_data.get("channel_id", None)
 
@@ -292,6 +300,8 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
 
     if not info_prodotto:
         raise ValueError("Errore nella ricerca del prodotto")
+    
+    await update_step(ctx, chat_id, msg_id, "📦 <b>Prodotto trovato</b>\n\nSto elaborando le informazioni del prodotto.")
 
     with GestisceDAO() as gestisceDAO:
         gestisce = gestisceDAO.get(user_id, channel_id)
@@ -322,6 +332,7 @@ def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str):
         layout_img = imgDAO.get_in_uso(channel_id)
 
     if layout_img:
+        await update_step(ctx, chat_id, msg_id, "🖼️ <b>Elaborazione immagine</b>\n\nSto elaborando l’immagine del prodotto.")
         from utils.image_composer import componi_immagine
         try:
             prodotto_img = ProductConfig(info_prodotto["img_url"], layout_img.prod_x, layout_img.prod_y, layout_img.prod_w_pct, layout_img.prod_h_pct)

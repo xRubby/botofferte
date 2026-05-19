@@ -22,8 +22,12 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     msg = await query.edit_message_text(
-        text="Inserisci il link di Amazon:",
-        reply_markup=reply_markup
+        text = (
+            "🔗 <b>Inserisci link Amazon</b>\n\n"
+            "Incolla il link del prodotto che vuoi aggiungere 👇"
+        ),
+        reply_markup=reply_markup,
+        parse_mode="HTML"
     )
     context.user_data["msg_id"] = msg.message_id
     return ATTESA_KEYWORD
@@ -39,10 +43,11 @@ async def ricevi_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not channel_id or not message_id:
         return
     
-    await context.bot.edit_message_text(
+    msg = await context.bot.edit_message_text(
         chat_id=update.effective_chat.id,
         message_id=message_id,
-        text="Elaboro il prodotto...",
+        text=("🔍 <b>Ricerca in corso...</b>\n\n"
+        "Sto analizzando il prodotto Amazon."),
         parse_mode="HTML",
     )
 
@@ -51,12 +56,23 @@ async def ricevi_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     try:
-        search_offer(update, context, keyword)
-        testo = "Link aggiunto con successo."
+        await search_offer(update, context, keyword, update.effective_chat.id, msg.message_id)
+        testo = (
+            "✅ <b>Operazione completata</b>\n\n"
+            "🔗 Il link è stato aggiunto correttamente nella lista."
+        )
     except ValueError as ve:
-        testo = f"<b>Errore durante l'elaborazione del prodotto</b>\n\nErrore: {ve}"
+        testo = (
+            "❌ <b>Errore nell'elaborazione del prodotto</b>\n\n"
+            "⚠️ Il link o i dati forniti non sono validi.\n"
+            "Controlla il contenuto e riprova."
+        )
     except Exception as e:
-        testo = "<b>Errore durante l'elaborazione del prodotto</b>\n\nErrore generico"
+        testo = (
+            "❌ <b>Errore imprevisto</b>\n\n"
+            "Si è verificato un problema durante l'elaborazione del prodotto.\n"
+            "Riprova più tardi."
+        )
         import traceback
         traceback.print_exc()
 
