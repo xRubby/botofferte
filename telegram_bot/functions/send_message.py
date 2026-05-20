@@ -143,12 +143,12 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
             prodotto.data_preordine = None
     return prodotto
 
-def get_prodotto_dizionario(asin: str) -> dict | None:
+async def get_prodotto_dizionario(asin: str) -> dict | None:
     with ProdottoDAO() as prodottoDAO:
         prodotto = prodottoDAO.get_by_asin(asin)
 
     if not prodotto:
-        risultato = scraping_product(asin)
+        risultato = await scraping_product(asin)
         info_prodotto = creaDizionarioProdotto(risultato)
         with ProdottoDAO() as prodottoDAO:
             prodottoDAO.insert(
@@ -176,7 +176,7 @@ def get_prodotto_dizionario(asin: str) -> dict | None:
     prodotto.sconto = round(prodotto.sconto)
 
     if datetime.now() > datetime.strptime(prodotto.last_check, "%Y-%m-%d %H:%M:%S") + timedelta(hours=1):
-        risultato = scraping_product(asin)
+        risultato = await scraping_product(asin)
         info_prodotto = creaDizionarioProdotto(risultato)
         with ProdottoDAO() as prodottoDAO:
             if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
@@ -214,7 +214,7 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
     except ValueError as ve:
         raise ValueError("ASIN non trovato") from ve
     
-    info_prodotto = get_prodotto_dizionario(asin)
+    info_prodotto = await get_prodotto_dizionario(asin)
 
     if not info_prodotto:
         raise ValueError("Errore nella ricerca del prodotto")
@@ -296,7 +296,7 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
     except ValueError as ve:
         raise ValueError("ASIN non trovato") from ve
     
-    info_prodotto = get_prodotto_dizionario(asin)
+    info_prodotto = await get_prodotto_dizionario(asin)
 
     if not info_prodotto:
         raise ValueError("Errore nella ricerca del prodotto")
