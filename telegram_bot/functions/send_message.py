@@ -30,6 +30,16 @@ import os
 load_dotenv()
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
 
+TEXT_ERRORE_VALORE= ("❌ <b>Errore nell'elaborazione del prodotto</b>\n\n"
+            "⚠️ Il link o i dati forniti non sono validi.\n"
+            "Controlla il contenuto e riprova.")
+
+TEXT_ERRORE_GENERICO = (
+            "❌ <b>Errore imprevisto</b>\n\n"
+            "Si è verificato un problema durante l'elaborazione del prodotto.\n"
+            "Riprova più tardi."
+        )
+
 def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
     if not prodotto:
         return None
@@ -190,8 +200,8 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
     
     return prodotto_to_dict(prodotto)
 
-def extract_asin(keyword: str):
-    expanded_url = expand_url(keyword)
+async def extract_asin(keyword: str):
+    expanded_url = await expand_url(keyword)
     asin = extract_asin_from_url(expanded_url)
 
     if not asin:
@@ -210,7 +220,7 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         raise ValueError("Errore nella keyword mandata")
     
     try:
-        asin = extract_asin(keyword)
+        asin = await extract_asin(keyword)
     except ValueError as ve:
         raise ValueError("ASIN non trovato") from ve
     
@@ -220,7 +230,7 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         raise ValueError("Errore nella ricerca del prodotto")
     
     info_prodotto["link"]+= f"?tag={ASSOCIATE_TAG}"
-    info_prodotto["link_short"] = shorten_url(info_prodotto["link"])
+    info_prodotto["link_short"] = await shorten_url(info_prodotto["link"])
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"])
     info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto)
 
@@ -273,32 +283,44 @@ TEMPLATE_MESSAGE = (
     "🔗 <b>Scopri l'offerta:</b> <a href=\"{link}\">Clicca qui!</a>"
 )
 
-async def update_step(context, chat_id, message_id, text):
+async def update_step(context, chat_id, message_id, text, reply_markup = None):
     await context.bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
         text=text,
-        parse_mode="HTML"
+        parse_mode="HTML",
+        reply_markup=reply_markup
     )
 
-async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int):
-    user_id = update.effective_user.id 
+async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int): 
     channel_id = ctx.user_data.get("channel_id", None)
 
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_info_{channel_id}")]
+    ])
+
     if not channel_id:
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_GENERICO, reply_markup)
+
         raise ValueError("Errore nel ritrovamento dell'id del canale")
 
     if not keyword:
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+
         raise ValueError("Errore nella keyword mandata")
     
     try:
-        asin = extract_asin(keyword)
+        asin = await extract_asin(keyword)
     except ValueError as ve:
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+
         raise ValueError("ASIN non trovato") from ve
     
     info_prodotto = await get_prodotto_dizionario(asin)
 
     if not info_prodotto:
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+
         raise ValueError("Errore nella ricerca del prodotto")
     
     await update_step(ctx, chat_id, msg_id, "📦 <b>Prodotto trovato</b>\n\nSto elaborando le informazioni del prodotto.")
@@ -315,7 +337,7 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
         if canale and canale.id_affiliato:
             info_prodotto["link"]+= f"?tag={canale.id_affiliato}"
 
-    info_prodotto["link_short"] = shorten_url(info_prodotto["link"])
+    info_prodotto["link_short"] = await shorten_url(info_prodotto["link"])
 
     with LayoutDAO() as layoutDAO:
         layout_in_uso = layoutDAO.get_in_uso(channel_id)
@@ -351,6 +373,8 @@ async def search_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, keyword: 
 
     with PubblicaDAO() as pubblicaDAO:
         pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message, info_prodotto["link"], info_prodotto["link_short"], foto)
+
+    await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", reply_markup)
 
 def parse_keyboard(text):
     result = []

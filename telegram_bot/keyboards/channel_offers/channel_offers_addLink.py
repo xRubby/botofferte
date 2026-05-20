@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
@@ -37,6 +39,7 @@ async def ricevi_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyword = update.message.text
     channel_id = context.user_data.get('channel_id')
     message_id = context.user_data.get("msg_id")
+    user_id = update.effective_user.id
 
     await update.message.delete()
 
@@ -51,38 +54,16 @@ async def ricevi_keyword(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML",
     )
 
-    reply_markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_info_{channel_id}")]
-    ])
-
-    try:
-        await search_offer(update, context, keyword, update.effective_chat.id, msg.message_id)
-        testo = (
-            "✅ <b>Operazione completata</b>\n\n"
-            "🔗 Il link è stato aggiunto correttamente nella lista."
+    asyncio.create_task(
+        search_offer(
+            user_id,
+            context,
+            keyword,
+            update.effective_chat.id,
+            msg.message_id
         )
-    except ValueError as ve:
-        testo = (
-            "❌ <b>Errore nell'elaborazione del prodotto</b>\n\n"
-            "⚠️ Il link o i dati forniti non sono validi.\n"
-            "Controlla il contenuto e riprova."
-        )
-    except Exception as e:
-        testo = (
-            "❌ <b>Errore imprevisto</b>\n\n"
-            "Si è verificato un problema durante l'elaborazione del prodotto.\n"
-            "Riprova più tardi."
-        )
-        import traceback
-        traceback.print_exc()
-
-    await context.bot.edit_message_text(
-        chat_id=update.effective_chat.id,
-        message_id=message_id,
-        text=testo,
-        parse_mode="HTML",
-        reply_markup=reply_markup,
     )
+
     return ConversationHandler.END
 
 

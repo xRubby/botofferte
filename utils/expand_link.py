@@ -1,17 +1,15 @@
-import requests
 import re
+import httpx
 
-def expand_url(url):
+async def expand_url(url: str) -> str:
     pattern = r'https?://[^\s/$.?#].[^\s]*'
-    if re.match(pattern, url):
-        try:
-
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(url, headers=headers, allow_redirects=True)
-            return response.url
-
-        except requests.RequestException as e:
-            return None
-    return url
+    if not re.match(pattern, url):
+        return url
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
+            response = await client.get(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            return str(response.url)
+    except Exception:
+        return url

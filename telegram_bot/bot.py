@@ -33,7 +33,7 @@ logging.basicConfig(
 def start_telegram_bot():
     logging.basicConfig(level=logging.INFO)
 
-    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).concurrent_updates(10).build()
 
     application.add_handler(conv_cerca_prodotto)
     application.add_handler(conv_genera_licenza)

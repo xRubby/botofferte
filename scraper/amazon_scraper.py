@@ -31,30 +31,40 @@ def get_headers():
     }
 
 
-# ─────────────────────────────────────────────
-# SESSION ASYNC SINGLETON
-# ─────────────────────────────────────────────
+class ScraperLimiter:
+    def __init__(self, limit=3):
+        self.semaphore = asyncio.Semaphore(limit)
+
+limiter = ScraperLimiter(3)
 _client: httpx.AsyncClient | None = None
+_client_lock = asyncio.Lock()
 
 
 async def get_client() -> httpx.AsyncClient:
+    """
+    Client singleton MA creato in modo thread-safe e senza warm-up globale bloccante.
+    """
     global _client
 
     if _client is None:
-        _client = httpx.AsyncClient(
-            timeout=15,
-            follow_redirects=True,
-            headers=get_headers()
-        )
-
-        # "warm-up" leggero (non blocca thread)
-        try:
-            await _client.get("https://www.amazon.it")
-            await asyncio.sleep(random.uniform(1.5, 3.5))
-        except Exception:
-            pass
+        async with _client_lock:
+            if _client is None:
+                _client = httpx.AsyncClient(
+                    timeout=15,
+                    follow_redirects=True,
+                    limits=httpx.Limits(
+                        max_connections=10,
+                        max_keepalive_connections=5
+                    )
+                )
 
     return _client
+
+async def warmup_client(client: httpx.AsyncClient):
+    try:
+        await client.get("https://www.amazon.it")
+    except Exception:
+        pass
 
 
 async def human_delay(min_s=2.0, max_s=6.0):
@@ -77,155 +87,133 @@ def parse_price(price_str: str) -> float:
 async def scraping_product(asin: str) -> dict | None:
     url = f"https://www.amazon.it/dp/{asin}"
     client = await get_client()
+    await warmup_client(client)
 
-    try:
-        await human_delay()
+    async with limiter.semaphore:
+        try:
+            response = await client.get(url, headers=get_headers())
+            response.raise_for_status()
+            await asyncio.sleep(random.uniform(0.3, 1.2))
 
-        response = await client.get(url)
-        response.raise_for_status()
+            if "captcha" in response.url.path.lower() or "Type the characters" in response.text:
+                global _client
+                if _client:
+                    await _client.aclose()
+                _client = None
+                return None
 
-        # CAPTCHA detection
-        if "captcha" in response.url.path.lower() or "Type the characters" in response.text:
-            print(f"CAPTCHA rilevato per ASIN {asin}")
-            global _client
-            _client = None
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # ── TITLO ──
+            title_span = soup.find("span", id="productTitle")
+            if not title_span:
+                return None
+            title = title_span.get_text(strip=True)
+
+            # ── PREZZO ──
+            symbol = soup.find("span", class_="a-price-symbol")
+            whole = soup.find("span", class_="a-price-whole")
+            fraction = soup.find("span", class_="a-price-fraction")
+
+            if not (symbol and whole and fraction):
+                return None
+
+            currency = symbol.get_text(strip=True)
+            price_str = whole.text + fraction.text
+            price_val = parse_price(price_str)
+
+            old_price_val = price_val
+
+            container = soup.find("div", class_="a-section a-spacing-small aok-align-center")
+            if container:
+                offscreen = container.find("span", class_="a-offscreen")
+                if offscreen:
+                    parsed = parse_price(offscreen.get_text(strip=True))
+                    if parsed > price_val:
+                        old_price_val = parsed
+
+            discount = round((old_price_val - price_val) / old_price_val * 100) if old_price_val > price_val else 0
+
+            # ── VENDITORE ──
+            venditore = ""
+            venditore_div = soup.find("div", id="merchantInfoFeature_feature_div")
+
+            if venditore_div:
+                span = venditore_div.find("span")
+                if span:
+                    venditore = span.text.strip()
+
+            # ── SPEDIZIONE ──
+            spedito = ""
+            spedito_amazon = False
+
+            spedito_div = soup.find("div", id="fulfillerInfoFeature_feature_div")
+            if spedito_div:
+                span = spedito_div.find("span")
+                if span:
+                    spedito = span.text.strip()
+                    spedito_amazon = "Amazon" in spedito
+
+            if "Amazon" in venditore:
+                spedito_amazon = True
+
+            # ── IMG ──
+            img_tag = soup.find("img", id="landingImage")
+            if not img_tag:
+                return None
+
+            img_link = img_tag.get("data-old-hires", "")
+
+            # ── BRAND ──
+            brand_tag = soup.find("a", id="bylineInfo")
+            brand = brand_tag.get_text(strip=True).split()[-1] if brand_tag else ""
+
+            # ── PREORDER ──
+            preorder = False
+            data_preordine = ""
+
+            preorder_div = soup.find("div", id="availability")
+            if preorder_div:
+                match = re.search(r"\b(\d{1,2}\s+[a-zA-Z]+\s+\d{4})\b", preorder_div.get_text())
+                if match:
+                    preorder = True
+                    data_preordine = match.group()
+
+            return {
+                "ASIN": asin,
+                "titolo": title,
+                "prezzo": format_price(price_val),
+                "old_prezzo": format_price(old_price_val),
+                "valuta": currency,
+                "sconto": round(discount),
+                "venditore": venditore,
+                "spedito_Amazon": spedito_amazon,
+                "link": url,
+                "img_url": img_link,
+                "brand": brand,
+                "preordine": preorder,
+                "data_preordine": data_preordine,
+                "isPrime": spedito_amazon,
+                "isWarehouse": False,
+                "condizione": "",
+                "condizione_descrizione": "",
+                "offertaesclusiva": "",
+            }
+
+        except httpx.RequestError:
             return None
 
-        soup = BeautifulSoup(response.text, "html.parser")
 
-        # ── Titolo ─────────────────────────────
-        title_span = soup.find("span", id="productTitle")
-        if not title_span:
-            raise RuntimeError("Titolo non trovato")
-        title = title_span.get_text(strip=True)
+async def main():
+    asins = ["B0GS6CXWS2", "B07DMCGF99", "B0FBLPC57N"]
 
-        # ── Prezzo ─────────────────────────────
-        symbol = soup.find("span", class_="a-price-symbol")
-        whole = soup.find("span", class_="a-price-whole")
-        fraction = soup.find("span", class_="a-price-fraction")
+    results = await asyncio.gather(
+        scraping_product(asins[0]),
+        scraping_product(asins[1]),
+        scraping_product(asins[2]),
+    )
 
-        if not (symbol and whole and fraction):
-            raise RuntimeError("Prezzo non trovato")
+    print(results)
 
-        currency = symbol.get_text(strip=True)
-        price_str = whole.text + fraction.text
-        price_val = parse_price(price_str)
-
-        # ── Prezzo vecchio ─────────────────────
-        old_price_val = price_val
-        container = soup.find("div", class_="a-section a-spacing-small aok-align-center")
-
-        if container:
-            offscreen = container.find("span", class_="a-offscreen")
-            if offscreen:
-                parsed = parse_price(offscreen.get_text(strip=True).replace("€", ""))
-                if parsed > price_val:
-                    old_price_val = parsed
-
-        discount = (
-            round((old_price_val - price_val) / old_price_val * 100)
-            if old_price_val > price_val else 0
-        )
-
-        # ── Venditore ──────────────────────────
-        venditore = ""
-        venditore_div = soup.find("div", id="merchantInfoFeature_feature_div")
-
-        if venditore_div:
-            span = (
-                venditore_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
-                or venditore_div.find("span", class_="a-size-small offer-display-feature-text-message")
-            )
-            if span:
-                venditore = span.text.strip()
-
-        # ── Spedizione ─────────────────────────
-        spedito = ""
-        spedito_amazon = False
-
-        spedito_div = soup.find("div", id="fulfillerInfoFeature_feature_div")
-
-        if spedito_div:
-            span = (
-                spedito_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
-                or spedito_div.find("span", class_="a-size-small offer-display-feature-text-message")
-            )
-            if span:
-                spedito = span.text.strip()
-                spedito_amazon = "Amazon" in spedito
-
-        if not spedito and venditore:
-            spedito = venditore
-
-        if "Amazon" in venditore:
-            spedito_amazon = True
-
-        # ── Immagine ───────────────────────────
-        img_tag = soup.find("img", id="landingImage")
-        if not img_tag:
-            raise RuntimeError("Immagine non trovata")
-
-        img_link = img_tag.get("data-old-hires", "")
-
-        # ── Brand ───────────────────────────────
-        brand_tag = soup.find("a", id="bylineInfo")
-        brand = brand_tag.get_text(strip=True).split()[-1] if brand_tag else ""
-
-        # ── Preordine ───────────────────────────
-        preorder = False
-        data_preordine = ""
-
-        preorder_div = soup.find("div", id="availability")
-
-        if preorder_div:
-            testo = preorder_div.get_text(strip=True)
-            match = re.search(r"\b(\d{1,2}\s+[a-zA-Z]+\s+\d{4})\b", testo)
-
-            if match:
-                preorder = True
-                data_preordine = match.group()
-
-        # ── Offerta ─────────────────────────────
-        offerta_esclusiva = ""
-        badge = soup.find("span", id="dealBadgeSupportingText")
-
-        if badge and "aok-hidden" not in (badge.get("class") or []):
-            offerta_esclusiva = badge.text.strip()
-
-        return {
-            "ASIN": asin,
-            "titolo": title,
-            "prezzo": format_price(price_val),
-            "old_prezzo": format_price(old_price_val),
-            "valuta": currency,
-            "sconto": round(discount),
-            "venditore": venditore,
-            "spedito_Amazon": spedito_amazon,
-            "link": url,
-            "img_url": img_link,
-            "brand": brand,
-            "preordine": preorder,
-            "data_preordine": data_preordine,
-            "isPrime": spedito_amazon,
-            "isWarehouse": False,
-            "condizione": "",
-            "condizione_descrizione": "",
-            "offertaesclusiva": offerta_esclusiva,
-        }
-
-    except httpx.RequestError as e:
-        print(f"Errore rete ASIN {asin}: {e}")
-        return None
-
-    except RuntimeError as e:
-        print(f"Errore parsing ASIN {asin}: {e}")
-        return None
-
-
-# ─────────────────────────────────────────────
-# TEST
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
-    import asyncio
-
-    print(asyncio.run(scraping_product("B0GS6CXWS2")))
+    asyncio.run(main())
