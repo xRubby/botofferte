@@ -446,6 +446,10 @@ def generate_keyboard(text, link: Pubblica):
     return InlineKeyboardMarkup(keyboard)
     
 async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
+
+    if link.isPubblicato:
+        raise Exception("L'offerta è già stata pubblicata sul canale")
+
     with ProdottoDAO() as prodotto_dao:
         prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
 

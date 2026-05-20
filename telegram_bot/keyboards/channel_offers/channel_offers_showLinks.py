@@ -89,6 +89,9 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=BACK_BTN,
             parse_mode='HTML'
         )
+        with PubblicaDAO() as pubblicaDAO:
+            links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+            context.user_data["links"] = links
         return
     
     try:
@@ -137,6 +140,9 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]]),
                 parse_mode='HTML'
             )
+
+            links = pubblica_dao.get_channel_link_non_pubblicati(channel_id)
+            context.user_data["links"] = links
             return
 
         pubblica_dao.delete(link.id, link.id_canale, link.asin_prodotti)
