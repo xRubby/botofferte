@@ -2,13 +2,19 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from database.DAO.CanaleDAO import CanaleDAO
-from utils.channel_offers_utils import check_channel_id
+from utils.channel_offers_utils import check_channel_id, delete_preview_message
 
 async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
     
     channel_id = check_channel_id(query, context)
+
+    #Cancella messaggio preview di Lista Link
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
 
     with CanaleDAO() as canaleDAO:
         canale = canaleDAO.get(channel_id)

@@ -20,6 +20,7 @@ from telegram_bot.keyboards.channel_offers.channel_offers_showLinks import inser
 from telegram_bot.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
 from telegram_bot.keyboards.channel_offers.channel_offers_layout import activate_layout, confirm_delete_layout, conv_layout, delete_layout, edit_layout, edit_layouts, layout_menu, show_layouts, conv_edit_messaggio_layout
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import conv_keyboard, conv_edit_messaggio_keyboard
+from utils.channel_offers_utils import delete_preview
 
 load_dotenv()
 
@@ -110,6 +111,8 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(edit_keyboard, pattern=r'^channeloffers_editkeyboard_(-?\d+)_(\d+)$'))
     application.add_handler(CallbackQueryHandler(delete_keyboard,         pattern=r'^channeloffers_deletekeyboard_-?\d+_\d+$'))
     application.add_handler(CallbackQueryHandler(confirm_delete_keyboard, pattern=r'^channeloffers_confirmdeletekeyboard_-?\d+_\d+$'))
+
+    application.add_handler(CallbackQueryHandler(delete_preview, pattern="^delete_preview$"))
 
     
 

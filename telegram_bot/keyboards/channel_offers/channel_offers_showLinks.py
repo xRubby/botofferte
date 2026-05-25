@@ -5,7 +5,7 @@ from telegram.ext import ContextTypes
 
 from database.DAO.PubblicaDAO import PubblicaDAO
 from telegram_bot.functions.send_message import publish_offer
-from utils.channel_offers_utils import check_channel_id
+from utils.channel_offers_utils import check_channel_id, delete_preview_message
 
 
 
@@ -14,6 +14,11 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     channel_id = check_channel_id(query, context)
+
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
 
     links = context.user_data.get("links")
 
@@ -66,12 +71,36 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode='HTML')
 
+    if hasattr(link, "img_bytes") and link.img_bytes:
+        photo_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "❌ Elimina anteprima",
+                    callback_data="delete_preview"
+                )
+            ]
+        ])
+
+        preview_msg = await context.bot.send_photo(
+            chat_id=query.message.chat_id,
+            photo=link.img_bytes,
+            caption=f"🖼️ Anteprima link {current_index + 1}",
+            reply_markup=photo_keyboard
+        )
+
+        context.user_data["preview_message_id"] = preview_msg.message_id
+
 async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     channel_id = check_channel_id(query, context)
     link_id = int(query.data.split("_")[-2])
+
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
 
     with PubblicaDAO() as pubblicaDAO:
         link = pubblicaDAO.get_channel_link_by_id(link_id, channel_id)
@@ -127,6 +156,11 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     channel_id = check_channel_id(query, context)
     link_id = int(query.data.split("_")[-2])
+
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
 
     with PubblicaDAO() as pubblica_dao:
         link = pubblica_dao.get_channel_link_by_id(link_id, channel_id)
