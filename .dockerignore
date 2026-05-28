@@ -133,3 +133,4 @@ celerybeat-schedule
 celerybeat.pid
 *.sage.py
 /site
+test.py
