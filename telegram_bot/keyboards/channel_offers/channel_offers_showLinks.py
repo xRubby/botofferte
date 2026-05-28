@@ -125,7 +125,7 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await query.answer(
             text=(
-                "⚠️ Questa offerta è già stata pubblicata nelle ultime 24 ore.\n\n"
+                "⚠️ Questo prodotto è già stato pubblicato nelle ultime 24 ore.\n\n"
                 "Premi di nuovo per confermare la pubblicazione."
             ),
             show_alert=True
