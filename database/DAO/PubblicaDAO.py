@@ -70,3 +70,19 @@ class PubblicaDAO:
             (id, id_canale)
         ).fetchone()
         return Pubblica(*row) if row else None
+    
+    def get_pubblicato_ultime_24h(self, id_canale: str, asin: str) -> Pubblica | None:
+        row = self._get_con().execute(
+            """
+            SELECT *
+            FROM Pubblica
+            WHERE id_canale = ?
+            AND asin_prodotti = ?
+            AND isPubblicato = 1
+            AND data_pubblicazione >= datetime('now', '-24 hours')
+            LIMIT 1
+            """,
+            (id_canale, asin)
+        ).fetchone()
+
+        return Pubblica(*row) if row else None

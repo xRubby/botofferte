@@ -44,6 +44,7 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     current_index = int(query.data.split("_")[-2])
     link = links[current_index]
+    context.user_data.pop("pubblicato", None)
 
     text = f"🔗 <b>Link {current_index + 1}</b>\n\n{link.messaggio}"
 
@@ -92,18 +93,14 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
 
     channel_id = check_channel_id(query, context)
     link_id = int(query.data.split("_")[-2])
 
-    await delete_preview_message(
-        chat_id=query.message.chat_id,
-        context=context
-    )
 
     with PubblicaDAO() as pubblicaDAO:
         link = pubblicaDAO.get_channel_link_by_id(link_id, channel_id)
+        pubblicato = pubblicaDAO.get_pubblicato_ultime_24h(channel_id, link.asin_prodotti)
 
     BACK_BTN = InlineKeyboardMarkup([[
                     InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
@@ -122,6 +119,49 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
             context.user_data["links"] = links
         return
+    
+    if pubblicato and not context.user_data.get("pubblicato", None):
+        context.user_data["pubblicato"] = True
+
+        await query.answer(
+            text=(
+                "⚠️ Questa offerta è già stata pubblicata nelle ultime 24 ore.\n\n"
+                "Premi di nuovo per confermare la pubblicazione."
+            ),
+            show_alert=True
+        )
+
+        keyboard = query.message.reply_markup.inline_keyboard
+        new_keyboard = []
+
+        for row in keyboard:
+            new_row = []
+
+            for btn in row:
+                if btn.callback_data and f"channeloffers_publishlink_{link_id}" in btn.callback_data:
+                    new_row.append(
+                        InlineKeyboardButton(
+                            "⚠️ Pubblica messaggio",
+                            callback_data=btn.callback_data
+                        )
+                    )
+                else:
+                    new_row.append(btn)
+
+            new_keyboard.append(new_row)
+
+        await query.edit_message_reply_markup(
+            reply_markup=InlineKeyboardMarkup(new_keyboard)
+        )
+        return
+    
+    await query.answer()
+    context.user_data.pop("pubblicato", None)
+
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
     
     try:
         await publish_offer(update, context, link)
