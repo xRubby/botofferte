@@ -134,25 +134,35 @@ async def scraping_product(asin: str) -> dict | None:
 
             discount = round((old_price_val - price_val) / old_price_val * 100) if old_price_val > price_val else 0
 
-            # ── VENDITORE ──
+            # ── Venditore ──────────────────────────
             venditore = ""
             venditore_div = soup.find("div", id="merchantInfoFeature_feature_div")
 
             if venditore_div:
-                span = venditore_div.find("span")
+                span = (
+                    venditore_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
+                    or venditore_div.find("span", class_="a-size-small offer-display-feature-text-message")
+                )
                 if span:
                     venditore = span.text.strip()
 
-            # ── SPEDIZIONE ──
+            # ── Spedizione ─────────────────────────
             spedito = ""
             spedito_amazon = False
 
             spedito_div = soup.find("div", id="fulfillerInfoFeature_feature_div")
+
             if spedito_div:
-                span = spedito_div.find("span")
+                span = (
+                    spedito_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
+                    or spedito_div.find("span", class_="a-size-small offer-display-feature-text-message")
+                )
                 if span:
                     spedito = span.text.strip()
                     spedito_amazon = "Amazon" in spedito
+
+            if not spedito and venditore:
+                spedito = venditore
 
             if "Amazon" in venditore:
                 spedito_amazon = True
@@ -205,12 +215,10 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0GS6CXWS2", "B07DMCGF99", "B0FBLPC57N"]
+    asins = ["B0GS6CXWS2", "B07DMCGF99", "B0FBLPC57N", "B0GZWJRH12"]
 
     results = await asyncio.gather(
-        scraping_product(asins[0]),
-        scraping_product(asins[1]),
-        scraping_product(asins[2]),
+        scraping_product(asins[3])
     )
 
     print(results)
