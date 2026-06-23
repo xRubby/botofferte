@@ -15,6 +15,7 @@ DEFAULT_TAGS = {
     "vnd": "Venduto e spedito da {venditore}",
     "preorder": "Preordine:",
     "prime": "Spedizione gratuita con Amazon Prime",
+    "offertaexcl": "Offerta Speciale:"
 }
 
 async def edit_tags(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -29,7 +30,8 @@ async def edit_tags(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("{prime}", callback_data=f'co_edittags_{channel_id}_prime'),
         ],
         [
-            InlineKeyboardButton("{preorder}", callback_data=f'co_edittags_{channel_id}_preorder')
+            InlineKeyboardButton("{preorder}", callback_data=f'co_edittags_{channel_id}_preorder'),
+            InlineKeyboardButton("{offertaexcl}", callback_data=f'co_edittags_{channel_id}_offertaexcl')
         ],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')]
     ]
@@ -77,7 +79,7 @@ async def edit_tags_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    match = re.match(r'^co_edittags_(-\d+)_(prime|preorder)$', query.data)
+    match = re.match(r'^co_edittags_(-\d+)_(prime|preorder|offertaexcl)$', query.data)
     channel_id = match.group(1)
     tag_type = match.group(2)
 
@@ -93,6 +95,9 @@ async def edit_tags_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif tag_type == "preorder":
         current = channel.preorder_tag
         label = "Preorder"
+    elif tag_type == "offertaexcl":
+        current = channel.offertaexcl_tag
+        label = "Offerta Esclusiva"
 
     text = (
         f"🏷️ <b>Tag selezionato:</b> {label}\n\n"
@@ -125,6 +130,8 @@ async def ricevi_nuovo_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
             channel.prime_tag = nuovo_testo
         elif tag_type == "preorder":
             channel.preorder_tag = nuovo_testo
+        elif tag_type == "offertaexcl":
+            channel.offertaexcl_tag = nuovo_testo
 
         canaleDAO.update_tags(
             channel.canale_id,
@@ -132,14 +139,16 @@ async def ricevi_nuovo_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
             channel.venditoreamazon_tag,
             channel.venditore_tag,
             channel.preorder_tag,
-            channel.prime_tag
+            channel.prime_tag,
+            channel.offertaexcl_tag
         )
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}')]]
 
     text = (
         "✅ <b>Tag aggiornato</b>\n\n"
-        f"🏷️ <b>{tag_type.capitalize()}</b> è stato aggiornato con successo."
+        f"🏷️ Il tag <b>{{{tag_type}"
+        "}</b> è stato aggiornato con successo."
     )
 
     if not message_id:
@@ -180,6 +189,8 @@ async def reset_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
             channel.prime_tag = DEFAULT_TAGS["prime"]
         elif tag_type == "preorder":
             channel.preorder_tag = DEFAULT_TAGS["preorder"]
+        elif tag_type == "offertaexcl":
+            channel.offertaexcl_tag = DEFAULT_TAGS["offertaexcl"]
 
         canaleDAO.update_tags(
             channel.canale_id,
@@ -187,7 +198,8 @@ async def reset_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
             channel.venditoreamazon_tag,
             channel.venditore_tag,
             channel.preorder_tag,
-            channel.prime_tag
+            channel.prime_tag,
+            channel.offertaexcl_tag
         )
 
     await query.edit_message_text(
@@ -263,7 +275,8 @@ async def ricevi_nuovo_tag_spedito(update: Update, context: ContextTypes.DEFAULT
             channel.venditoreamazon_tag,
             channel.venditore_tag,
             channel.preorder_tag,
-            channel.prime_tag
+            channel.prime_tag,
+            channel.offertaexcl_tag
         )
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}_sp')]]
@@ -320,7 +333,8 @@ async def reset_tag_spedito(update: Update, context: ContextTypes.DEFAULT_TYPE):
             channel.venditoreamazon_tag,
             channel.venditore_tag,
             channel.preorder_tag,
-            channel.prime_tag
+            channel.prime_tag,
+            channel.offertaexcl_tag
         )
 
     await query.edit_message_text(
@@ -337,12 +351,12 @@ async def reset_tag_spedito(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 conv_edit_tag = ConversationHandler(
     entry_points=[
-        CallbackQueryHandler(edit_tags_type, pattern=r'^co_edittags_(-\d+)_(prime|preorder)$'),
+        CallbackQueryHandler(edit_tags_type, pattern=r'^co_edittags_(-\d+)_(prime|preorder|offertaexcl)$'),
     ],
     states={
         ATTESA_NUOVO_TAG: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, ricevi_nuovo_tag),
-            CallbackQueryHandler(reset_tag, pattern=r'^co_edittags_-?\d+_reset_(prime|preorder)$'),
+            CallbackQueryHandler(reset_tag, pattern=r'^co_edittags_-?\d+_reset_(prime|preorder|offertaexcl)$'),
             CallbackQueryHandler(annulla_edit_tag, pattern=r'^co_edittags_-?\d+$'),
         ],
     },

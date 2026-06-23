@@ -98,6 +98,7 @@ class Connessione:
                 venditore_tag       TEXT NOT NULL DEFAULT 'Venduto e spedito da {venditore}',
                 preorder_tag        TEXT NOT NULL DEFAULT 'Preordine:',
                 prime_tag           TEXT NOT NULL DEFAULT 'Spedizione gratuita con Amazon Prime',
+                offertaexcl_tag     TEXT NOT NULL DEFAULT 'Offerta Speciale:',
                 FOREIGN KEY (codice_licenza) REFERENCES Licenze(codice_licenza) ON DELETE SET NULL
             );
                                

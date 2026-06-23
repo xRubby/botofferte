@@ -31,16 +31,17 @@ class CanaleDAO:
             (nome_canale, id_affiliato, codice_licenza, canale_id)
         )
 
-    def update_tags(self, canale_id: str, amazon_tag: str, venditoreamazon_tag: str, venditore_tag: str, preorder_tag: str, prime_tag: str) -> None:
+    def update_tags(self, canale_id: str, amazon_tag: str, venditoreamazon_tag: str, venditore_tag: str, preorder_tag: str, prime_tag: str, offertaexcl_tag: str) -> None:
         self._get_con().execute(
             """UPDATE Canali SET
                 amazon_tag          = ?,
                 venditoreamazon_tag = ?,
                 venditore_tag       = ?,
                 preorder_tag        = ?,
-                prime_tag           = ?
+                prime_tag           = ?,
+                offertaexcl_tag     = ?
             WHERE canale_id = ?""",
-            (amazon_tag, venditoreamazon_tag, venditore_tag, preorder_tag, prime_tag, canale_id)
+            (amazon_tag, venditoreamazon_tag, venditore_tag, preorder_tag, prime_tag, offertaexcl_tag, canale_id)
         )
 
     def update_id_affiliato(self, canale_id: str, id_affiliato: str) -> None:

@@ -28,7 +28,7 @@ def _tag_disponibili_text() -> str:
     tags = [
         "titolo", "prezzo", "old_prezzo", "valuta", "sconto",
         "link", "link_short", "brand", "spedito", "prime",
-        "preorder", "data_preordine"
+        "preorder", "data_preordine", "offertaexcl"
     ]
     return "\n".join(f"- <code>{{{tag}}}</code>" for tag in tags)
 

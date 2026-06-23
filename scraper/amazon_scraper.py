@@ -124,7 +124,13 @@ async def scraping_product(asin: str) -> dict | None:
 
             old_price_val = price_val
 
-            container = soup.find("div", class_="a-section a-spacing-small aok-align-center")
+
+            #Prende il prezzo consigliato, altrimenti quello più basso negli ultimi 30 giorni
+            container = soup.find("div", class_="a-section a-spacing-none aok-align-center")
+
+            if not container:
+                container = soup.find("div", class_="a-section a-spacing-small aok-align-center")
+
             if container:
                 offscreen = container.find("span", class_="a-offscreen")
                 if offscreen:
@@ -189,6 +195,12 @@ async def scraping_product(asin: str) -> dict | None:
                     preorder = True
                     data_preordine = match.group()
 
+            # -- OFFERTA ESCLUSIVA --
+            offertaesclusiva = False
+            offertaesclusiva_span = soup.find("span", id="dealBadgeSupportingText")
+            if offertaesclusiva_span:
+                offertaesclusiva = True
+
             return {
                 "ASIN": asin,
                 "titolo": title,
@@ -207,7 +219,7 @@ async def scraping_product(asin: str) -> dict | None:
                 "isWarehouse": False,
                 "condizione": "",
                 "condizione_descrizione": "",
-                "offertaesclusiva": "",
+                "offertaesclusiva": offertaesclusiva,
             }
 
         except httpx.RequestError:
@@ -215,10 +227,10 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0GS6CXWS2", "B07DMCGF99", "B0FBLPC57N", "B0GZWJRH12"]
+    asins = ["B0G2S7WSRL"]
 
     results = await asyncio.gather(
-        scraping_product(asins[3])
+        scraping_product(asins[0])
     )
 
     print(results)

@@ -60,7 +60,8 @@ def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
         "condizione": prodotto.condizione,
         "condizione_commento": prodotto.condizione_descrizione,
         "preorder": prodotto.preorder,
-        "isPrime": prodotto.isPrime
+        "isPrime": prodotto.isPrime,
+        "offertaexcl": prodotto.offertaesclusiva
     }
 
 def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
@@ -82,7 +83,8 @@ def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
             "condizione": risultato["condizione"],
             "condizione_commento": risultato["condizione_descrizione"],
             "preorder": bool(risultato["preordine"]),
-            "isPrime": bool(risultato["spedito_Amazon"])
+            "isPrime": bool(risultato["spedito_Amazon"]),
+            "offertaexcl": bool(risultato["offertaesclusiva"])
             }
         
         if tag:
@@ -347,6 +349,8 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"], canale)
 
     info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto, canale)
+
+    info_prodotto["offertaexcl"] = canale.offertaexcl_tag if info_prodotto["offertaexcl"] else None
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 

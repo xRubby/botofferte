@@ -11,3 +11,4 @@ class Canale:
     venditore_tag: str
     preorder_tag: str
     prime_tag: str
+    offertaexcl_tag: str
