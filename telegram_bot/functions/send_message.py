@@ -181,7 +181,7 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
                 isWarehouse=info_prodotto["isWarehouse"],
                 condizione=info_prodotto["condizione"],
                 condizione_descrizione=info_prodotto["condizione_commento"],
-                offertaesclusiva=info_prodotto.get("offertaesclusiva", None)
+                offertaesclusiva=info_prodotto["offertaexcl"]
             )
         return info_prodotto
     
