@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 import re
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update, error
 from telegram.ext import ContextTypes
 
 from APIs.bitly_api import shorten_url
@@ -477,5 +477,7 @@ async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link
             parse_mode='HTML',
             reply_markup=reply_markup
         )
+    except error.BadRequest:
+        raise error.BadRequest("Il bot non ha i permessi di amministratore nel canale")
     except Exception as e:
         raise Exception("Il bot non è un admin del canale")

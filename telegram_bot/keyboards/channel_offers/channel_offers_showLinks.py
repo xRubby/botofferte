@@ -1,6 +1,6 @@
 import traceback
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, error
 from telegram.ext import ContextTypes
 
 from database.DAO.PubblicaDAO import PubblicaDAO
@@ -176,6 +176,14 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         with PubblicaDAO() as pubblicaDAO:
             pubblicaDAO.update_pubblicato(link.id, 1)
+    except error.BadRequest:
+        await query.edit_message_text(
+            text=("❌ <b>Errore di pubblicazione</b>\n\n"
+            "Il bot non ha i permessi di amministratore per mandare il messaggio nel canale."),
+            parse_mode='HTML',
+            reply_markup=BACK_BTN
+        )
+        traceback.print_exc()
     except Exception as e:
         await query.edit_message_text(
             text=("❌ <b>Errore di pubblicazione</b>\n\n"
