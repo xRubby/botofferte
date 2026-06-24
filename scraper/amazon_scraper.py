@@ -152,6 +152,9 @@ async def scraping_product(asin: str) -> dict | None:
                 if span:
                     venditore = span.text.strip()
 
+            if not venditore:
+                return None
+
             # ── Spedizione ─────────────────────────
             spedito = ""
             spedito_amazon = False
@@ -227,7 +230,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0G2S7WSRL"]
+    asins = ["B0F3P3X5P2"]
 
     results = await asyncio.gather(
         scraping_product(asins[0])
