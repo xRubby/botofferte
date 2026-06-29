@@ -181,7 +181,7 @@ async def scraping_product(asin: str) -> dict | None:
             if not img_tag:
                 return None
 
-            img_link = img_tag.get("data-old-hires", "")
+            img_link = img_tag.get("src", "")
 
             # ── BRAND ──
             brand_tag = soup.find("a", id="bylineInfo")
@@ -230,7 +230,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0F3P3X5P2"]
+    asins = ["B0FFTQ6B37"]
 
     results = await asyncio.gather(
         scraping_product(asins[0])
