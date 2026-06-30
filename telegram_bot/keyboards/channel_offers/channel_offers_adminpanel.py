@@ -23,39 +23,48 @@ ATTESA_ID_AFFILIATO = "ATTESA_ID_AFFILIATO"
 
 BOT_USERNAME = os.getenv("BOT_USERNAME")
 
+async def check_is_creator(query: CallbackQuery, update: Update, context: ContextTypes.DEFAULT_TYPE, channel_id):
+    user_id = update.effective_user.id
+    isCreator = context.user_data.get("isCreator", False)
+
+    if not isCreator:
+        with GestisceDAO() as gestisce_dao:
+            gestisce_info = gestisce_dao.get(user_id, channel_id)
+            if(gestisce_info and gestisce_info.isCreator):
+                context.user_data['isCreator'] = True
+                isCreator = True
+
+    if isCreator:
+        await query.answer()
+        return True
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return False
+
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     channel_id = check_channel_id(query, context)
-    user_id = update.effective_user.id
 
-    with GestisceDAO() as gestisce_dao:
-        gestisce_info = gestisce_dao.get(user_id, channel_id)
-
-        if(gestisce_info and gestisce_info.isCreator):
-            await query.answer()
-            context.user_data['isCreator'] = gestisce_info.isCreator
-        else:
-            await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-            return
+    if await check_is_creator(query, update, context, channel_id):
         
-    text = (
-        "🛠️ <b>Pannello Admin</b>\n\n"
-        "📊 Gestisci le impostazioni del tuo canale.\n\n"
-        "Seleziona un’opzione qui sotto 👇"
-    )
-    keyboard = [
-        [InlineKeyboardButton("👥 Gestisci Membri", callback_data=f'channeloffers_managemembers_{channel_id}_0')],
-        [InlineKeyboardButton("🏷️ Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("📄 Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
-        [InlineKeyboardButton("🗑️ Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
-    ]
+        text = (
+            "🛠️ <b>Pannello Admin</b>\n\n"
+            "📊 Gestisci le impostazioni del tuo canale.\n\n"
+            "Seleziona un’opzione qui sotto 👇"
+        )
+        keyboard = [
+            [InlineKeyboardButton("👥 Gestisci Membri", callback_data=f'channeloffers_managemembers_{channel_id}_0')],
+            [InlineKeyboardButton("🏷️ Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("📄 Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
+            [InlineKeyboardButton("🗑️ Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
+        ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML"
-    )
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+        )
 
 MEMBERS_PER_PAGE = 10
 
@@ -66,141 +75,221 @@ async def admin_manage_members(update: Update, context: ContextTypes.DEFAULT_TYP
     channel_id = int(data[2])
     page = int(data[3]) if len(data) > 3 else 0
 
-    isCreator = context.user_data.get("isCreator", None)
+    if await check_is_creator(query, update, context, channel_id):
 
-    if isCreator:
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
+        offset = page * MEMBERS_PER_PAGE
 
-    offset = page * MEMBERS_PER_PAGE
-
-    text = (
-        "👥 <b>Gestione Membri</b>\n\n"
-        "ℹ️ Qui puoi visualizzare tutti i membri che hanno accesso a questo canale.\n\n"
-        "➕ Utilizza il pulsante <b>Invita membri</b> per aggiungere nuovi utenti."
-    )
-
-    keyboard = []
-
-    keyboard.append([
-        InlineKeyboardButton(
-            "➕ Invita membri",
-            callback_data=f"channeloffers_invitemember_{channel_id}"
+        text = (
+            "👥 <b>Gestione Membri</b>\n\n"
+            "ℹ️ Qui puoi visualizzare tutti i membri che hanno accesso a questo canale.\n\n"
+            "➕ Utilizza il pulsante <b>Invita membri</b> per aggiungere nuovi utenti."
         )
-    ])
 
-    keyboard.append([
-        InlineKeyboardButton(
-            "-----",
-            callback_data=f"none"
+        keyboard = []
+
+        keyboard.append([
+            InlineKeyboardButton(
+                "➕ Invita membri",
+                callback_data=f"channeloffers_invitemember_{channel_id}"
+            )
+        ])
+
+        keyboard.append([
+            InlineKeyboardButton(
+                "-----",
+                callback_data=f"none"
+            )
+        ])
+
+        with GestisceDAO() as gestisceDAO:
+            lista_membri = gestisceDAO.get_member_list(
+                channel_id,
+                limit=MEMBERS_PER_PAGE,
+                offset=offset
+            )
+            total_members = gestisceDAO.count_members(channel_id)
+
+        if lista_membri:
+            with UtenteDAO() as utenteDAO:
+                for membro in lista_membri:
+                    utente = utenteDAO.get(membro.telegram_id)
+
+                    keyboard.append([
+                        InlineKeyboardButton(
+                            utente.nome,
+                            callback_data=f"channeloffers_memberinfo_{channel_id}_{utente.telegram_id}"
+                        )
+                    ])
+
+        keyboard.append([
+            InlineKeyboardButton(
+                "-----",
+                callback_data=f"none"
+            )
+        ])
+
+        total_pages = max(1, math.ceil(total_members / MEMBERS_PER_PAGE))
+
+        nav_row = []
+
+        if page > 0:
+            nav_row.append(
+                InlineKeyboardButton(
+                    "⬅️",
+                    callback_data=f"channeloffers_managemembers_{channel_id}_{page - 1}"
+                )
+            )
+
+        if (page + 1) < total_pages:
+            nav_row.append(
+                InlineKeyboardButton(
+                    "➡️",
+                    callback_data=f"channeloffers_managemembers_{channel_id}_{page + 1}"
+                )
+            )
+
+        keyboard.append(nav_row)
+
+        keyboard.append([
+            InlineKeyboardButton(
+                "⬅️ Indietro",
+                callback_data=f"channeloffers_adminpanel_{channel_id}"
+            )
+        ])
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
         )
-    ])
 
-    with GestisceDAO() as gestisceDAO:
-        lista_membri = gestisceDAO.get_member_list(
-            channel_id,
-            limit=MEMBERS_PER_PAGE,
-            offset=offset
-        )
-        total_members = gestisceDAO.count_members(channel_id)
+async def admin_member_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data.split("_")
 
-    if lista_membri:
+    channel_id = int(data[2])
+    telegram_id = int(data[3])
+
+    if await check_is_creator(query, update, context, channel_id):
+    
         with UtenteDAO() as utenteDAO:
-            for membro in lista_membri:
-                utente = utenteDAO.get(membro.telegram_id)
+            utente = utenteDAO.get(telegram_id)
 
-                keyboard.append([
-                    InlineKeyboardButton(
-                        utente.nome,
-                        callback_data="none"
-                    )
-                ])
+        with GestisceDAO() as gestisceDAO:
+            gestisce = gestisceDAO.get(telegram_id, channel_id)
+        
+        if not utente:
+            return
+        
+        if not gestisce:
+            return
+        
 
-    keyboard.append([
-        InlineKeyboardButton(
-            "-----",
-            callback_data=f"none"
-        )
-    ])
+        id_affiliato = gestisce.id_affiliato if gestisce.id_affiliato else "Nessuno"
 
-    total_pages = max(1, math.ceil(total_members / MEMBERS_PER_PAGE))
-
-    nav_row = []
-
-    if page > 0:
-        nav_row.append(
-            InlineKeyboardButton(
-                "⬅️",
-                callback_data=f"channeloffers_managemembers_{channel_id}_{page - 1}"
-            )
+        text = (
+            "👤 <b>Info Membro</b>\n\n"
+            f"🏷️ <b>Nome:</b> {utente.nome}\n"
+            f"🧾 <b>ID affiliato:</b> {id_affiliato}"
         )
 
-    if (page + 1) < total_pages:
-        nav_row.append(
-            InlineKeyboardButton(
-                "➡️",
-                callback_data=f"channeloffers_managemembers_{channel_id}_{page + 1}"
-            )
+        keyboard = []
+
+        if not gestisce.isCreator:
+            keyboard.append([InlineKeyboardButton("🗑️ Rimuovi Membro", callback_data=f"channeloffers_removemember_{channel_id}_{telegram_id}")])
+
+        keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_managemembers_{channel_id}_0")])
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+        )
+    
+async def admin_remove_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+
+    data = query.data.split("_")
+    channel_id = int(data[2])
+    telegram_id = int(data[3])
+
+    if await check_is_creator(query, update, context, channel_id): 
+        keyboard = [
+            [InlineKeyboardButton("✅ Sì, rimuovi", callback_data=f"channeloffers_confirmremovemember_{channel_id}_{telegram_id}")],
+            [InlineKeyboardButton("❌ Annulla", callback_data=f"channeloffers_memberinfo_{channel_id}_{telegram_id}")]
+        ]
+
+        text = (
+            "⚠️ <b>Conferma rimozione</b>\n\n"
+            "Sei sicuro di voler rimuovere questo membro?")
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML"
         )
 
-    keyboard.append(nav_row)
+async def admin_remove_member_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
 
-    keyboard.append([
-        InlineKeyboardButton(
-            "⬅️ Indietro",
-            callback_data=f"channeloffers_adminpanel_{channel_id}"
+    data = query.data.split("_")
+    channel_id = int(data[2])
+    telegram_id = int(data[3])
+
+    if await check_is_creator(query, update, context, channel_id):
+        with GestisceDAO() as gestisceDAO:
+            gestisce = gestisceDAO.get(telegram_id, channel_id)
+
+            text = "⚠️ <b>Operazione non consentita</b>\n\nNon puoi rimuovere il creatore del canale."
+
+            if not gestisce.isCreator:
+                gestisceDAO.delete(telegram_id, channel_id)
+                text="✅ Membro rimosso con successo."
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("⬅️ Torna ai membri", callback_data=f"channeloffers_managemembers_{channel_id}_0")]
+            ])
         )
-    ])
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML"
-    )
 
 async def admin_edit_affiliateid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     channel_id = check_channel_id(query, context)
 
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
+    if await check_is_creator(query, update, context, channel_id):
     
-    with CanaleDAO() as canaleDAO:
-        canale = canaleDAO.get(channel_id)
-        
-    id_affiliato = canale.id_affiliato if canale.id_affiliato else "Nessuno"
-        
-    text = (
-        "🏷️ <b>Configurazione ID Affiliato</b>\n\n"
-        "ℹ️ Questo ID verrà utilizzato automaticamente come predefinito durante la pubblicazione dei prodotti.\n\n"
-        f"🔑 <b>ID attuale:</b> <code>{id_affiliato}</code>\n\n"
-        "✏️ Invia un nuovo ID per aggiornarlo."
-    )
+        with CanaleDAO() as canaleDAO:
+            canale = canaleDAO.get(channel_id)
+            
+        id_affiliato = canale.id_affiliato if canale.id_affiliato else "Nessuno"
+            
+        text = (
+            "🏷️ <b>Configurazione ID Affiliato</b>\n\n"
+            "ℹ️ Questo ID verrà utilizzato automaticamente come predefinito durante la pubblicazione dei prodotti.\n\n"
+            f"🔑 <b>ID attuale:</b> <code>{id_affiliato}</code>\n\n"
+            "✏️ Invia un nuovo ID per aggiornarlo."
+        )
 
-    keyboard = [
-        [InlineKeyboardButton("❌ Rimuovi ID Affiliato", callback_data=f'channeloffers_adminremoveaffiliateid_{channel_id}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
-    ]
+        keyboard = [
+            [InlineKeyboardButton("❌ Rimuovi ID Affiliato", callback_data=f'channeloffers_adminremoveaffiliateid_{channel_id}')],
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
+        ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    msg = await query.edit_message_text(
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML"
-    )
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        msg = await query.edit_message_text(
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML"
+        )
 
-    context.user_data["msg_id"] = msg.id
+        context.user_data["msg_id"] = msg.id
 
-    return ATTESA_ID_AFFILIATO
+        return ATTESA_ID_AFFILIATO
 
 async def admin_ricevi_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
@@ -254,42 +343,35 @@ async def admin_annulla_inserimento_affiliateid(update: Update, context: Context
 
 async def admin_remove_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-    
     channel_id = check_channel_id(query, context)
 
-    try:
-        with CanaleDAO() as canaleDAO:
-            canaleDAO.update_id_affiliato(channel_id, "")
+    if await check_is_creator(query, update, context, channel_id):
 
-        text = (
-            "🗑️ <b>ID Affiliato rimosso con successo</b>"
+        try:
+            with CanaleDAO() as canaleDAO:
+                canaleDAO.update_id_affiliato(channel_id, "")
+
+            text = (
+                "🗑️ <b>ID Affiliato rimosso con successo</b>"
+            )
+        except Exception as e:
+            text = (
+                "❌ <b>Errore durante la rimozione</b>\n\n"
+                "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
+                "Riprova più tardi."
+            )
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
+        ])
+        
+        await query.edit_message_text(
+            text=text,
+            parse_mode="HTML",
+            reply_markup=keyboard
         )
-    except Exception as e:
-        text = (
-            "❌ <b>Errore durante la rimozione</b>\n\n"
-            "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
-            "Riprova più tardi."
-        )
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
-    ])
-    
-    await query.edit_message_text(
-        text=text,
-        parse_mode="HTML",
-        reply_markup=keyboard
-    )
-
-    return ConversationHandler.END
+        return ConversationHandler.END
 
 conv_edit_admin_affiliateid = ConversationHandler(
     entry_points=[
@@ -313,217 +395,177 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
     query = update.callback_query
     channel_id = check_channel_id(query, context)
 
-    isCreator = context.user_data.get("isCreator", None)
+    if await check_is_creator(query, update, context, channel_id):
 
-    if not isCreator:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
+        try:
+            with CanaleDAO() as canaleDAO:
+                canale = canaleDAO.get(channel_id)
 
-    try:
-        with CanaleDAO() as canaleDAO:
-            canale = canaleDAO.get(channel_id)
+            if not canale:
+                raise ValueError()
 
-        if not canale:
-            raise ValueError()
+            with LicenzaDAO() as licenzaDAO:
+                licenza = licenzaDAO.get(canale.codice_licenza)
+                stato = licenzaDAO.get_stato(canale.codice_licenza)
 
-        with LicenzaDAO() as licenzaDAO:
-            licenza = licenzaDAO.get(canale.codice_licenza)
-            stato = licenzaDAO.get_stato(canale.codice_licenza)
+            if not licenza:
+                raise ValueError()
 
-        if not licenza:
-            raise ValueError()
-
-        text = (
-            f"📄 <b>Informazioni Licenza</b>\n\n"
-            f"🔑 <b>Codice:</b> <code>{licenza.codice_licenza}</code>\n"
-            f"📦 <b>Tipo:</b> {licenza.tipo.title()}\n\n"
-        )
-
-        if stato:
-            text += (
-                f"🟢 <b>Stato:</b> Attiva\n"
-                f"📅 <b>Attivazione:</b> {licenza.data_attivazione}\n"
-                f"⏳ <b>Scadenza:</b> {"Mai" if not licenza.data_scadenza else licenza.data_scadenza}"
+            text = (
+                f"📄 <b>Informazioni Licenza</b>\n\n"
+                f"🔑 <b>Codice:</b> <code>{licenza.codice_licenza}</code>\n"
+                f"📦 <b>Tipo:</b> {licenza.tipo.title()}\n\n"
             )
-        else:
-            text += "🔴 <b>Stato:</b> Non attiva"
-        
-        keyboard = [
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
-        ]
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+            if stato:
+                text += (
+                    f"🟢 <b>Stato:</b> Attiva\n"
+                    f"📅 <b>Attivazione:</b> {licenza.data_attivazione}\n"
+                    f"⏳ <b>Scadenza:</b> {"Mai" if not licenza.data_scadenza else licenza.data_scadenza}"
+                )
+            else:
+                text += "🔴 <b>Stato:</b> Non attiva"
+            
+            keyboard = [
+                [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
+            ]
 
-        await query.answer()
+            reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await query.edit_message_text(
-            text=text,
-            reply_markup=reply_markup,
-            parse_mode='HTML'
-        )
-    except Exception as e:
-        await query.answer(text="Errore durante il recupero delle informazioni", show_alert=True)
-        return
+            await query.edit_message_text(
+                text=text,
+                reply_markup=reply_markup,
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            await query.answer(text="Errore durante il recupero delle informazioni", show_alert=True)
+            return
     
 async def admin_delete_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-    
     channel_id = check_channel_id(query, context)
 
-    keyboard = [
-            [InlineKeyboardButton("✅ Conferma", callback_data=f'channeloffers_admindeletechannelconfirm_{channel_id}')],
-            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
-        ]
-    
-    text = (
-        "⚠️ <b>Conferma eliminazione canale</b>\n\n"
-        "Sei sicuro di voler <b>cancellare definitivamente</b> questo canale?\n"
-        "Questa azione è <b>irreversibile</b>."
-    )
-    
-    await query.edit_message_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='HTML'
+    if await check_is_creator(query, update, context, channel_id):
+        keyboard = [
+                [InlineKeyboardButton("✅ Conferma", callback_data=f'channeloffers_admindeletechannelconfirm_{channel_id}')],
+                [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')]
+            ]
+        
+        text = (
+            "⚠️ <b>Conferma eliminazione canale</b>\n\n"
+            "Sei sicuro di voler <b>cancellare definitivamente</b> questo canale?\n"
+            "Questa azione è <b>irreversibile</b>."
         )
+        
+        await query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='HTML'
+            )
     
 
 async def admin_delete_channel_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-    
     channel_id = check_channel_id(query, context)
 
-    try:
-        with CanaleDAO() as canaleDAO:
-            canaleDAO.delete(channel_id)
-        text = (
-            "🗑️ <b>Canale eliminato con successo</b>\n\n"
-            "ℹ️ Il canale è stato rimosso definitivamente."
-        )
-    except:
-        text = (
-            "❌ <b>Errore durante la cancellazione</b>\n\n"
-            "⚠️ Non è stato possibile eliminare il canale.\n"
-            "Riprova più tardi o verifica i permessi."
-        )
+    if await check_is_creator(query, update, context, channel_id):
 
-    keyboard = [
-        [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
-    ]
+        try:
+            with CanaleDAO() as canaleDAO:
+                canaleDAO.delete(channel_id)
+            text = (
+                "🗑️ <b>Canale eliminato con successo</b>\n\n"
+                "ℹ️ Il canale è stato rimosso definitivamente."
+            )
+        except:
+            text = (
+                "❌ <b>Errore durante la cancellazione</b>\n\n"
+                "⚠️ Non è stato possibile eliminare il canale.\n"
+                "Riprova più tardi o verifica i permessi."
+            )
 
-    await query.edit_message_text(
-        text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='HTML'
-    )
+        keyboard = [
+            [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
+        ]
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
 
 async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-    
     channel_id = check_channel_id(query, context)
-    create_link = context.user_data.pop('create_link', None)
-    token = context.user_data.pop('token', None)
+
+    if await check_is_creator(query, update, context, channel_id):
     
-    text = (
-        "➕ <b>Gestione Inviti Canale</b>\n\n"
-        "ℹ️ In questa sezione puoi invitare altri membri a collaborare nella gestione del tuo canale.\n"
-    )
-
-    keyboard = [
-    ]
-
-    if create_link and token:
-        text += (
-            "\n🔗 <b>Link di invito generato:</b>\n"
-            f"<code>t.me/{BOT_USERNAME}?start={token}</code>"
+        create_link = context.user_data.pop('create_link', None)
+        token = context.user_data.pop('token', None)
+        
+        text = (
+            "➕ <b>Gestione Inviti Canale</b>\n\n"
+            "ℹ️ In questa sezione puoi invitare altri membri a collaborare nella gestione del tuo canale.\n"
         )
-        keyboard.append([InlineKeyboardButton("🗑️ Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
-    else:
-        keyboard.append([InlineKeyboardButton("🔗 Genera link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
 
-    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_managemembers_{channel_id}_0')])
-    
+        keyboard = [
+        ]
 
-    await query.edit_message_text(
-        text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='HTML'
-    )
+        if create_link and token:
+            text += (
+                "\n🔗 <b>Link di invito generato:</b>\n"
+                f"<code>t.me/{BOT_USERNAME}?start={token}</code>"
+            )
+            keyboard.append([InlineKeyboardButton("🗑️ Rimuovi link membro", callback_data=f"channeloffers_adminremovelinkmember_{channel_id}")])
+        else:
+            keyboard.append([InlineKeyboardButton("🔗 Genera link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
+
+        keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_managemembers_{channel_id}_0')])
+        
+
+        await query.edit_message_text(
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='HTML'
+        )
 
 async def admin_invite_member_createlink(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-
-    token = secrets.token_hex(4).upper()
     channel_id = check_channel_id(query, context)
 
-    try:
-        with InvitoDAO() as invitoDAO:
-            invito_canale = invitoDAO.get_by_canale(channel_id)
-            if invito_canale:
-                invitoDAO.delete(invito_canale.token)
-            
-            invitoDAO.insert(token, datetime.today(), channel_id)
-    except Exception as e:
-        print(e)
+    if await check_is_creator(query, update, context, channel_id):
 
-    context.user_data['create_link'] = True
-    context.user_data['token'] = token
+        token = secrets.token_hex(4).upper()
 
-    await admin_invite_member(update, context)
+        try:
+            with InvitoDAO() as invitoDAO:
+                invito_canale = invitoDAO.get_by_canale(channel_id)
+                if invito_canale:
+                    invitoDAO.delete(invito_canale.token)
+                
+                invitoDAO.insert(token, datetime.today(), channel_id)
+        except Exception as e:
+            print(e)
+
+        context.user_data['create_link'] = True
+        context.user_data['token'] = token
+
+        await admin_invite_member(update, context)
 
 async def admin_invite_member_removelink(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-
-    isCreator = context.user_data.get("isCreator", None)
-
-    if(isCreator):
-        await query.answer()
-    else:
-        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
-        return
-    
-    context.user_data['create_link'] = False
-
     channel_id = check_channel_id(query, context)
 
-    try:
-        with InvitoDAO() as invitoDAO:
-            invito_canale = invitoDAO.get_by_canale(channel_id)
-            if invito_canale:
-                invitoDAO.delete(invito_canale.token)
-    except Exception as e:
-        print(e)
+    if await check_is_creator(query, update, context, channel_id):
+    
+        context.user_data['create_link'] = False
 
-    await admin_invite_member(update, context)
+        try:
+            with InvitoDAO() as invitoDAO:
+                invito_canale = invitoDAO.get_by_canale(channel_id)
+                if invito_canale:
+                    invitoDAO.delete(invito_canale.token)
+        except Exception as e:
+            print(e)
+
+        await admin_invite_member(update, context)
