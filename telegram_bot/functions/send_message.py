@@ -350,7 +350,7 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
 
     info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto, canale)
 
-    info_prodotto["offertaexcl"] = canale.offertaexcl_tag if info_prodotto["offertaexcl"] else None
+    info_prodotto["offertaexcl"] = canale.offertaexcl_tag if bool(info_prodotto["offertaexcl"]) else None
 
     message = processa_messaggio(layout_messaggio, info_prodotto)
 
