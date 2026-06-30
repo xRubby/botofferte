@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
 
-from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_panel, conv_edit_admin_affiliateid
+from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_manage_members, admin_panel, conv_edit_admin_affiliateid
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import activate_attr_img, activate_immagine, confirm_delete_immagine, delete_immagine, edit_immagine, edit_immagini, immagine_menu, conv_add_immagine, layoutimg_attr_menu, layoutimg_prodotto_menu, show_immagini, conv_set_pos, conv_set_size
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import activate_keyboard, confirm_delete_keyboard, delete_keyboard, edit_keyboard, edit_keyboards, keyboard_menu, show_keyboards
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
@@ -88,6 +88,7 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(admin_invite_member, pattern="^channeloffers_invitemember_.+$"))
     application.add_handler(CallbackQueryHandler(admin_invite_member_createlink, pattern="^channeloffers_admincreatelinkmember_.+$"))
     application.add_handler(CallbackQueryHandler(admin_invite_member_removelink, pattern="^channeloffers_adminremovelinkmember_.+$"))
+    application.add_handler(CallbackQueryHandler(admin_manage_members, pattern=r"^channeloffers_managemembers_[^_]+_\d+$"))
 
     application.add_handler(CallbackQueryHandler(channel_settings_menu, pattern="^channeloffers_settings_.+$"))
     application.add_handler(CallbackQueryHandler(exit_channel, pattern="^channeloffers_exitchannel_.+$"))

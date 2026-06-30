@@ -38,7 +38,7 @@ class UtenteDAO:
     def get(self, telegram_id: int) -> Utente | None:
         row = self._get_con().execute(
             "SELECT * FROM utenti WHERE telegram_id = ?", (telegram_id,)
-        ).fetchone()  # ✅ mancava .fetchone()
+        ).fetchone()
         return Utente(*row) if row else None
 
     def get_all(self) -> list[Utente]:

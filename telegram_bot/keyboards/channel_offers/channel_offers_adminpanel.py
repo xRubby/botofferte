@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import secrets
 from dotenv import load_dotenv
+import math
 
 from telegram import *
 from telegram.ext import *
@@ -10,6 +11,10 @@ from database.DAO.GestisceDAO import GestisceDAO
 from database.DAO.CanaleDAO import CanaleDAO
 from database.DAO.InvitoDAO import InvitoDAO
 from database.DAO.LicenzaDAO import LicenzaDAO
+from database.DAO.UtenteDAO import UtenteDAO
+
+from database.Entity.Gestisce import Gestisce
+
 from utils.channel_offers_utils import check_channel_id
 
 load_dotenv()
@@ -39,13 +44,118 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Seleziona un’opzione qui sotto 👇"
     )
     keyboard = [
-        [InlineKeyboardButton("👥 Invita membri", callback_data=f'channeloffers_invitemember_{channel_id}')],
+        [InlineKeyboardButton("👥 Gestisci Membri", callback_data=f'channeloffers_managemembers_{channel_id}_0')],
         [InlineKeyboardButton("🏷️ Tag affiliato", callback_data=f'channeloffers_adminaffiliateid_{channel_id}'), InlineKeyboardButton("📄 Informazioni Licenza", callback_data=f'channeloffers_adminlicenseinfo_{channel_id}')],
         [InlineKeyboardButton("🗑️ Cancella canale", callback_data=f'channeloffers_admindeletechannel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode="HTML"
+    )
+
+MEMBERS_PER_PAGE = 10
+
+async def admin_manage_members(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data.split("_")
+
+    channel_id = int(data[2])
+    page = int(data[3]) if len(data) > 3 else 0
+
+    isCreator = context.user_data.get("isCreator", None)
+
+    if isCreator:
+        await query.answer()
+    else:
+        await query.answer(text="Non puoi visualizzare quest'area", show_alert=True)
+        return
+
+    offset = page * MEMBERS_PER_PAGE
+
+    text = (
+        "👥 <b>Gestione Membri</b>\n\n"
+        "ℹ️ Qui puoi visualizzare tutti i membri che hanno accesso a questo canale.\n\n"
+        "➕ Utilizza il pulsante <b>Invita membri</b> per aggiungere nuovi utenti."
+    )
+
+    keyboard = []
+
+    keyboard.append([
+        InlineKeyboardButton(
+            "➕ Invita membri",
+            callback_data=f"channeloffers_invitemember_{channel_id}"
+        )
+    ])
+
+    keyboard.append([
+        InlineKeyboardButton(
+            "-----",
+            callback_data=f"none"
+        )
+    ])
+
+    with GestisceDAO() as gestisceDAO:
+        lista_membri = gestisceDAO.get_member_list(
+            channel_id,
+            limit=MEMBERS_PER_PAGE,
+            offset=offset
+        )
+        total_members = gestisceDAO.count_members(channel_id)
+
+    if lista_membri:
+        with UtenteDAO() as utenteDAO:
+            for membro in lista_membri:
+                utente = utenteDAO.get(membro.telegram_id)
+
+                keyboard.append([
+                    InlineKeyboardButton(
+                        utente.nome,
+                        callback_data="none"
+                    )
+                ])
+
+    keyboard.append([
+        InlineKeyboardButton(
+            "-----",
+            callback_data=f"none"
+        )
+    ])
+
+    total_pages = max(1, math.ceil(total_members / MEMBERS_PER_PAGE))
+
+    nav_row = []
+
+    if page > 0:
+        nav_row.append(
+            InlineKeyboardButton(
+                "⬅️",
+                callback_data=f"channeloffers_managemembers_{channel_id}_{page - 1}"
+            )
+        )
+
+    if (page + 1) < total_pages:
+        nav_row.append(
+            InlineKeyboardButton(
+                "➡️",
+                callback_data=f"channeloffers_managemembers_{channel_id}_{page + 1}"
+            )
+        )
+
+    keyboard.append(nav_row)
+
+    keyboard.append([
+        InlineKeyboardButton(
+            "⬅️ Indietro",
+            callback_data=f"channeloffers_adminpanel_{channel_id}"
+        )
+    ])
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await query.edit_message_text(
         text=text,
         reply_markup=reply_markup,
@@ -339,7 +449,7 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
     token = context.user_data.pop('token', None)
     
     text = (
-        "👥 <b>Gestione Inviti Canale</b>\n\n"
+        "➕ <b>Gestione Inviti Canale</b>\n\n"
         "ℹ️ In questa sezione puoi invitare altri membri a collaborare nella gestione del tuo canale.\n"
     )
 
@@ -355,7 +465,7 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         keyboard.append([InlineKeyboardButton("🔗 Genera link membro", callback_data=f"channeloffers_admincreatelinkmember_{channel_id}")])
 
-    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminpanel_{channel_id}')])
+    keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_managemembers_{channel_id}_0')])
     
 
     await query.edit_message_text(

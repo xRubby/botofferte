@@ -54,3 +54,29 @@ class GestisceDAO:
             "SELECT * FROM Gestisce"
         ).fetchall()
         return [Gestisce(*row) for row in rows]
+    
+    def get_member_list(self, canale_id: str, limit: int, offset: int) -> list[Gestisce]:
+        rows = self._get_con().execute(
+            """
+            SELECT *
+            FROM Gestisce
+            WHERE canale_id = ?
+            ORDER BY telegram_id
+            LIMIT ? OFFSET ?
+            """,
+            (canale_id, limit, offset)
+        ).fetchall()
+
+        return [Gestisce(*row) for row in rows]
+    
+    def count_members(self, canale_id: str) -> int:
+        row = self._get_con().execute(
+            """
+            SELECT COUNT(*)
+            FROM Gestisce
+            WHERE canale_id = ?
+            """,
+            (canale_id,)
+        ).fetchone()
+
+        return row[0]
