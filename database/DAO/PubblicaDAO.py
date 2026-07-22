@@ -86,3 +86,19 @@ class PubblicaDAO:
         ).fetchone()
 
         return Pubblica(*row) if row else None
+    
+    def get_ultimo_pubblicato_by_asin(self, id_canale: str, asin: str) -> Pubblica | None:
+        row = self._get_con().execute(
+            """
+            SELECT *
+            FROM Pubblica
+            WHERE id_canale = ?
+            AND asin_prodotti = ?
+            AND isPubblicato = 1
+            ORDER BY data_pubblicazione DESC
+            LIMIT 1
+            """,
+            (id_canale, asin)
+        ).fetchone()
+
+        return Pubblica(*row) if row else None

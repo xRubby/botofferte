@@ -40,3 +40,10 @@ class PrezziStoricoDAO:
             "SELECT * FROM PrezziStorico WHERE asin = ? ORDER BY rilevato DESC", (asin,)
         ).fetchall()
         return [PrezziStorico(*row) for row in rows]
+    
+    def get_last_by_asin(self, asin: str) -> list[PrezziStorico]:
+        row = self._get_con().execute(
+            "SELECT * FROM PrezziStorico WHERE asin = ? ORDER BY rilevato DESC LIMIT 1", (asin,)
+        ).fetchone()
+
+        return PrezziStorico(*row) if row else None
