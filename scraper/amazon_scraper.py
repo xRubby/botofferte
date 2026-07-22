@@ -185,7 +185,7 @@ async def scraping_product(asin: str) -> dict | None:
 
             # ── BRAND ──
             brand_tag = soup.find("a", id="bylineInfo")
-            brand = brand_tag.get_text(strip=True).removeprefix("Visita lo Store di ") if brand_tag else ""
+            brand = brand_tag.get_text(strip=True).removeprefix("Visita lo Store di ").removeprefix("Marca: ") if brand_tag else ""
 
             # ── PREORDER ──
             preorder = False
@@ -230,7 +230,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0FS1W4JPS"]
+    asins = ["B0G26ZHPS8"]
 
     results = await asyncio.gather(
         scraping_product(asins[0])
