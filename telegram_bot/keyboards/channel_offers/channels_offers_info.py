@@ -2,6 +2,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from database.DAO.CanaleDAO import CanaleDAO
+from database.session import SessionLocal
+from services.canale_service import CanaleService
 from utils.channel_offers_utils import check_channel_id, delete_preview_message
 
 async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,8 +18,9 @@ async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context=context
     )
 
-    with CanaleDAO() as canaleDAO:
-        canale = canaleDAO.get(channel_id)
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        canale = canale_service.ottieni_canale(channel_id)
 
     if not canale:
         await query.answer(text="Canale non trovato", show_alert=True)

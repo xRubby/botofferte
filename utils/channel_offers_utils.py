@@ -7,7 +7,7 @@ def check_channel_id(query: CallbackQuery, context: ContextTypes.DEFAULT_TYPE):
         channel_id = int(query.data.split("_")[-1])
         context.user_data['channel_id'] = channel_id
 
-    return channel_id
+    return str(channel_id)
 
 async def delete_preview(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
