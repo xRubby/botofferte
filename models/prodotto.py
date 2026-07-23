@@ -57,6 +57,6 @@ class Prodotto(Base):
     offertaesclusiva: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
-    storico_prezzi: Mapped[list["PrezzoStorico"]] = relationship(back_populates="prodotti")
+    storico_prezzi: Mapped[list["PrezzoStorico"]] = relationship(back_populates="prodotto")
 
     pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="prodotto")

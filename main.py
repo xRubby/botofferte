@@ -12,8 +12,6 @@ def main():
 
     Base.metadata.create_all(engine)
 
-    Connessione().create_tables()
-
     start_telegram_bot()
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 from database.Connessione import Connessione
 from database.Entity.Licenza import Licenza
 from database.DAO.CanaleDAO import CanaleDAO
-from utils.StatoLicenza import StatoLicenza
+from enums.StatoLicenza import StatoLicenza
 from utils.generate_license import calcola_data_scadenza
 from datetime import datetime
 
