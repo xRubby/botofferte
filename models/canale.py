@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from models.layout_immagine import LayoutImmagine
     from models.pubblica import Pubblica
     from models.tastiera import Tastiera
+    from models.licenza import Licenza
 
 
 class Canale(Base):
@@ -50,4 +51,6 @@ class Canale(Base):
     layout_immagini: Mapped[list["LayoutImmagine"]] = relationship(back_populates="canale")
 
     pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="canale")
+
+    licenza: Mapped["Licenza"] = relationship(back_populates="canale")
 

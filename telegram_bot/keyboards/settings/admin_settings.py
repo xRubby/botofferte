@@ -4,7 +4,10 @@ from telegram.ext import (
     MessageHandler, filters
 )
 from database.DAO.LicenzaDAO import LicenzaDAO
-from utils.StatoLicenza import StatoLicenza
+from database.session import SessionLocal
+from enums.StatoLicenza import StatoLicenza
+from enums.esito_licenza import EsitoLicenza
+from services.licenza_service import LicenzaService
 from utils.generate_license import calcola_tipo_scadenza, generate_license
 
 ADMIN_MENU_MSG = (
@@ -119,13 +122,25 @@ async def _crea_licenza(
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data='admin_settings')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    if calcola_tipo_scadenza(tipo_licenza):
-        codice_licenza = generate_license()
-        with LicenzaDAO() as licenza_dao:
-            licenza_dao.insert(codice_licenza, tipo_licenza)
-        text = f"Licenza con codice <code>{codice_licenza}</code> generata correttamente!"
-    else:
-        text = "Il tipo della licenza è errato!"
+    with SessionLocal() as session:
+
+        licenza_service = LicenzaService(session)
+
+        try:
+            esito, codice_licenza = licenza_service.crea_licenza(tipo_licenza)
+
+            match esito:
+                case EsitoLicenza.OK:
+                    text = f"Licenza con codice <code>{codice_licenza}</code> generata correttamente!"
+
+                case EsitoLicenza.ERRORE:
+                    text = "Il tipo della licenza è errato!"
+
+            session.commit()
+
+        except Exception:
+            session.rollback()
+            raise    
 
     if query:
         await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
@@ -144,8 +159,11 @@ async def visualizza_licenze(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     pagina = int(query.data.split("_")[-1]) if query.data.startswith("admin_settings_visualizzalicenze_") else 0
 
-    with LicenzaDAO() as licenza_dao:
-        licenze, totale = licenza_dao.get_paginated(pagina, LICENZE_PER_PAGINA)
+    with SessionLocal() as session:
+
+        licenza_service = LicenzaService(session)
+
+        licenze, totale = licenza_service.ottieni_licenze_paginate(pagina, LICENZE_PER_PAGINA)
 
     if not licenze:
         tastiera = InlineKeyboardMarkup([
@@ -191,8 +209,15 @@ async def dettagli_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     codice_licenza = query.data.removeprefix("admin_settings_dettaglilicenza_")
 
-    with LicenzaDAO() as licenza_dao:
-        licenza, stato, canale_id, nome_canale = licenza_dao.get_dettagli(codice_licenza)
+    with SessionLocal() as session:
+
+        licenza_service = LicenzaService(session)
+
+        licenza = licenza_service.ottieni_licenza(codice_licenza)
+
+        stato = licenza_service.get_stato(licenza)
+
+        canale = licenza.canale
 
     stato_map = {
         StatoLicenza.ATTIVA:       "🟢 Attiva",
@@ -223,10 +248,10 @@ async def dettagli_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"⏳ <b>Scadenza</b>: {licenza.data_scadenza or 'Nessuna'}\n"
         )
 
-    if canale_id:
+    if canale and canale.canale_id:
         text += (
-            f"\n📢 <b>Canale associato</b>: {nome_canale}\n"
-            f"<i>(ID: {canale_id})</i>"
+            f"\n📢 <b>Canale associato</b>: {canale.nome_canale}\n"
+            f"<i>(ID: {canale.canale_id})</i>"
         )
     else:
         text += "\n📢 <b>Canale</b>: licenza non attivata da nessun canale"
@@ -269,8 +294,20 @@ async def disattiva_licenza_ok(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     codice_licenza = query.data.removeprefix("admin_settings_disattiva_ok_")
-    with LicenzaDAO() as licenza_dao:
-        licenza_dao.disattiva(codice_licenza)
+
+    with SessionLocal() as session:
+
+        licenza_service = LicenzaService(session)
+
+        licenza = licenza_service.ottieni_licenza(codice_licenza)
+
+        try:
+            licenza.attiva = False
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
     text = f"🚫 Licenza <code>{codice_licenza}</code> disattivata."
     keyboard = [[InlineKeyboardButton("🔙 Indietro", callback_data=f"admin_settings_dettaglilicenza_{codice_licenza}")]]
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -280,8 +317,20 @@ async def attiva_licenza_ok(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     codice_licenza = query.data.removeprefix("admin_settings_attivalicenza_")
-    with LicenzaDAO() as licenza_dao:
-        licenza_dao.attiva(codice_licenza)
+
+    with SessionLocal() as session:
+
+        licenza_service = LicenzaService(session)
+
+        licenza = licenza_service.ottieni_licenza(codice_licenza)
+
+        try:
+            licenza.attiva = True
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
     text = f"✅ Licenza <code>{codice_licenza}</code> riattivata."
     keyboard = [[InlineKeyboardButton("🔙 Indietro", callback_data=f"admin_settings_dettaglilicenza_{codice_licenza}")]]
     await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))

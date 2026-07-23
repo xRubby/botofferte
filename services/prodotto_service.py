@@ -2,11 +2,12 @@ from datetime import datetime
 
 from models.prodotto import Prodotto
 from models.prezzo_storico import PrezziStorico
+from repositories.prodotto_repository import ProdottoRepository
 
 
 class ProdottoService:
 
-    def __init__(self, prodotto_repository, session):
+    def __init__(self, prodotto_repository: ProdottoRepository):
         self.repository = prodotto_repository
 
 

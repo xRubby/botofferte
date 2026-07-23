@@ -1,21 +1,38 @@
 from datetime import datetime
 
+from enums.esito_licenza import EsitoLicenza
 from models.licenza import Licenza
 from repositories.licenza_repository import LicenzaRepository
-from utils.generate_license import calcola_data_scadenza
+from utils.generate_license import calcola_data_scadenza, calcola_tipo_scadenza, generate_license
 from enums.StatoLicenza import StatoLicenza
 
 
 class LicenzaService:
 
-    def __init__(self, licenza_repository: LicenzaRepository):
-        self.licenza_repository = licenza_repository
+    def __init__(self, session):
+        self.session = session
+        self.licenza_repository = LicenzaRepository(session)
+
+    def crea_licenza(self, tipo_licenza) -> EsitoLicenza:
+        if calcola_tipo_scadenza(tipo_licenza):
+            codice_licenza = generate_license()
+
+            licenza = Licenza(
+                codice_licenza = codice_licenza,
+                tipo = tipo_licenza
+            )
+
+            self.licenza_repository.create(licenza)
+
+            return EsitoLicenza.OK, codice_licenza
+        else:
+            return EsitoLicenza.ERRORE
 
 
     def activate_licenza(self, licenza: str | Licenza) -> bool:
 
         if isinstance(licenza, str):
-            licenza = self.repository.get(licenza)
+            licenza = self.licenza_repository.get(licenza)
 
         if not licenza:
             return False
@@ -38,14 +55,12 @@ class LicenzaService:
             )
         )
 
-        self.session.commit()
-
         return True
 
     def get_stato(self, licenza: str | Licenza) -> StatoLicenza | None:
 
         if isinstance(licenza, str):
-            licenza = self.repository.get(licenza)
+            licenza = self.licenza_repository.get(licenza)
 
         if not licenza:
             return None
@@ -64,7 +79,7 @@ class LicenzaService:
     def release_licenza(self, licenza: str | Licenza):
 
         if isinstance(licenza, str):
-            licenza = self.repository.get(licenza)
+            licenza = self.licenza_repository.get(licenza)
 
         if not licenza:
             return
@@ -81,4 +96,10 @@ class LicenzaService:
         licenza.data_attivazione = None
         licenza.data_scadenza = None
 
-        self.session.commit()
+    def ottieni_licenza(self, codice_licenza: str) -> Licenza | None:
+
+        return self.licenza_repository.get(codice_licenza)
+
+    def ottieni_licenze_paginate(self, pagina: int, item_per_pagina: int) -> tuple[list[Licenza], int]:
+
+        return self.licenza_repository.get_paginated(pagina, item_per_pagina)

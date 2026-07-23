@@ -28,11 +28,9 @@ class LicenzaRepository:
 
         offset = page * per_page
 
-        stmt = (select(Licenza).offset(offset).limit(per_page)
-        )
+        stmt = (select(Licenza).offset(offset).limit(per_page))
 
         licenze = list(self.session.scalars(stmt))
-
 
         count_stmt = select(func.count()).select_from(Licenza)
 

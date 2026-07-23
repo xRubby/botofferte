@@ -5,6 +5,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.canale import Canale
+
 
 class Licenza(Base):
 
@@ -18,5 +23,6 @@ class Licenza(Base):
 
     data_scadenza: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     
-
     attiva: Mapped[bool] = mapped_column(Boolean, nullable=False, default=1)
+
+    canale: Mapped["Canale"] = relationship(back_populates="licenza")
