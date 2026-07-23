@@ -26,7 +26,7 @@ class TastieraRepository:
 
     def get_in_uso(self, canale_id: str) -> Tastiera | None:
 
-        stmt = (select(Tastiera).where(Tastiera.canale_id == canale_id, Tastiera.in_uso.is_(True)))
+        stmt = (select(Tastiera).where(Tastiera.canale_id == str(canale_id), Tastiera.in_uso.is_(True)))
 
         return self.session.scalars(stmt).first()
 

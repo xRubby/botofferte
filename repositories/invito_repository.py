@@ -19,7 +19,7 @@ class InvitoRepository:
 
     def get_by_canale(self, canale_id: str) -> Invito | None:
 
-        stmt = select(Invito).where(Invito.canale_id == canale_id)
+        stmt = select(Invito).where(Invito.canale_id == str(canale_id))
 
         return self.session.scalars(stmt).first()
 

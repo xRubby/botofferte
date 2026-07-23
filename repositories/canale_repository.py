@@ -13,7 +13,7 @@ class CanaleRepository:
 
     def get_by_id(self, canale_id: str) -> Canale | None:
 
-        stmt = select(Canale).where(Canale.canale_id == canale_id)
+        stmt = select(Canale).where(Canale.canale_id == str(canale_id))
 
         return self.session.scalars(stmt).first()
 

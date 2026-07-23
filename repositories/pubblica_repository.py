@@ -24,7 +24,7 @@ class PubblicaRepository:
         return list(self.session.scalars(stmt))
 
     
-    def get_channel_non_pubblicati(self, id_canale: str) -> list[Pubblica]:
+    def get_channel_link_non_pubblicati(self, id_canale: str) -> list[Pubblica]:
 
         stmt = (select(Pubblica).where(Pubblica.id_canale == id_canale, Pubblica.is_pubblicato.is_(False)).order_by(Pubblica.id.asc()))
 

@@ -13,3 +13,7 @@ class GestisceService:
     def aggiungi_gestione(self, gestione: Gestisce) -> Gestisce:
 
         return self.gestisce_repository.create(gestione)
+
+    def ottieni_gestione(self, telegram_id: int, canale_id: str) -> Gestisce | None:
+
+        return self.gestisce_repository.get(telegram_id, canale_id)

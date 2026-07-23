@@ -19,7 +19,7 @@ class LayoutImmagineRepository:
 
     def get_in_uso(self, canale_id: str) -> LayoutImmagine | None:
 
-        stmt = (select(LayoutImmagine).where(LayoutImmagine.canale_id == canale_id, LayoutImmagine.in_uso.is_(True)))
+        stmt = (select(LayoutImmagine).where(LayoutImmagine.canale_id == str(canale_id), LayoutImmagine.in_uso.is_(True)))
 
         return self.session.scalars(stmt).first()
 

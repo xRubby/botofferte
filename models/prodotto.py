@@ -26,7 +26,7 @@ class Prodotto(Base):
 
     valuta: Mapped[str] = mapped_column(String, nullable=False)
 
-    sconto: Mapped[float] = mapped_column(Float, nullable=False)
+    sconto: Mapped[int] = mapped_column(Integer, nullable=False)
 
     venditore: Mapped[str] = mapped_column(String, nullable=False)
 

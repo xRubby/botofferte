@@ -9,23 +9,21 @@ from telegram.ext import ContextTypes
 from APIs.bitly_api import shorten_url
 from DTO.ProductConfig import ProductConfig
 from DTO.TextConfig import TextConfig
-from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
-from database.DAO.ProdottoDAO import ProdottoDAO
-from database.DAO.PubblicaDAO import PubblicaDAO
-from database.DAO.CanaleDAO import CanaleDAO
-from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.LayoutDAO import LayoutDAO
-from database.DAO.TastieraDAO import TastieraDAO
-from database.Entity.Canale import Canale
-from database.Entity.Layout import Layout
-from database.Entity.Pubblica import Pubblica
 from database.session import SessionLocal
+from models.canale import Canale
+from models.pubblica import Pubblica
 from scraper.amazon_scraper import scraping_product
 
+from services.canale_service import CanaleService
+from services.gestisce_service import GestisceService
+from services.layout_immagine_service import LayoutImmagineService
+from services.layout_service import LayoutService
 from services.prodotto_service import ProdottoService
 
 from models.prodotto import Prodotto
 
+from services.pubblica_service import PubblicaService
+from services.tastiera_service import TastieraService
 from utils.amazon_utils import extract_asin_from_url, is_future_date, search_warehouse_seller_id_from_link
 from utils.expand_link import expand_url
 
@@ -374,11 +372,17 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
     
     await update_step(ctx, chat_id, msg_id, "📦 <b>Prodotto trovato</b>\n\nSto elaborando le informazioni del prodotto.")
 
-    with GestisceDAO() as gestisceDAO:
-        gestisce = gestisceDAO.get(user_id, channel_id)
 
-    with CanaleDAO() as canaleDAO:
-        canale = canaleDAO.get(channel_id)
+    with SessionLocal() as session:
+        gestisce_service = GestisceService(session)
+        canale_service = CanaleService(session)
+        layout_service = LayoutService(session)
+        layout_immagine_service = LayoutImmagineService(session)
+
+        gestisce = gestisce_service.ottieni_gestione(user_id, channel_id)
+        canale = canale_service.ottieni_canale(channel_id)
+        layout_in_uso = layout_service.ottieni_layout_in_uso(channel_id)
+        layout_img = layout_immagine_service.ottieni_layout_immagine_in_uso(channel_id)
 
     if gestisce and gestisce.id_affiliato:
         info_prodotto["link"]+= f"?tag={gestisce.id_affiliato}"
@@ -388,9 +392,6 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
 
     info_prodotto["link_short"] = await shorten_url(info_prodotto["link"])
 
-    with LayoutDAO() as layoutDAO:
-        layout_in_uso = layoutDAO.get_in_uso(channel_id)
-
     layout_messaggio = layout_in_uso.messaggio if layout_in_uso else TEMPLATE_MESSAGE
 
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"], canale)
@@ -399,10 +400,11 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
 
     info_prodotto["offertaexcl"] = canale.offertaexcl_tag if bool(info_prodotto["offertaexcl"]) else None
 
-    message = processa_messaggio(layout_messaggio, info_prodotto)
+    info_prodotto["prezzo"] = str(info_prodotto["prezzo"]).replace(".", ",")
+    
+    info_prodotto["old_prezzo"] = str(info_prodotto["old_prezzo"]).replace(".", ",")
 
-    with LayoutImmagineDAO() as imgDAO:
-        layout_img = imgDAO.get_in_uso(channel_id)
+    message = processa_messaggio(layout_messaggio, info_prodotto)
 
     foto = None
 
@@ -422,9 +424,24 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
         except Exception:
             foto = None
 
-    with PubblicaDAO() as pubblicaDAO:
-        pubblicaDAO.insert(channel_id, info_prodotto["ASIN"], message, info_prodotto["link"], info_prodotto["link_short"], foto)
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
 
+        pubblicazione = Pubblica(
+            id_canale = channel_id,
+            asin_prodotti = info_prodotto["ASIN"],
+            messaggio = message,
+            link = info_prodotto["link"],
+            link_short = info_prodotto["link_short"],
+            img_bytes = foto            
+        )
+        try:
+            pubblica_service.aggiungi_link(pubblicazione)
+
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
     await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", reply_markup)
 
 def parse_keyboard(text):
@@ -498,19 +515,20 @@ def generate_keyboard(text, link: Pubblica):
     
 async def publish_offer(update: Update, context: ContextTypes.DEFAULT_TYPE, link: Pubblica):
 
-    if link.isPubblicato:
+    if link.is_pubblicato:
         raise Exception("L'offerta è già stata pubblicata sul canale")
 
-    with ProdottoDAO() as prodotto_dao:
-        prodotto = prodotto_dao.get_by_asin(link.asin_prodotti)
+    with SessionLocal() as session:
+        prodotto_service = ProdottoService(session)
+        tastiera_service = TastieraService(session)
+
+        prodotto = prodotto_service.ottieni_prodotto(link.asin_prodotti)
+        tastiera = tastiera_service.ottieni_tastiera_in_uso(link.id_canale)
 
     if link.img_bytes:
         foto = BytesIO(link.img_bytes)
     else:
         foto = prodotto.img_url
-
-    with TastieraDAO() as tastieraDAO:
-        tastiera = tastieraDAO.get_in_uso(link.id_canale)
 
     reply_markup = None
     if tastiera:

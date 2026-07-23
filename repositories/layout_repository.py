@@ -25,7 +25,7 @@ class LayoutRepository:
 
     def get_in_uso(self, canale_id: str) -> Layout | None:
 
-        stmt = (select(Layout).where(Layout.canale_id == canale_id, Layout.in_uso.is_(True)))
+        stmt = (select(Layout).where(Layout.canale_id == str(canale_id), Layout.in_uso.is_(True)))
 
         return self.session.scalars(stmt).first()
 

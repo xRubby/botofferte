@@ -12,7 +12,7 @@ class GestisceRepository:
 
     def get(self, telegram_id: int, canale_id: str) -> Gestisce | None:
 
-        stmt = (select(Gestisce).where(Gestisce.telegram_id == telegram_id, Gestisce.canale_id == canale_id))
+        stmt = (select(Gestisce).where(Gestisce.telegram_id == telegram_id, Gestisce.canale_id == str(canale_id)))
 
         return self.session.scalars(stmt).first()
 
@@ -26,14 +26,14 @@ class GestisceRepository:
 
     def get_member_list(self, canale_id: str, limit: int, offset: int) -> list[Gestisce]:
 
-        stmt = (select(Gestisce).where(Gestisce.canale_id == canale_id).order_by(Gestisce.telegram_id).limit(limit).offset(offset))
+        stmt = (select(Gestisce).where(Gestisce.canale_id == str(canale_id)).order_by(Gestisce.telegram_id).limit(limit).offset(offset))
 
         return list(self.session.scalars(stmt))
 
 
     def count_members(self, canale_id: str) -> int:
 
-        stmt = (select(func.count()).select_from(Gestisce).where(Gestisce.canale_id == canale_id))
+        stmt = (select(func.count()).select_from(Gestisce).where(Gestisce.canale_id == str(canale_id)))
 
         return self.session.scalar(stmt) or 0
 

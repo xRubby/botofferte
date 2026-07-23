@@ -4,6 +4,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, error
 from telegram.ext import ContextTypes
 
 from database.DAO.PubblicaDAO import PubblicaDAO
+from database.session import SessionLocal
+from services.pubblica_service import PubblicaService
 from telegram_bot.functions.send_message import publish_offer
 from utils.channel_offers_utils import check_channel_id, delete_preview_message
 
@@ -23,8 +25,10 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     links = context.user_data.get("links")
 
     if not links:
-        with PubblicaDAO() as pubblicaDAO:
-            links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+
+        with SessionLocal() as session:
+            pubblica_service = PubblicaService(session)
+            links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
             context.user_data["links"] = links
 
     if not links:
@@ -98,9 +102,11 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     link_id = int(query.data.split("_")[-2])
 
 
-    with PubblicaDAO() as pubblicaDAO:
-        link = pubblicaDAO.get_channel_link_by_id(link_id, channel_id)
-        pubblicato = pubblicaDAO.get_pubblicato_ultime_24h(channel_id, link.asin_prodotti)
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+
+        link = pubblica_service.ottieni_link_da_id_canale(link_id, channel_id)
+        pubblicato = pubblica_service.ottieni_link_pubblicato_ultime_24h(channel_id, link.asin_prodotti)
 
     BACK_BTN = InlineKeyboardMarkup([[
                     InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
@@ -115,8 +121,9 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=BACK_BTN,
             parse_mode='HTML'
         )
-        with PubblicaDAO() as pubblicaDAO:
-            links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+        with SessionLocal() as session:
+            pubblica_service = PubblicaService(session)
+            links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
             context.user_data["links"] = links
         return
     
@@ -174,8 +181,15 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=BACK_BTN,
             parse_mode='HTML'
         )
-        with PubblicaDAO() as pubblicaDAO:
-            pubblicaDAO.update_pubblicato(link.id, 1)
+
+        with SessionLocal() as session:
+            pubblica_service = PubblicaService(session)
+            link = session.merge(link)
+
+            pubblica_service.segna_pubblicato(link)
+
+            session.commit()
+
     except error.BadRequest:
         await query.edit_message_text(
             text=("❌ <b>Errore di pubblicazione</b>\n\n"
@@ -194,8 +208,9 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         traceback.print_exc()
 
-    with PubblicaDAO() as pubblicaDAO:
-        links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+        links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
         context.user_data["links"] = links
 
 async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -210,8 +225,9 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context=context
     )
 
-    with PubblicaDAO() as pubblica_dao:
-        link = pubblica_dao.get_channel_link_by_id(link_id, channel_id)
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+        link = pubblica_service.ottieni_link_da_id_canale(link_id, channel_id)
 
         if not link:
             await query.edit_message_text(
@@ -223,11 +239,12 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode='HTML'
             )
 
-            links = pubblica_dao.get_channel_link_non_pubblicati(channel_id)
+            links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
             context.user_data["links"] = links
             return
 
-        pubblica_dao.delete(link.id, link.id_canale, link.asin_prodotti)
+        pubblica_service.rimuovi_link(link)
+        session.commit()
 
     await query.edit_message_text(
             text=(
@@ -240,6 +257,7 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='HTML'
     )
 
-    with PubblicaDAO() as pubblicaDAO:
-            links = pubblicaDAO.get_channel_link_non_pubblicati(channel_id)
-            context.user_data["links"] = links
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+        links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
+        context.user_data["links"] = links

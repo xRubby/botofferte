@@ -1,7 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from database.DAO.CanaleDAO import CanaleDAO
 from database.session import SessionLocal
 from services.canale_service import CanaleService
 from utils.channel_offers_utils import check_channel_id, delete_preview_message
