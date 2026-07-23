@@ -44,7 +44,7 @@ class LicenzaService:
             return False
 
 
-        data_attivazione = datetime.now()
+        data_attivazione = datetime.now().replace(microsecond=0)
 
         licenza.data_attivazione = data_attivazione
 

@@ -1,9 +1,12 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
-from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.LicenzaDAO import LicenzaDAO
-from database.DAO.CanaleDAO import CanaleDAO
+from database.session import SessionLocal
+from models.canale import Canale
+from models.gestisce import Gestisce
+from services.canale_service import CanaleService
+from services.gestisce_service import GestisceService
+from services.licenza_service import LicenzaService
 
 ATTESA_FORWARD  = 1
 ATTESA_LICENZA  = 2
@@ -13,28 +16,30 @@ BTN_INDIETRO = [[InlineKeyboardButton("⬅️ Indietro", callback_data="channelo
 async def channeloffers_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    userID = update.effective_user.id
+    telegram_id = update.effective_user.id
 
     context.user_data.pop("channel_id", None)
 
-    with CanaleDAO() as canaleDAO:
-        channels = canaleDAO.get_user_channels(userID)
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        canali = canale_service.ottieni_canale_utente(telegram_id)
+
 
     keyboard = []
 
-    if not channels:
+    if not canali:
         text = "Non hai canali. Aggiungi un canale per iniziare!"
     else:
         text = "📢 <b>I tuoi canali</b>\n\nScegli un canale per gestirlo 👇\n"
-        for channel in channels:
-            channel_id = channel.canale_id
-            channel_name = channel.nome_canale
-            text += f"\n- {channel_name}"
+        for canale in canali:
+            canale_id = canale.canale_id
+            nome_canale = canale.nome_canale
+            text += f"\n- {nome_canale}"
 
             keyboard.append([
                 InlineKeyboardButton(
-                    channel_name, 
-                    callback_data=f'channeloffers_info_{channel_id}'
+                    nome_canale, 
+                    callback_data=f'channeloffers_info_{canale_id}'
                 )
             ])
 
@@ -96,8 +101,9 @@ async def received_forward(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     channel_id   = origin.chat.id
     channel_name = origin.chat.title
 
-    with CanaleDAO() as canale_dao:
-        esistente = canale_dao.get(str(channel_id))
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        esistente = canale_service.ottieni_canale(str(channel_id))
 
     if esistente:
         await ctx.bot.edit_message_text(
@@ -154,8 +160,9 @@ async def received_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     reply_markup = InlineKeyboardMarkup(BTN_INDIETRO)
 
-    with LicenzaDAO() as licenza_dao:
-        licenza = licenza_dao.get(codice)
+    with SessionLocal() as session:
+        licenza_service = LicenzaService(session)
+        licenza = licenza_service.ottieni_licenza(codice)
 
     try:
         if not licenza or not licenza.attiva or licenza.data_attivazione is not None:
@@ -173,28 +180,43 @@ async def received_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return ATTESA_LICENZA
 
-    try:
-        with CanaleDAO() as canale_dao:
-            canale_dao.insert(channel_id, channel_name, None, codice)
 
-        with GestisceDAO() as gestisce_dao:
-            gestisce_dao.insert(
-                telegram_id=int(update.effective_user.id),
-                canale_id=channel_id,
-                id_affiliato=None,
-                isCreator=True
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        gestisce_service = GestisceService(session)
+        licenza_service = LicenzaService(session)
+
+        try:
+
+            canale = Canale(
+                canale_id = channel_id,
+                nome_canale = channel_name,
+                id_affiliato = None,
+                codice_licenza = codice
             )
 
-    except Exception as e:
-        await ctx.bot.edit_message_text(
-            chat_id=chat_id, message_id=message_id,
-            text=f"❌ Errore durante il salvataggio del canale: {e}",
-            parse_mode="HTML", reply_markup=reply_markup
-        )
-        return ATTESA_LICENZA
+            gestisce = Gestisce(
+                telegram_id = int(update.effective_user.id),
+                canale_id = channel_id,
+                id_affiliato = None,
+                is_creator = True
+            )
 
-    with LicenzaDAO() as licenza_dao:
-        licenza_dao.activate_licenza(codice)
+            canale_service.aggiungi_canale(canale)
+            gestisce_service.aggiungi_gestione(gestisce)
+
+            licenza_service.activate_licenza(codice)
+
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            await ctx.bot.edit_message_text(
+                chat_id=chat_id, message_id=message_id,
+                text=f"❌ Errore durante il salvataggio del canale: {e}",
+                parse_mode="HTML", reply_markup=reply_markup
+            )
+            return ATTESA_LICENZA
 
     await ctx.bot.edit_message_text(
         chat_id=chat_id, message_id=message_id,

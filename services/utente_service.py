@@ -10,7 +10,7 @@ class UtenteService:
         self.utente_repository = UtenteRepository(session)
 
 
-    def crea_utente(self, telegram_id: int, nome: str, is_admin: bool = False):
+    def crea_utente(self, telegram_id: int, nome: str, is_admin: bool = False) -> Utente:
 
             utente = Utente(
                 telegram_id=telegram_id,
