@@ -3,12 +3,10 @@ from telegram.ext import (
     CallbackQueryHandler, ContextTypes, ConversationHandler,
     MessageHandler, filters
 )
-from database.DAO.LicenzaDAO import LicenzaDAO
 from database.session import SessionLocal
 from enums.StatoLicenza import StatoLicenza
 from enums.esito_licenza import EsitoLicenza
 from services.licenza_service import LicenzaService
-from utils.generate_license import calcola_tipo_scadenza, generate_license
 
 ADMIN_MENU_MSG = (
     "🛠️ <b>Pannello admin</b>\n\n"

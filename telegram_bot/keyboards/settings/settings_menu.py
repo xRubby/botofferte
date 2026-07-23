@@ -1,7 +1,6 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from database.DAO.UtenteDAO import UtenteDAO
 from database.session import SessionLocal
 from services.utente_service import UtenteService
 

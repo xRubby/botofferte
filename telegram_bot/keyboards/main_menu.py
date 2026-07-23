@@ -1,18 +1,10 @@
-from datetime import datetime, timedelta
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User
 from telegram.ext import ContextTypes
 
-from database.Connessione import Connessione
-
 import os
 
-from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.InvitoDAO import InvitoDAO
-from database.DAO.UtenteDAO import UtenteDAO
 from database.session import SessionLocal
 from enums.esito_invito import EsitoInvito
-from repositories.utente_repository import UtenteRepository
 from services.invito_service import InvitoService
 from services.utente_service import UtenteService
 
