@@ -70,11 +70,6 @@ async def warmup_client(client: httpx.AsyncClient):
 async def human_delay(min_s=2.0, max_s=6.0):
     await asyncio.sleep(random.uniform(min_s, max_s))
 
-
-def format_price(price):
-    return "{:.2f}".format(price).replace(".", ",")
-
-
 def parse_price(price_str: str) -> float:
     return float(
         price_str.replace("€", "").replace(".", "").replace(",", ".").strip()
@@ -181,7 +176,7 @@ async def scraping_product(asin: str) -> dict | None:
             if not img_tag:
                 return None
 
-            img_link = img_tag.get("src", "")
+            img_link = img_tag.get("data-old-hires") or img_tag.get("src", "")
 
             # ── BRAND ──
             brand_tag = soup.find("a", id="bylineInfo")
@@ -189,7 +184,7 @@ async def scraping_product(asin: str) -> dict | None:
 
             # ── PREORDER ──
             preorder = False
-            data_preordine = ""
+            data_preordine = None
 
             preorder_div = soup.find("div", id="availability")
             if preorder_div:
@@ -207,8 +202,8 @@ async def scraping_product(asin: str) -> dict | None:
             return {
                 "ASIN": asin,
                 "titolo": title,
-                "prezzo": format_price(price_val),
-                "old_prezzo": format_price(old_price_val),
+                "prezzo": price_val,
+                "old_prezzo": old_price_val,
                 "valuta": currency,
                 "sconto": round(discount),
                 "venditore": venditore,
@@ -217,11 +212,11 @@ async def scraping_product(asin: str) -> dict | None:
                 "img_url": img_link,
                 "brand": brand,
                 "preordine": preorder,
-                "data_preordine": data_preordine,
+                "data_preordine": data_preordine if data_preordine else None,
                 "isPrime": spedito_amazon,
                 "isWarehouse": False,
-                "condizione": "",
-                "condizione_descrizione": "",
+                "condizione": None,
+                "condizione_descrizione": None,
                 "offertaesclusiva": offertaesclusiva,
             }
 
