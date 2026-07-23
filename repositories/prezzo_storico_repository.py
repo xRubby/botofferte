@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models.prezzo_storico import PrezziStorico
+from models.prezzo_storico import PrezzoStorico
 
 
 class PrezziStoricoRepository:
@@ -10,34 +10,34 @@ class PrezziStoricoRepository:
         self.session = session
 
 
-    def get(self, id: int) -> PrezziStorico | None:
+    def get(self, id: int) -> PrezzoStorico | None:
 
-        stmt = select(PrezziStorico).where(PrezziStorico.id == id)
+        stmt = select(PrezzoStorico).where(PrezzoStorico.id == id)
 
         return self.session.scalars(stmt).first()
 
 
-    def get_by_asin(self, asin: str) -> list[PrezziStorico] | None:
+    def get_by_asin(self, asin: str) -> list[PrezzoStorico] | None:
 
-        stmt = (select(PrezziStorico).where(PrezziStorico.asin == asin).order_by(PrezziStorico.rilevato.desc()))
+        stmt = (select(PrezzoStorico).where(PrezzoStorico.asin == asin).order_by(PrezzoStorico.rilevato.desc()))
 
         return list(self.session.scalars(stmt))
 
 
-    def get_last_by_asin(self, asin: str) -> PrezziStorico | None:
+    def get_last_by_asin(self, asin: str) -> PrezzoStorico | None:
 
-        stmt = (select(PrezziStorico).where(PrezziStorico.asin == asin).order_by(PrezziStorico.rilevato.desc()).limit(1))
+        stmt = (select(PrezzoStorico).where(PrezzoStorico.asin == asin).order_by(PrezzoStorico.rilevato.desc()).limit(1))
 
         return self.session.scalars(stmt).first()
 
 
-    def create(self, prezzo: PrezziStorico) -> PrezziStorico:
+    def create(self, prezzo: PrezzoStorico) -> PrezzoStorico:
 
         self.session.add(prezzo)
 
         return prezzo
 
 
-    def delete(self, prezzo: PrezziStorico) -> None:
+    def delete(self, prezzo: PrezzoStorico) -> None:
 
         self.session.delete(prezzo)

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from io import BytesIO
 import re
+import traceback
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update, error
 from telegram.ext import ContextTypes
@@ -17,15 +18,23 @@ from database.DAO.LayoutDAO import LayoutDAO
 from database.DAO.TastieraDAO import TastieraDAO
 from database.Entity.Canale import Canale
 from database.Entity.Layout import Layout
-from database.Entity.Prodotto import Prodotto
 from database.Entity.Pubblica import Pubblica
+from database.session import SessionLocal
 from scraper.amazon_scraper import scraping_product
+
+from services.prodotto_service import ProdottoService
+
+from models.prodotto import Prodotto
 
 from utils.amazon_utils import extract_asin_from_url, is_future_date, search_warehouse_seller_id_from_link
 from utils.expand_link import expand_url
 
 from dotenv import load_dotenv
 import os
+
+from sqlalchemy.orm import Session
+
+from utils.formattazione_data import converti_data_preordine_da_db, converti_data_preordine_per_db
 
 load_dotenv()
 ASSOCIATE_TAG = os.getenv('ASSOCIATE_TAG')
@@ -51,16 +60,16 @@ def prodotto_to_dict(prodotto: Prodotto) -> dict | None:
         "valuta": prodotto.valuta,
         "sconto": prodotto.sconto,
         "venditore": prodotto.venditore,
-        "spedito_Amazon": prodotto.spedito_Amazon,
+        "spedito_Amazon": prodotto.spedito_amazon,
         "link": prodotto.link,
         "img_url": prodotto.img_url,
         "brand": prodotto.brand,
-        "data_preordine": prodotto.data_preordine or "",
-        "isWarehouse": prodotto.isWarehouse,
+        "data_preordine": converti_data_preordine_da_db(prodotto.data_preordine),
+        "isWarehouse": prodotto.is_warehouse,
         "condizione": prodotto.condizione,
         "condizione_commento": prodotto.condizione_descrizione,
         "preorder": prodotto.preorder,
-        "isPrime": prodotto.isPrime,
+        "isPrime": prodotto.is_prime,
         "offertaexcl": prodotto.offertaesclusiva
     }
 
@@ -78,7 +87,7 @@ def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
             "link": risultato["link"],
             "img_url": risultato["img_url"],
             "brand": risultato["brand"],
-            "data_preordine": risultato["data_preordine"] or "",
+            "data_preordine": risultato["data_preordine"],
             "isWarehouse": risultato["isWarehouse"],
             "condizione": risultato["condizione"],
             "condizione_commento": risultato["condizione_descrizione"],
@@ -155,15 +164,52 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
             prodotto.data_preordine = None
     return prodotto
 
-async def get_prodotto_dizionario(asin: str) -> dict | None:
-    with ProdottoDAO() as prodottoDAO:
-        prodotto = prodottoDAO.get_by_asin(asin)
-
-    if not prodotto:
+async def check_aggiornamento_prodotto(asin: str, prodotto: Prodotto, session: Session) -> dict | None:
+    if datetime.now() > prodotto.last_check + timedelta(hours=1):
         risultato = await scraping_product(asin)
         info_prodotto = creaDizionarioProdotto(risultato)
-        with ProdottoDAO() as prodottoDAO:
-            prodottoDAO.insert(
+
+        try:
+            if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
+                prodotto.asin = info_prodotto["ASIN"]
+                prodotto.prezzo = info_prodotto["prezzo"]
+                prodotto.old_prezzo = info_prodotto["old_prezzo"]
+                prodotto.valuta = info_prodotto["valuta"]
+                prodotto.sconto = info_prodotto["sconto"]
+                prodotto.venditore = info_prodotto["venditore"]
+                prodotto.img_url = info_prodotto["img_url"]
+                prodotto.spedito_amazon = info_prodotto["spedito_Amazon"]
+                prodotto.offertaesclusiva = info_prodotto.get("offertaesclusiva", None)
+                prodotto.last_check = datetime.now()
+                prodotto.preorder=bool(info_prodotto["preorder"]),
+                prodotto.data_preordine=info_prodotto["data_preordine"],
+
+            elif info_prodotto:
+                prodotto.last_check = datetime.now()
+
+            session.commit()
+
+        except Exception:
+            session.rollback()
+            traceback.print_exc()
+            raise
+
+        return info_prodotto
+
+    return None
+
+async def get_prodotto_dizionario(asin: str) -> dict | None:
+
+    with SessionLocal() as session:
+        prodotto_service = ProdottoService(session)
+
+        prodotto = prodotto_service.ottieni_prodotto(asin)
+
+        if not prodotto:
+            risultato = await scraping_product(asin)
+            info_prodotto = creaDizionarioProdotto(risultato)
+
+            prodotto = Prodotto(
                 asin=info_prodotto["ASIN"],
                 titolo=info_prodotto["titolo"],
                 prezzo=info_prodotto["prezzo"],
@@ -171,33 +217,32 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
                 valuta=info_prodotto["valuta"],
                 sconto=info_prodotto["sconto"],
                 venditore=info_prodotto["venditore"],
-                spedito_Amazon=info_prodotto["spedito_Amazon"],
+                spedito_amazon=info_prodotto["spedito_Amazon"],
                 link=info_prodotto["link"],
                 img_url=info_prodotto["img_url"],
                 brand=info_prodotto["brand"],
                 preorder=bool(info_prodotto["preorder"]),
-                data_preordine=info_prodotto["data_preordine"],
-                isPrime=bool(info_prodotto["isPrime"]),
-                isWarehouse=info_prodotto["isWarehouse"],
+                data_preordine=converti_data_preordine_per_db(info_prodotto["data_preordine"]),
+                is_prime=bool(info_prodotto["isPrime"]),
+                is_warehouse=info_prodotto["isWarehouse"],
                 condizione=info_prodotto["condizione"],
                 condizione_descrizione=info_prodotto["condizione_commento"],
                 offertaesclusiva=info_prodotto["offertaexcl"]
             )
-        return info_prodotto
-    
-    prodotto.sconto = round(prodotto.sconto)
 
-    if datetime.now() > datetime.strptime(prodotto.last_check, "%Y-%m-%d %H:%M:%S") + timedelta(hours=1):
-        risultato = await scraping_product(asin)
-        info_prodotto = creaDizionarioProdotto(risultato)
-        with ProdottoDAO() as prodottoDAO:
-            if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
-                    prodottoDAO.update_price(info_prodotto["ASIN"], info_prodotto["prezzo"], info_prodotto["old_prezzo"], info_prodotto["valuta"],
-                        info_prodotto["sconto"], info_prodotto["venditore"], info_prodotto["spedito_Amazon"], info_prodotto.get("offertaesclusiva", None))
-            elif info_prodotto:
-                prodottoDAO.update_last_check(info_prodotto["ASIN"])
+            try:
+                prodotto_service.aggiungi_prodotto(prodotto)
+                session.commit()
+            except Exception:
+                session.rollback()
+                traceback.print_exc()
+                raise
 
-        return info_prodotto
+            return info_prodotto
+
+        info_prodotto = await check_aggiornamento_prodotto(asin, prodotto, prodotto_service)
+        if info_prodotto:
+            return info_prodotto
 
     
     return prodotto_to_dict(prodotto)
@@ -235,6 +280,8 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
     info_prodotto["link_short"] = await shorten_url(info_prodotto["link"])
     info_prodotto["spedito"] = venduto_e_spedito(info_prodotto["venditore"], info_prodotto["spedito_Amazon"])
     info_prodotto["prime"], info_prodotto["preorder"] = get_prime_preorder_tags(info_prodotto)
+    info_prodotto["prezzo"] = str(info_prodotto["prezzo"]).replace(".", ",")
+    info_prodotto["old_prezzo"] = str(info_prodotto["old_prezzo"]).replace(".", ",")
 
     messaggio = (
         "📦 <i>{_{preorder}:_}</i><i>{_{warehouse}:_}</i> <b>{titolo}</b> {_- <b>In uscita il {data_preordine}</b>_}\n"

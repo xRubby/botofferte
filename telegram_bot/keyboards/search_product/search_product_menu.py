@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -57,12 +58,11 @@ async def handler_keyword(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int
         text="<b>🔍 Cerca prodotto</b>\n\nSto elaborando il tuo link...",
         parse_mode="HTML"
     )
-
-    await asyncio.sleep(2)
     
     try:
         await search_and_send_offer(update, ctx, keyword)
     except ValueError as ve:
+        traceback.print_exc()
         await ctx.bot.edit_message_text(
             chat_id=update.effective_chat.id,
             message_id=message_id,
@@ -71,6 +71,7 @@ async def handler_keyword(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int
             reply_markup=reply_markup,
         )
     except Exception:
+        traceback.print_exc()
         await ctx.bot.edit_message_text(
             chat_id=update.effective_chat.id,
             message_id=message_id,

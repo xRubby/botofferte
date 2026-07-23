@@ -54,7 +54,7 @@ class Prodotto(Base):
 
     priorita: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
 
-    offertaesclusiva: Mapped[str | None] = mapped_column(String, nullable=True)
+    offertaesclusiva: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
     storico_prezzi: Mapped[list["PrezzoStorico"]] = relationship(back_populates="prodotto")
