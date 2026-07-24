@@ -1,7 +1,8 @@
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.GestisceDAO import GestisceDAO
+from database.session import SessionLocal
+from services.gestisce_service import GestisceService
 from telegram_bot.keyboards.channel_offers.channels_offers_info import channel_info
 from utils.channel_offers_utils import check_channel_id
 
@@ -17,11 +18,13 @@ async def insert_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     id_affiliato = "Nessuno"
 
-    with GestisceDAO() as gestisceDAO:
-        gestisce_info = gestisceDAO.get(user_id, channel_id)
+    with SessionLocal() as session:
+        gestisce_service = GestisceService(session)
 
-    if gestisce_info and gestisce_info.id_affiliato:
-        id_affiliato = gestisce_info.id_affiliato
+        gestisce_info = gestisce_service.ottieni_gestione(user_id, channel_id)
+
+        if gestisce_info and gestisce_info.id_affiliato:
+            id_affiliato = gestisce_info.id_affiliato
 
     text = (f"🏷️ <b>Configurazione ID Affiliato</b>\n\n"
         f"🔑 <b>ID corrente:</b> <code>{id_affiliato}</code>\n\n"
@@ -51,15 +54,23 @@ async def remove_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
     channel_id = check_channel_id(query, context)
     user_id = update.effective_user.id
 
-    try:
-        with GestisceDAO() as gestisce_dao:     
-            gestisce_dao.update_idaffiliato(user_id, channel_id, "")
+    with SessionLocal() as session:
+        gestisce_service = GestisceService(session)
+
+        gestione = gestisce_service.ottieni_gestione(user_id, channel_id)
         
-        text = "🗑️ <b>ID Affiliato rimosso con successo</b>"
-    except Exception as e:
-        text = ("❌ <b>Errore durante la rimozione</b>\n\n"
-            "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
-            "Riprova più tardi.")
+        try:
+            gestione.id_affiliato = ""
+
+            session.commit()
+            
+            text = "🗑️ <b>ID Affiliato rimosso con successo</b>"
+        except Exception as e:
+            session.rollback()
+
+            text = ("❌ <b>Errore durante la rimozione</b>\n\n"
+                "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
+                "Riprova più tardi.")
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_affiliateid_{channel_id}')]
@@ -81,18 +92,26 @@ async def ricevi_affiliate_id(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = update.effective_user.id
 
     await update.message.delete()
-    try:
-        with GestisceDAO() as gestisceDAO:
-            gestisceDAO.update_idaffiliato(user_id, channel_id, affiliate_id)
 
-        text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
-        text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
-    except Exception as e:
-        text = (
-            "❌ <b>Errore durante l'aggiornamento</b>\n\n"
-            "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
-            "Riprova più tardi o verifica i dati inseriti."
-        )
+    with SessionLocal() as session:
+        gestisce_service = GestisceService(session)
+
+        gestione = gestisce_service.ottieni_gestione(user_id, channel_id)
+
+        try:
+            gestione.id_affiliato = affiliate_id
+
+            session.commit()
+            text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
+            text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ <b>Errore durante l'aggiornamento</b>\n\n"
+                "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
+                "Riprova più tardi o verifica i dati inseriti."
+            )
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_affiliateid_{channel_id}')]
