@@ -218,11 +218,13 @@ async def dettagli_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         canale = licenza.canale
 
     stato_map = {
-        StatoLicenza.ATTIVA:       "🟢 Attiva",
-        StatoLicenza.NON_ATTIVATA: "⚪️ Non ancora attivata",
-        StatoLicenza.SCADUTA:      "🔴 Scaduta",
-        StatoLicenza.DISATTIVATA:  "⛔️ Disattivata dall'admin",
+        StatoLicenza.NESSUN_CANALE: "⚫️ Nessun canale",
+        StatoLicenza.ATTIVA:        "🟢 Attiva",
+        StatoLicenza.NON_ATTIVATA:  "⚪️ Non ancora attivata",
+        StatoLicenza.SCADUTA:       "🔴 Scaduta",
+        StatoLicenza.DISATTIVATA:   "⛔️ Disattivata dall'admin",
     }
+
     stato_text = stato_map[stato]
 
     if not licenza:

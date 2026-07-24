@@ -74,6 +74,9 @@ class LicenzaService:
         if (licenza.data_scadenza and licenza.data_scadenza < datetime.now()):
             return StatoLicenza.SCADUTA
 
+        if not licenza.canale:
+            return StatoLicenza.NESSUN_CANALE
+
         return StatoLicenza.ATTIVA
 
     def release_licenza(self, licenza: str | Licenza):

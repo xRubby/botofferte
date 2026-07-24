@@ -2,6 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
 from database.session import SessionLocal
+from enums.StatoLicenza import StatoLicenza
 from models.canale import Canale
 from models.gestisce import Gestisce
 from services.canale_service import CanaleService
@@ -164,21 +165,20 @@ async def received_licenza(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         licenza_service = LicenzaService(session)
         licenza = licenza_service.ottieni_licenza(codice)
 
-    try:
-        if not licenza or not licenza.attiva or licenza.data_attivazione is not None:
-            await ctx.bot.edit_message_text(
-                chat_id=chat_id, message_id=message_id,
-                text="❌ Licenza non valida o già utilizzata.\n\nRiprova con un codice diverso.",
-                parse_mode="HTML", reply_markup=reply_markup
-            )
-            return ATTESA_LICENZA
-    except Exception as e:
-        await ctx.bot.edit_message_text(
-            chat_id=chat_id, message_id=message_id,
-            text=f"❌ Errore durante la lettura della licenza",
-            parse_mode="HTML", reply_markup=reply_markup
-        )
-        return ATTESA_LICENZA
+        stato_licenza = None
+        if licenza:
+            stato_licenza = licenza_service.get_stato(licenza)
+
+        if stato_licenza not in(StatoLicenza.ATTIVA, StatoLicenza.NON_ATTIVATA, StatoLicenza.NESSUN_CANALE) or licenza.canale:
+                try:
+                    await ctx.bot.edit_message_text(
+                        chat_id=chat_id, message_id=message_id,
+                        text="❌ Licenza non valida o già utilizzata.\n\nRiprova con un codice diverso.",
+                        parse_mode="HTML", reply_markup=reply_markup
+                    )
+                    return ATTESA_LICENZA
+                except:
+                    return ATTESA_LICENZA
 
 
     with SessionLocal() as session:
