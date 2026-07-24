@@ -1,7 +1,8 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from database.DAO.GestisceDAO import GestisceDAO
+from database.session import SessionLocal
+from services.gestisce_service import GestisceService
 from utils.channel_offers_utils import check_channel_id
 
 async def channel_settings_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -61,15 +62,17 @@ async def exit_channel_confirm(update: Update, context: ContextTypes.DEFAULT_TYP
         [InlineKeyboardButton("🏠 Home", callback_data=f'back_to_main')]
     ]
 
-    with GestisceDAO() as gestisceDAO:
-        gestisce = gestisceDAO.get(user_id, channel_id)
-        if gestisce and not gestisce.isCreator:
-            gestisceDAO.delete(user_id, channel_id)
+    with SessionLocal() as session:
+        gestisce_service = GestisceService(session)
+
+        gestisce = gestisce_service.ottieni_gestione(user_id, channel_id)
+        if gestisce and not gestisce.is_creator:
+            gestisce_service.rimuovi_gestione(gestisce)
             text = (
                 "🚪 <b>Rimozione completata</b>\n\n"
                 "Sei stato rimosso dal canale."
             )
-        elif gestisce.isCreator:
+        elif gestisce.is_creator:
             text = (
                 "⚠️ <b>Operazione non consentita</b>\n\n"
                 "Non puoi essere rimosso dal canale perché sei il creatore."

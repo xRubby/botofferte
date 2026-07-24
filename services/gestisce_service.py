@@ -17,3 +17,7 @@ class GestisceService:
     def ottieni_gestione(self, telegram_id: int, canale_id: str) -> Gestisce | None:
 
         return self.gestisce_repository.get(telegram_id, canale_id)
+
+    def rimuovi_gestione(self, gestione: Gestisce) -> None:
+
+        return self.gestisce_repository.delete(gestione)
