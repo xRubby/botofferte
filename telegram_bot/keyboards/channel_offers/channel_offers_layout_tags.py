@@ -2,8 +2,8 @@ from telegram import *
 from telegram.ext import *
 import re
 
-from database.Entity.Canale import Canale
-from database.DAO.CanaleDAO import CanaleDAO
+from database.session import SessionLocal
+from services.canale_service import CanaleService
 from utils.channel_offers_utils import check_channel_id
 
 ATTESA_NUOVO_TAG = "ATTESA_NUOVO_TAG"
@@ -86,8 +86,9 @@ async def edit_tags_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["tag_type"] = tag_type
     context.user_data["channel_id"] = channel_id
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
 
     if tag_type == "prime":
         current = channel.prime_tag
@@ -124,24 +125,22 @@ async def ricevi_nuovo_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.delete()
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
-        if tag_type == "prime":
-            channel.prime_tag = nuovo_testo
-        elif tag_type == "preorder":
-            channel.preorder_tag = nuovo_testo
-        elif tag_type == "offertaexcl":
-            channel.offertaexcl_tag = nuovo_testo
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
+        try:
+            if tag_type == "prime":
+                channel.prime_tag = nuovo_testo
+            elif tag_type == "preorder":
+                channel.preorder_tag = nuovo_testo
+            elif tag_type == "offertaexcl":
+                channel.offertaexcl_tag = nuovo_testo
 
-        canaleDAO.update_tags(
-            channel.canale_id,
-            channel.amazon_tag,
-            channel.venditoreamazon_tag,
-            channel.venditore_tag,
-            channel.preorder_tag,
-            channel.prime_tag,
-            channel.offertaexcl_tag
-        )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}')]]
 
@@ -179,28 +178,25 @@ async def reset_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    match = re.match(r'^co_edittags_(-\d+)_reset_(prime|preorder)$', query.data)
+    match = re.match(r'^co_edittags_(-\d+)_reset_(prime|preorder|offertaexcl)$', query.data)
     channel_id = match.group(1)
     tag_type = match.group(2)
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
-        if tag_type == "prime":
-            channel.prime_tag = DEFAULT_TAGS["prime"]
-        elif tag_type == "preorder":
-            channel.preorder_tag = DEFAULT_TAGS["preorder"]
-        elif tag_type == "offertaexcl":
-            channel.offertaexcl_tag = DEFAULT_TAGS["offertaexcl"]
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
+        try:
+            if tag_type == "prime":
+                channel.prime_tag = DEFAULT_TAGS["prime"]
+            elif tag_type == "preorder":
+                channel.preorder_tag = DEFAULT_TAGS["preorder"]
+            elif tag_type == "offertaexcl":
+                channel.offertaexcl_tag = DEFAULT_TAGS["offertaexcl"]
 
-        canaleDAO.update_tags(
-            channel.canale_id,
-            channel.amazon_tag,
-            channel.venditoreamazon_tag,
-            channel.venditore_tag,
-            channel.preorder_tag,
-            channel.prime_tag,
-            channel.offertaexcl_tag
-        )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
     await query.edit_message_text(
         "🔄 <b>Tag ripristinato</b>\n\n"
@@ -225,8 +221,9 @@ async def edit_tags_spedito_type(update: Update, context: ContextTypes.DEFAULT_T
     context.user_data["spedito_type"] = spedito_type
     context.user_data["channel_id"] = channel_id
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
 
     labels = {
         "amazon": ("Amazon", channel.amazon_tag),
@@ -260,24 +257,22 @@ async def ricevi_nuovo_tag_spedito(update: Update, context: ContextTypes.DEFAULT
 
     await update.message.delete()
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
-        if spedito_type == "amazon":
-            channel.amazon_tag = nuovo_testo
-        elif spedito_type == "vndamazon":
-            channel.venditoreamazon_tag = nuovo_testo
-        elif spedito_type == "vnd":
-            channel.venditore_tag = nuovo_testo
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
 
-        canaleDAO.update_tags(
-            channel.canale_id,
-            channel.amazon_tag,
-            channel.venditoreamazon_tag,
-            channel.venditore_tag,
-            channel.preorder_tag,
-            channel.prime_tag,
-            channel.offertaexcl_tag
-        )
+        try:
+            if spedito_type == "amazon":
+                channel.amazon_tag = nuovo_testo
+            elif spedito_type == "vndamazon":
+                channel.venditoreamazon_tag = nuovo_testo
+            elif spedito_type == "vnd":
+                channel.venditore_tag = nuovo_testo
+
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}_sp')]]
 
@@ -318,28 +313,26 @@ async def reset_tag_spedito(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = match.group(1)
     spedito_type = match.group(2)
 
-    with CanaleDAO() as canaleDAO:
-        channel = canaleDAO.get(channel_id)
-        if spedito_type == "amazon":
-            channel.amazon_tag = DEFAULT_TAGS["amazon"]
-        elif spedito_type == "vndamazon":
-            channel.venditoreamazon_tag = DEFAULT_TAGS["vndamazon"]
-        elif spedito_type == "vnd":
-            channel.venditore_tag = DEFAULT_TAGS["vnd"]
+    with SessionLocal() as session:
+        canale_service = CanaleService(session)
+        channel = canale_service.ottieni_canale(channel_id)
 
-        canaleDAO.update_tags(
-            channel.canale_id,
-            channel.amazon_tag,
-            channel.venditoreamazon_tag,
-            channel.venditore_tag,
-            channel.preorder_tag,
-            channel.prime_tag,
-            channel.offertaexcl_tag
-        )
+        try:
+            if spedito_type == "amazon":
+                channel.amazon_tag = DEFAULT_TAGS["amazon"]
+            elif spedito_type == "vndamazon":
+                channel.venditoreamazon_tag = DEFAULT_TAGS["vndamazon"]
+            elif spedito_type == "vnd":
+                channel.venditore_tag = DEFAULT_TAGS["vnd"]
+
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
     await query.edit_message_text(
         "🔄 <b>Tag ripristinato</b>\n\n"
-        f"🏷️ <b>Il tag è stato riportato al valore predefinito.",
+        f"🏷️ Il tag è stato riportato al valore predefinito.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'co_edittags_{channel_id}_sp')]
