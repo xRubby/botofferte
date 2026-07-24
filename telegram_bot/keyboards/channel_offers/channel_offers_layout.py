@@ -3,10 +3,9 @@ import html
 from telegram import *
 from telegram.ext import *
 
-from database.Entity.Layout import Layout
-
-from database.DAO.LayoutDAO import LayoutDAO
-
+from database.session import SessionLocal
+from models.layout import Layout
+from services.layout_service import LayoutService
 from utils.channel_offers_utils import check_channel_id
 
 (
@@ -145,14 +144,21 @@ async def ricevi_messaggio_layout(update: Update, context: ContextTypes.DEFAULT_
 
     await update.message.delete()
 
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
     try:
-        with LayoutDAO() as layout_dao:
-            layout_dao.insert(nome_layout, messaggio, 0, channel_id)
+        layout = Layout(nome_layout = nome_layout, messaggio = messaggio, in_uso = 0, canale_id = channel_id)
+        layout_service.crea_layout(layout)
+
+        session.commit()
+
         text = (
             f"🎨 <b>Layout creato</b>\n\n"
             f"Il layout <b>{nome_layout}</b> è stato creato con successo."
         )
     except Exception as e:
+        session.rollback()
+
         text = (
             "❌ <b>Creazione fallita</b>\n\n"
             "Si è verificato un errore durante la creazione del layout.\n"
@@ -192,26 +198,29 @@ async def show_layouts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = []
 
-    with LayoutDAO() as layout_dao:
-        layouts = layout_dao.get_channel_layouts(channel_id)
-        if layouts:
-            text = (
-                "🎨 <b>I tuoi layout</b>\n\n"
-                f"📊 Layout totali: <b>{len(layouts)}</b>\n\n"
-                "Seleziona un layout per gestirlo 👇"
-            )
-            for layout in layouts:
-                emoji_stato = "🟢" if layout.in_uso else "🔴"
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
 
-                keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channeloffers_activatelayout_{channel_id}_{layout.layout_id}')])
+        layouts = layout_service.ottieni_canale_layout(channel_id)
 
-        else:
-            text = (
-                "🎨 <b>Nessun layout presente</b>\n\n"
-                "Non hai ancora creato alcun layout.\n\n"
-                "➕ Creane uno per iniziare."
-            )
-            keyboard.append([InlineKeyboardButton("➕ Nuovo Layout", callback_data=f'channeloffers_addlayout_{channel_id}')])
+    if layouts:
+        text = (
+            "🎨 <b>I tuoi layout</b>\n\n"
+            f"📊 Layout totali: <b>{len(layouts)}</b>\n\n"
+            "Seleziona un layout per gestirlo 👇"
+        )
+        for layout in layouts:
+            emoji_stato = "🟢" if layout.in_uso else "🔴"
+
+            keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'none'), InlineKeyboardButton(f"{emoji_stato}", callback_data=f'channeloffers_activatelayout_{channel_id}_{layout.layout_id}')])
+
+    else:
+        text = (
+            "🎨 <b>Nessun layout presente</b>\n\n"
+            "Non hai ancora creato alcun layout.\n\n"
+            "➕ Creane uno per iniziare."
+        )
+        keyboard.append([InlineKeyboardButton("➕ Nuovo Layout", callback_data=f'channeloffers_addlayout_{channel_id}')])
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -228,26 +237,34 @@ async def activate_layout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     parts = query.data.split("_")
-    layout_id = parts[-1]
+    layout_id = int(parts[-1])
     context.user_data["channel_id"] = parts[-2]
 
-    with LayoutDAO() as layoutDAO:
-        layout = layoutDAO.get(layout_id)
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
+
+        layout = layout_service.ottieni_layout(layout_id)
 
         if not layout:
             text = "⚠️ Errore durante l'attivazione del layout"
-        else:   
-            id_canale = layout.canale_id
+        else: 
+            try:  
+                if(layout.in_uso):
+                    layout.in_uso = False
 
-            if(layout.in_uso):
-                layoutDAO.update_stato(layout.layout_id, 0)
-                text="🔴 Layout disattivato!"
-            else:
-                layout_old = layoutDAO.get_in_uso(id_canale)
-                if layout_old:
-                    layoutDAO.update_stato(layout_old.layout_id, 0)
-                layoutDAO.update_stato(layout.layout_id, 1)
-                text="🟢 Layout selezionato!"
+                    session.commit()
+                    
+                    text="🔴 Layout disattivato!"
+                else:
+                    layout_old = layout_service.ottieni_layout_in_uso(layout.canale_id)
+                    if layout_old:
+                        layout_old.in_uso = False
+                    layout.in_uso = True
+                    text="🟢 Layout selezionato!"
+
+                    session.commit()
+            except:
+                session.rollback()
     
     await query.answer(text=text, show_alert=True)
 
@@ -263,22 +280,25 @@ async def edit_layouts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = []
 
-    with LayoutDAO() as layoutDAO:
-        layouts = layoutDAO.get_channel_layouts(channel_id)
-        if layouts:
-            text=(
-                "🎨 <b>Modifica layout</b>\n\n"
-                "Seleziona un layout da modificare 👇"
-            )
-            for layout in layouts:
-                keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'channeloffers_editlayout_{channel_id}_{layout.layout_id}')])
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
 
-        else:
-            text = (
-                "🎨 <b>Gestione layout</b>\n\n"
-                "Non hai ancora layout creati.\n\n"
-                "➕ Aggiungine uno per poterlo modificare."
-            )
+        layouts = layout_service.ottieni_canale_layout(channel_id)
+
+    if layouts:
+        text=(
+            "🎨 <b>Modifica layout</b>\n\n"
+            "Seleziona un layout da modificare 👇"
+        )
+        for layout in layouts:
+            keyboard.append([InlineKeyboardButton(f"{layout.nome_layout}", callback_data=f'channeloffers_editlayout_{channel_id}_{layout.layout_id}')])
+
+    else:
+        text = (
+            "🎨 <b>Gestione layout</b>\n\n"
+            "Non hai ancora layout creati.\n\n"
+            "➕ Aggiungine uno per poterlo modificare."
+        )
 
     keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_layout_{channel_id}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -295,31 +315,34 @@ async def edit_layout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     parts = query.data.split("_")
-    layout_id = parts[-1]
+    layout_id = int(parts[-1])
     context.user_data["channel_id"] = parts[-2]
 
-    with LayoutDAO() as layout_dao:
-        layout = layout_dao.get(layout_id)
-    
-    safe_message = html.escape(layout.messaggio)
-    
-    text = (
-        f"🎨 <b>Layout selezionato</b>\n\n"
-        f"🏷️ <b>{layout.nome_layout}</b>\n\n"
-        "📝 <b>Messaggio attuale</b>\n\n"
-        f"<code>{safe_message}</code>")
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
 
-    keyboard = [
-        [InlineKeyboardButton("✏️ Modifica Messaggio", callback_data=f'channeloffers_editmessagelayout_{layout.canale_id}_{layout_id}'),InlineKeyboardButton("🗑️ Cancella Layout", callback_data=f'channeloffers_deletelayout_{layout.canale_id}_{layout.layout_id}')],
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editlayouts_{layout.canale_id}')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+        layout = layout_service.ottieni_layout(layout_id)
 
-    await query.edit_message_text(
-            text=text,
-            reply_markup=reply_markup,
-            parse_mode="HTML"
-    )
+    if layout:
+        safe_message = html.escape(layout.messaggio)
+    
+        text = (
+            f"🎨 <b>Layout selezionato</b>\n\n"
+            f"🏷️ <b>{layout.nome_layout}</b>\n\n"
+            "📝 <b>Messaggio attuale</b>\n\n"
+            f"<code>{safe_message}</code>")
+
+        keyboard = [
+            [InlineKeyboardButton("✏️ Modifica Messaggio", callback_data=f'channeloffers_editmessagelayout_{layout.canale_id}_{layout_id}'),InlineKeyboardButton("🗑️ Cancella Layout", callback_data=f'channeloffers_deletelayout_{layout.canale_id}_{layout.layout_id}')],
+            [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editlayouts_{layout.canale_id}')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        await query.edit_message_text(
+                text=text,
+                reply_markup=reply_markup,
+                parse_mode="HTML"
+        )
 
 async def edit_layout_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -366,26 +389,34 @@ async def edit_layout_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def ricevi_nuovo_messaggio_layout(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    layout_id  = context.user_data.get("layout_id")
+    layout_id  = int(context.user_data.get("layout_id"))
     channel_id = context.user_data.get("channel_id")
     message_id = context.user_data.get("msg_id")
     nuovo_messaggio = update.message.text
 
     await update.message.delete()
 
-    try:
-        with LayoutDAO() as layoutDAO:
-            layoutDAO.update_messaggio(layout_id, nuovo_messaggio)
-        text = (
-            "✅ <b>Messaggio aggiornato</b>\n\n"
-            "Il contenuto del layout è stato aggiornato con successo."
-        )
-    except Exception as e:
-        text = (
-            "❌ <b>Aggiornamento fallito</b>\n\n"
-            "Si è verificato un errore durante l’aggiornamento del messaggio.\n"
-            "Riprova più tardi."
-        )
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
+
+        layout = layout_service.ottieni_layout(layout_id)
+        try:
+            layout.messaggio = nuovo_messaggio
+
+            session.commit()
+
+            text = (
+                "✅ <b>Messaggio aggiornato</b>\n\n"
+                "Il contenuto del layout è stato aggiornato con successo."
+            )
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ <b>Aggiornamento fallito</b>\n\n"
+                "Si è verificato un errore durante l’aggiornamento del messaggio.\n"
+                "Riprova più tardi."
+            )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editlayout_{channel_id}_{layout_id}')]
@@ -417,18 +448,26 @@ async def reset_layout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     context.user_data.pop("msg_id", None)
-    layout_id  = context.user_data.get("layout_id")
+    layout_id  = int(context.user_data.get("layout_id"))
     
-    try:
-        with LayoutDAO() as layoutDAO:
-            layoutDAO.update_messaggio(layout_id, RESET_LAYOUT_MSG)
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
+
+        layout = layout_service.ottieni_layout(layout_id)
+        try:
+            layout.messaggio = RESET_LAYOUT_MSG
+
+            session.commit()
+
             text = (
                 "♻️ Layout resettato con successo.\n\n"
             )
-    except Exception as e:
-        text = (
-            "❌ Non è stato possibile ripristinare il messaggio del layout."
-        )
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ Non è stato possibile ripristinare il messaggio del layout."
+            )
 
     await query.answer(text, show_alert=True)
 
@@ -472,22 +511,30 @@ async def confirm_delete_layout(update: Update, context: ContextTypes.DEFAULT_TY
     await query.answer()
 
     parts = query.data.split("_")
-    layout_id = parts[-1]
+    layout_id = int(parts[-1])
     channel_id = parts[-2]
 
-    try:
-        with LayoutDAO() as layout_dao:
-            layout_dao.delete(layout_id)
-        text = (
-            "🗑️ <b>Layout eliminato</b>\n\n"
-            "Il layout è stato rimosso con successo."
-        )
-    except Exception as e:
-        text = (
-            "❌ <b>Eliminazione fallita</b>\n\n"
-            "Si è verificato un errore durante la rimozione del layout.\n"
-            "Riprova più tardi."
-        )
+    with SessionLocal() as session:
+        layout_service = LayoutService(session)
+
+        layout = layout_service.ottieni_layout(layout_id)
+        try:
+            layout_service.rimuovi_layout(layout)
+
+            session.commit()
+
+            text = (
+                "🗑️ <b>Layout eliminato</b>\n\n"
+                "Il layout è stato rimosso con successo."
+            )
+        except Exception as e:
+            session.rollback()
+            
+            text = (
+                "❌ <b>Eliminazione fallita</b>\n\n"
+                "Si è verificato un errore durante la rimozione del layout.\n"
+                "Riprova più tardi."
+            )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editlayouts_{channel_id}')]

@@ -29,6 +29,12 @@ class LayoutRepository:
 
         return self.session.scalars(stmt).first()
 
+    def get_by_canale(self, canale_id: str) -> list[Layout] | None:
+
+        stmt = (select(Layout).where(Layout.canale_id == str(canale_id)).order_by(Layout.layout_id))
+
+        return list(self.session.scalars(stmt))
+
 
     def create(self, layout: Layout) -> Layout:
 
