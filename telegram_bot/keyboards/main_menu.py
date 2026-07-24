@@ -69,8 +69,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
                         text = "Sei stato inserito correttamente all'interno del canale!"
 
                     case EsitoInvito.NON_TROVATO:
-                        await handler_menu_principale(update, ctx)
-                        return
+                        text = "L'invito al canale non è stato trovato."
 
                     case EsitoInvito.SCADUTO:
                         text = "L'invito al canale è scaduto. Richiedine uno nuovo."

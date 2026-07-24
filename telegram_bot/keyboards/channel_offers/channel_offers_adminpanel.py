@@ -250,8 +250,17 @@ async def admin_remove_member_confirm(update: Update, context: ContextTypes.DEFA
             text = "⚠️ <b>Operazione non consentita</b>\n\nNon puoi rimuovere il creatore del canale."
 
             if not gestione.is_creator:
-                gestisce_service.rimuovi_gestione(gestione)
-                text="✅ Membro rimosso con successo."
+                try:
+                    gestisce_service.rimuovi_gestione(gestione)
+
+                    session.commit()
+
+                    text="✅ Membro rimosso con successo."
+                except Exception:
+                    session.rollback()
+
+                    text = "❌ Errore durante la rimozione dell'utente."
+
 
         await query.edit_message_text(
             text=text,
