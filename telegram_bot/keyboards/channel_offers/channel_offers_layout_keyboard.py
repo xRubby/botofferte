@@ -1,7 +1,9 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
-from database.DAO.TastieraDAO import TastieraDAO
+from database.session import SessionLocal
+from models.tastiera import Tastiera
+from services.tastiera_service import TastieraService
 from utils.channel_offers_utils import check_channel_id
 
 ATTESA_NOME, ATTESA_MESSAGGIO = range(2)
@@ -15,7 +17,7 @@ async def keyboard_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = check_channel_id(query, context)
 
     text = (
-        "⌨️ <b>Tastiera post</b>\n\n"
+        "⌨️ <b>Tastiera Post</b>\n\n"
         "Gestisci la tastiera utilizzata nelle pubblicazioni delle offerte.\n\n"
         "Seleziona un’opzione per continuare 👇"
     )
@@ -119,15 +121,21 @@ async def keyboard_menu_add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "La tastiera è stata salvata correttamente."
     )
 
-    try:
-        with TastieraDAO() as tastieraDAO:
-            tastieraDAO.insert(nome_tastiera, messaggio_tastiera, 0, channel_id)
-    except Exception:
-        text = (
-            "❌ <b>Errore tastiera</b>\n\n"
-            "Non è stato possibile inserire la tastiera.\n"
-            "Riprova più tardi."
-        )
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+        try:
+            tastiera = Tastiera(nome_tastiera = nome_tastiera, messaggio = messaggio_tastiera, in_uso = 0, canale_id = channel_id)
+
+            tastiera_service.crea_tastiera(tastiera)
+
+            session.commit()
+        except Exception:
+            session.rollback()
+            text = (
+                "❌ <b>Errore tastiera</b>\n\n"
+                "Non è stato possibile inserire la tastiera.\n"
+                "Riprova più tardi."
+            )
 
     await context.bot.edit_message_text(
         chat_id=update.effective_chat.id,
@@ -156,8 +164,10 @@ async def show_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = []
 
-    with TastieraDAO() as tastieraDAO:
-        tastiere = tastieraDAO.get_channel_keyboards(channel_id)
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+
+        tastiere = tastiera_service.ottieni_tastiere_canale(channel_id)
         if tastiere:
             text = (
                 "⌨️ <b>Le tue tastiere</b>\n\n"
@@ -190,26 +200,36 @@ async def activate_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     parts = query.data.split("_")
-    keyboard_id = parts[-1]
+    tastiera_id = int(parts[-1])
     context.user_data["channel_id"] = parts[-2]
 
-    with TastieraDAO() as tastieraDAO:
-        tastiera = tastieraDAO.get(keyboard_id)
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
 
-        if not  tastiera:
+        tastiera = tastiera_service.ottieni_tastiera(tastiera_id)
+
+        if not tastiera:
             text = "⚠️ Errore durante l'attivazione della tastiera"
-        else:   
-            id_canale = tastiera.canale_id
+        else:
+            try:   
+                if(tastiera.in_uso):
+                    tastiera.in_uso = False
 
-            if( tastiera.in_uso):
-                tastieraDAO.update_stato(tastiera.tastiera_id, 0)
-                text="🔴 Tastiera disattivata!"
-            else:
-                tastiera_old = tastieraDAO.get_in_uso(id_canale)
-                if tastiera_old:
-                    tastieraDAO.update_stato(tastiera_old.tastiera_id, 0)
-                tastieraDAO.update_stato( tastiera.tastiera_id, 1)
-                text="🟢 Tastiera selezionata!"
+                    session.commit()
+
+                    text="🔴 Tastiera disattivata!"
+                else:
+                    tastiera_old = tastiera_service.ottieni_tastiera_in_uso(tastiera.canale_id)
+                    if tastiera_old:
+                        tastiera_old.in_uso = False
+                    tastiera.in_uso = True
+
+                    session.commit()
+
+                    text="🟢 Tastiera selezionata!"
+            except Exception:
+                session.rollback()
+                raise
     
     await query.answer(text=text, show_alert=True)
 
@@ -224,8 +244,10 @@ async def edit_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = []
 
-    with TastieraDAO() as tastieraDAO:
-        tastiere = tastieraDAO.get_channel_keyboards(channel_id)
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+
+        tastiere = tastiera_service.ottieni_tastiere_canale(channel_id)
         if tastiere:
             text = (
                 "⌨️ <b>Modifica tastiera</b>\n\n"
@@ -257,11 +279,13 @@ async def edit_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     parts = query.data.split("_")
-    tastiera_id = parts[-1]
+    tastiera_id = int(parts[-1])
     context.user_data["channel_id"] = parts[-2]
 
-    with TastieraDAO() as tastieraDAO:
-        tastiera = tastieraDAO.get(tastiera_id)
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+
+        tastiera = tastiera_service.ottieni_tastiera(tastiera_id)
     
     text = (
         f"⌨️ <b>Tastiera selezionata</b>\n\n"
@@ -317,25 +341,32 @@ async def edit_keyboard_message(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def ricevi_nuovo_messaggio_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tastiera_id  = context.user_data.get("tastiera_id")
+    tastiera_id  = int(context.user_data.get("tastiera_id"))
     channel_id = context.user_data.get("channel_id")
     message_id = context.user_data.get("msg_id")
     nuovo_messaggio = update.message.text
 
     await update.message.delete()
 
-    try:
-        with TastieraDAO() as tastieraDAO:
-            tastieraDAO.update_messaggio(tastiera_id, nuovo_messaggio)
-        text = (
-        "⌨️ <b>Tastiera aggiornata</b>\n\n"
-        "Il contenuto è stato salvato con successo."
-    )
-    except Exception as e:
-        text = (
-            "❌ <b>Aggiornamento fallito</b>\n\n"
-            "Non è stato possibile salvare le modifiche alla tastiera."
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+        tastiera = tastiera_service.ottieni_tastiera(tastiera_id)
+        try:
+            tastiera.messaggio = nuovo_messaggio
+
+            session.commit()
+
+            text = (
+            "⌨️ <b>Tastiera aggiornata</b>\n\n"
+            "Il contenuto è stato salvato con successo."
         )
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ <b>Aggiornamento fallito</b>\n\n"
+                "Non è stato possibile salvare le modifiche alla tastiera."
+            )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editkeyboard_{channel_id}_{tastiera_id}')]
@@ -399,22 +430,30 @@ async def confirm_delete_keyboard(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
 
     parts = query.data.split("_")
-    tastiera_id = parts[-1]
+    tastiera_id = int(parts[-1])
     channel_id = parts[-2]
 
-    try:
-        with TastieraDAO() as tastieraDAO:
-            tastieraDAO.delete(tastiera_id)
-        text = (
-            "🗑️ <b>Tastiera eliminata</b>\n\n"
-            "La tastiera è stata rimossa con successo."
-        )
-    except Exception as e:
-        text = (
-            "❌ <b>Eliminazione fallita</b>\n\n"
-            "Non è stato possibile eliminare la tastiera.\n"
-            "Riprova più tardi."
-        )
+    with SessionLocal() as session:
+        tastiera_service = TastieraService(session)
+
+        tastiera = tastiera_service.ottieni_tastiera(tastiera_id)
+        try:
+            tastiera_service.rimuovi_tastiera(tastiera)
+
+            session.commit()
+
+            text = (
+                "🗑️ <b>Tastiera eliminata</b>\n\n"
+                "La tastiera è stata rimossa con successo."
+            )
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ <b>Eliminazione fallita</b>\n\n"
+                "Non è stato possibile eliminare la tastiera.\n"
+                "Riprova più tardi."
+            )
 
     keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_editkeyboards_{channel_id}')]

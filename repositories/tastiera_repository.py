@@ -31,6 +31,13 @@ class TastieraRepository:
         return self.session.scalars(stmt).first()
 
 
+    def get_by_channel(self, canale_id: str) -> list[Tastiera] | None:
+    
+        stmt = (select(Tastiera).where(Tastiera.canale_id == str(canale_id)).order_by(Tastiera.tastiera_id))
+
+        return list(self.session.scalars(stmt))
+
+
     def create(self, tastiera: Tastiera) -> Tastiera:
 
         self.session.add(tastiera)
