@@ -29,6 +29,12 @@ class LayoutImmagineRepository:
 
         return list(self.session.scalars(stmt))
 
+    def get_by_channel_id(self, canale_id: str) -> list[LayoutImmagine] | None:
+
+        stmt = (select(LayoutImmagine).where(LayoutImmagine.canale_id == str(canale_id)).order_by(LayoutImmagine.immagine_id))
+
+        return list(self.session.scalars(stmt))
+
 
     def create(self, immagine: LayoutImmagine) -> LayoutImmagine:
 

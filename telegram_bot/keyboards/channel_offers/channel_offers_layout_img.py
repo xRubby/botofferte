@@ -14,8 +14,9 @@ from telegram.ext import (
 
 from DTO.ProductConfig import ProductConfig
 from DTO.TextConfig import TextConfig
-from database.DAO.LayoutImmagineDAO import LayoutImmagineDAO
-from database.Entity.LayoutImmagine import LayoutImmagine
+from database.session import SessionLocal
+from models.layout_immagine import LayoutImmagine
+from services.layout_immagine_service import LayoutImmagineService
 from utils.channel_offers_utils import check_channel_id
 from utils.image_composer import componi_immagine, leggi_dimensioni_template
 
@@ -138,21 +139,27 @@ async def ricevi_template_img(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     nome = update.message.caption or f"Template {tw}x{th}"
 
-    try:
-        with LayoutImmagineDAO() as imgDAO:
-            immagine_id = imgDAO.insert(channel_id, nome, template_bytes, tw, th)
-        context.user_data["immagine_id"] = immagine_id
-        text = (
-            f"🖼️ <b>Template salvato</b>\n\n"
-            f"🏷️ Nome: <b>{nome}</b>\n"
-            f"📐 Dimensioni: <b>{tw}x{th}px</b>\n\n"
-            "📦 <b>Prodotto</b>\n"
-            "• Posizione: <b>50% x 50%</b>\n"
-            "• Dimensioni: <b>50% x 50%</b>\n\n"
-            "⚙️ Puoi modificare questi parametri dal menu <b>Modifica immagine</b>."
-        )
-    except Exception:
-        text = "❌ Errore durante il salvataggio del template."
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+        try:
+            layout_immagine = layout_immagine_service.crea_layout_immagine(LayoutImmagine(canale_id = channel_id, nome = nome, template_img = template_bytes, template_w = tw, template_h = th))
+
+            session.commit()
+
+            context.user_data["immagine_id"] = layout_immagine.immagine_id
+            text = (
+                f"🖼️ <b>Template salvato</b>\n\n"
+                f"🏷️ Nome: <b>{nome}</b>\n"
+                f"📐 Dimensioni: <b>{tw}x{th}px</b>\n\n"
+                "📦 <b>Prodotto</b>\n"
+                "• Posizione: <b>50% x 50%</b>\n"
+                "• Dimensioni: <b>50% x 50%</b>\n\n"
+                "⚙️ Puoi modificare questi parametri dal menu <b>Modifica immagine</b>."
+            )
+        except Exception:
+            session.rollback()
+
+            text = "❌ Errore durante il salvataggio del template."
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_menu_{channel_id}')]]
 
@@ -186,8 +193,10 @@ async def show_immagini(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = check_channel_id(query, context)
     keyboard = []
 
-    with LayoutImmagineDAO() as imgDAO:
-        immagini = imgDAO.get_by_canale(channel_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        immagini = layout_immagine_service.ottieni_layout_immagini_canale(channel_id)
 
     if immagini:
         text = (
@@ -224,18 +233,27 @@ async def activate_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     immagine_id = int(parts[-1])
     channel_id = parts[-2]
 
-    with LayoutImmagineDAO() as imgDAO:
-        img = imgDAO.get(immagine_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
         if not img:
             await query.answer("⚠️ Template non trovato.", show_alert=True)
             return
+        try:
+            if img.in_uso:
+                img.in_uso = False
+                testo_risposta = "🔴 Template disattivato!"
+            else:
+                img_old = layout_immagine_service.ottieni_layout_immagine_in_uso(channel_id)
+                if img_old:
+                    img_old.in_uso = False
+                img.in_uso = True
+                testo_risposta = "🟢 Template attivato!"
 
-        if img.in_uso:
-            imgDAO.disattiva(channel_id)
-            testo_risposta = "🔴 Template disattivato!"
-        else:
-            imgDAO.set_in_uso(immagine_id, channel_id)
-            testo_risposta = "🟢 Template attivato!"
+            session.commit()
+        except Exception:
+            session.rollback()
 
     await query.answer(testo_risposta, show_alert=True)
     await show_immagini(update, context)
@@ -262,8 +280,10 @@ async def edit_immagini(update: Update, context: ContextTypes.DEFAULT_TYPE):
     channel_id = check_channel_id(query, context)
     keyboard = []
 
-    with LayoutImmagineDAO() as imgDAO:
-        immagini = imgDAO.get_by_canale(channel_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        immagini = layout_immagine_service.ottieni_layout_immagini_canale(channel_id)
 
     if immagini:
         text = (
@@ -306,8 +326,10 @@ async def edit_immagine(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["immagine_id"] = immagine_id
     context.user_data["channel_id"] = channel_id
 
-    with LayoutImmagineDAO() as imgDAO:
-        img = imgDAO.get(immagine_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
 
     if not img:
         await query.edit_message_text("⚠️ Template non trovato.")
@@ -372,8 +394,11 @@ async def layoutimg_prodotto_menu(update: Update, context: ContextTypes.DEFAULT_
         )
     ]]
 
-    with LayoutImmagineDAO() as imgDAO:
-        img = imgDAO.get(immagine_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
+        
     if not img:
         await query.edit_message_text("Template non trovato.", reply_markup=InlineKeyboardMarkup(tasto_indietro))
         return
@@ -412,8 +437,10 @@ async def layoutimg_attr_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
     ]]
 
-    with LayoutImmagineDAO() as imgDAO:
-        img = imgDAO.get(immagine_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
     if not img:
         await query.edit_message_text("Template non trovato.", reply_markup=InlineKeyboardMarkup(tasto_indietro))
         return
@@ -552,8 +579,16 @@ async def ricevi_set_pos(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not metodo:
             raise ValueError(f"Tipo non valido: {tipo}")
 
-        with LayoutImmagineDAO() as imgDAO:
-            getattr(imgDAO, metodo)(immagine_id, x_pct, y_pct)
+        with SessionLocal() as session:
+            layout_immagine_service = LayoutImmagineService(session)
+
+            try:
+                layout_immagine_service.modifica_posizione_attributo_layout_immagine(immagine_id, x_pct, y_pct, metodo)
+
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise
 
         text = f"✅ Dimensioni aggiornate: <b>{x_pct}% x {y_pct}%</b>"
     except Exception:
@@ -657,8 +692,16 @@ async def ricevi_set_size(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not metodo:
             raise ValueError(f"Tipo non valido: {tipo}")
 
-        with LayoutImmagineDAO() as imgDAO:
-            getattr(imgDAO, metodo)(immagine_id, w_pct, h_pct)
+        with SessionLocal() as session:
+            layout_immagine_service = LayoutImmagineService(session)
+
+            try:
+                layout_immagine_service.modifica_dimensione_attributo_layout_immagine(immagine_id, w_pct, h_pct, metodo)
+
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise
 
         text = f"✅ Dimensioni aggiornate: <b>{w_pct}% x {h_pct}%</b>"
     except Exception:
@@ -699,35 +742,41 @@ async def activate_attr_img(update: Update, context: ContextTypes.DEFAULT_TYPE):
     parts = query.data.split("_")
     immagine_id = int(parts[3])
     tipo = parts[4]
-    with LayoutImmagineDAO() as imgDAO:
-        img = imgDAO.get(immagine_id)
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
         if not img:
             await query.answer("⚠️ Layout immagine non trovata.", show_alert=True)
             return
+        try:
+            if tipo == "prezzo":
+                if img.prezzo_active:
+                    img.prezzo_active = False
+                    testo_risposta = "🔴 Prezzo disattivato!"
+                else:
+                    img.prezzo_active = True
+                    testo_risposta = "🟢 Prezzo attivato!"
+            elif tipo == "prezzoold":
+                if img.prezzo_old_active:
+                    img.prezzo_old_active = False
+                    testo_risposta = "🔴 Prezzo consigliato disattivato!"
+                else:
+                    img.prezzo_old_active = True
+                    testo_risposta = "🟢 Prezzo consigliato attivato!"
+            elif tipo == "sconto":
+                if img.sconto_active:
+                    img.sconto_active = False
+                    testo_risposta = "🔴 Sconto disattivato!"
+                else:
+                    img.sconto_active = True
+                    testo_risposta = "🟢 Sconto attivato!"
+            else:
+                testo_risposta = "⚠️ Attributo non trovato."
 
-        if tipo == "prezzo":
-            if img.prezzo_active:
-                imgDAO.disattiva_prezzo(immagine_id)
-                testo_risposta = "🔴 Prezzo disattivato!"
-            else:
-                imgDAO.attiva_prezzo(immagine_id)
-                testo_risposta = "🟢 Prezzo attivato!"
-        elif tipo == "prezzoold":
-            if img.prezzo_old_active:
-                imgDAO.disattiva_prezzo_old(immagine_id)
-                testo_risposta = "🔴 Prezzo consigliato disattivato!"
-            else:
-                imgDAO.attiva_prezzo_old(immagine_id)
-                testo_risposta = "🟢 Prezzo consigliato attivato!"
-        elif tipo == "sconto":
-            if img.sconto_active:
-                imgDAO.disattiva_sconto(immagine_id)
-                testo_risposta = "🔴 Sconto disattivato!"
-            else:
-                imgDAO.attiva_sconto(immagine_id)
-                testo_risposta = "🟢 Sconto attivato!"
-        else:
-            testo_risposta = "⚠️ Attributo non trovato."
+            session.commit()
+        except Exception:
+            session.rollback()
 
     await query.answer(testo_risposta, show_alert=True)
     await edit_immagine(update, context)
@@ -777,19 +826,27 @@ async def confirm_delete_immagine(update: Update, context: ContextTypes.DEFAULT_
     immagine_id = int(parts[-1])
     channel_id = parts[-2]
 
-    try:
-        with LayoutImmagineDAO() as imgDAO:
-            imgDAO.delete(immagine_id)
-        text = (
-            "🗑️ <b>Template eliminato</b>\n\n"
-            "Il template è stato rimosso con successo."
-        )
-    except Exception:
-        text = (
-            "❌ <b>Eliminazione fallita</b>\n\n"
-            "Non è stato possibile eliminare il template.\n"
-            "Riprova più tardi."
-        )
+    with SessionLocal() as session:
+        layout_immagine_service = LayoutImmagineService(session)
+
+        img = layout_immagine_service.ottieni_layout_immagine(immagine_id)
+        try:
+            layout_immagine_service.cancella_layout_immagine(img)
+
+            session.commit()
+
+            text = (
+                "🗑️ <b>Template eliminato</b>\n\n"
+                "Il template è stato rimosso con successo."
+            )
+        except Exception:
+            session.rollback()
+
+            text = (
+                "❌ <b>Eliminazione fallita</b>\n\n"
+                "Non è stato possibile eliminare il template.\n"
+                "Riprova più tardi."
+            )
 
     keyboard = [[InlineKeyboardButton("⬅️ Indietro", callback_data=f'layoutimg_edit_{channel_id}')]]
 
