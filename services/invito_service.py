@@ -40,10 +40,17 @@ class InvitoService:
 
         return EsitoInvito.OK
 
+    def crea_invito(self, invito: Invito) -> Invito:
+
+        return self.invito_repository.create(invito)
 
     def ottieni_invito(self, token: str) -> Invito | None:
 
         return self.invito_repository.get(token)
+
+    def ottieni_invito_per_canale(self, token: str) -> Invito | None:
+
+        return self.invito_repository.get_by_canale(token)
 
     def cancella_invito(self, invito: Invito | str) -> bool:
 

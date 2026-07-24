@@ -1,20 +1,20 @@
 from datetime import datetime
 import os
 import secrets
+import traceback
 from dotenv import load_dotenv
 import math
 
 from telegram import *
 from telegram.ext import *
 
-from database.DAO.GestisceDAO import GestisceDAO
-from database.DAO.CanaleDAO import CanaleDAO
-from database.DAO.InvitoDAO import InvitoDAO
-from database.DAO.LicenzaDAO import LicenzaDAO
-from database.DAO.UtenteDAO import UtenteDAO
-
-from database.Entity.Gestisce import Gestisce
-
+from database.session import SessionLocal
+from enums.StatoLicenza import StatoLicenza
+from models.invito import Invito
+from services.canale_service import CanaleService
+from services.gestisce_service import GestisceService
+from services.invito_service import InvitoService
+from services.licenza_service import LicenzaService
 from utils.channel_offers_utils import check_channel_id
 
 load_dotenv()
@@ -28,9 +28,12 @@ async def check_is_creator(query: CallbackQuery, update: Update, context: Contex
     isCreator = context.user_data.get("isCreator", False)
 
     if not isCreator:
-        with GestisceDAO() as gestisce_dao:
-            gestisce_info = gestisce_dao.get(user_id, channel_id)
-            if(gestisce_info and gestisce_info.isCreator):
+        with SessionLocal() as session:
+            gestisce_service = GestisceService(session)
+
+            gestisce_info = gestisce_service.ottieni_gestione(user_id, channel_id)
+
+            if(gestisce_info and gestisce_info.is_creator):
                 context.user_data['isCreator'] = True
                 isCreator = True
 
@@ -101,18 +104,16 @@ async def admin_manage_members(update: Update, context: ContextTypes.DEFAULT_TYP
             )
         ])
 
-        with GestisceDAO() as gestisceDAO:
-            lista_membri = gestisceDAO.get_member_list(
-                channel_id,
-                limit=MEMBERS_PER_PAGE,
-                offset=offset
-            )
-            total_members = gestisceDAO.count_members(channel_id)
+        with SessionLocal() as session:
+            gestisce_service = GestisceService(session)
 
-        if lista_membri:
-            with UtenteDAO() as utenteDAO:
+            lista_membri = gestisce_service.ottieni_lista_membri_canale(channel_id, MEMBERS_PER_PAGE, offset)
+
+            total_members = gestisce_service.conta_membri_canale(channel_id)
+
+            if lista_membri:
                 for membro in lista_membri:
-                    utente = utenteDAO.get(membro.telegram_id)
+                    utente = membro.utente
 
                     keyboard.append([
                         InlineKeyboardButton(
@@ -173,19 +174,19 @@ async def admin_member_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = int(data[3])
 
     if await check_is_creator(query, update, context, channel_id):
-    
-        with UtenteDAO() as utenteDAO:
-            utente = utenteDAO.get(telegram_id)
 
-        with GestisceDAO() as gestisceDAO:
-            gestisce = gestisceDAO.get(telegram_id, channel_id)
-        
-        if not utente:
-            return
-        
-        if not gestisce:
-            return
-        
+        with SessionLocal() as session:
+            gestisce_service = GestisceService(session)
+
+            gestisce = gestisce_service.ottieni_gestione(telegram_id, channel_id)
+
+            if not gestisce:
+                return
+
+            utente = gestisce.utente
+
+            if not utente:
+                return
 
         id_affiliato = gestisce.id_affiliato if gestisce.id_affiliato else "Nessuno"
 
@@ -197,7 +198,7 @@ async def admin_member_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = []
 
-        if not gestisce.isCreator:
+        if not gestisce.is_creator:
             keyboard.append([InlineKeyboardButton("🗑️ Rimuovi Membro", callback_data=f"channeloffers_removemember_{channel_id}_{telegram_id}")])
 
         keyboard.append([InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_managemembers_{channel_id}_0")])
@@ -241,13 +242,15 @@ async def admin_remove_member_confirm(update: Update, context: ContextTypes.DEFA
     telegram_id = int(data[3])
 
     if await check_is_creator(query, update, context, channel_id):
-        with GestisceDAO() as gestisceDAO:
-            gestisce = gestisceDAO.get(telegram_id, channel_id)
+        with SessionLocal() as session:
+            gestisce_service = GestisceService(session)
+
+            gestione = gestisce_service.ottieni_gestione(telegram_id, channel_id)
 
             text = "⚠️ <b>Operazione non consentita</b>\n\nNon puoi rimuovere il creatore del canale."
 
-            if not gestisce.isCreator:
-                gestisceDAO.delete(telegram_id, channel_id)
+            if not gestione.is_creator:
+                gestisce_service.rimuovi_gestione(gestione)
                 text="✅ Membro rimosso con successo."
 
         await query.edit_message_text(
@@ -262,9 +265,11 @@ async def admin_edit_affiliateid(update: Update, context: ContextTypes.DEFAULT_T
     channel_id = check_channel_id(query, context)
 
     if await check_is_creator(query, update, context, channel_id):
-    
-        with CanaleDAO() as canaleDAO:
-            canale = canaleDAO.get(channel_id)
+
+        with SessionLocal() as session:
+            canale_service = CanaleService(session)
+
+            canale = canale_service.ottieni_canale(channel_id)
             
         id_affiliato = canale.id_affiliato if canale.id_affiliato else "Nessuno"
             
@@ -298,18 +303,26 @@ async def admin_ricevi_affiliate_id(update: Update, context: ContextTypes.DEFAUL
     affiliate_id = update.message.text
 
     await update.message.delete()
-    try:
-        with CanaleDAO() as canaleDAO:
-            canaleDAO.update_id_affiliato(channel_id, affiliate_id)
+    with SessionLocal() as session:
+        try:
+            canale_service = CanaleService(session)
 
-        text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
-        text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
-    except Exception as e:
-        text = (
-            "❌ <b>Errore durante l'aggiornamento</b>\n\n"
-            "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
-            "Riprova più tardi o verifica i dati inseriti."
-        )
+            canale = canale_service.ottieni_canale(channel_id)
+            
+            canale.id_affiliato = affiliate_id
+
+            session.commit()
+
+            text = f"✅ <b>ID Affiliato aggiornato con successo!</b>\n\n"
+            text += f"🔑 Nuovo ID: <code>{affiliate_id}</code>"
+        except Exception as e:
+            session.rollback()
+
+            text = (
+                "❌ <b>Errore durante l'aggiornamento</b>\n\n"
+                "⚠️ Non è stato possibile aggiornare l'ID Affiliato.\n"
+                "Riprova più tardi o verifica i dati inseriti."
+            )
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
@@ -346,20 +359,27 @@ async def admin_remove_affiliate_id(update: Update, context: ContextTypes.DEFAUL
     channel_id = check_channel_id(query, context)
 
     if await check_is_creator(query, update, context, channel_id):
+        with SessionLocal() as session:
+            try:
+                
+                canale_service = CanaleService(session)
 
-        try:
-            with CanaleDAO() as canaleDAO:
-                canaleDAO.update_id_affiliato(channel_id, "")
+                canale = canale_service.ottieni_canale(channel_id)
+                
+                canale.id_affiliato = ""
 
-            text = (
-                "🗑️ <b>ID Affiliato rimosso con successo</b>"
-            )
-        except Exception as e:
-            text = (
-                "❌ <b>Errore durante la rimozione</b>\n\n"
-                "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
-                "Riprova più tardi."
-            )
+                session.commit()
+
+                text = (
+                    "🗑️ <b>ID Affiliato rimosso con successo</b>"
+                )
+            except Exception as e:
+                session.rollback()
+                text = (
+                    "❌ <b>Errore durante la rimozione</b>\n\n"
+                    "⚠️ Non è stato possibile rimuovere l'ID Affiliato.\n"
+                    "Riprova più tardi."
+                )
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_adminaffiliateid_{channel_id}')]
@@ -398,18 +418,21 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if await check_is_creator(query, update, context, channel_id):
 
         try:
-            with CanaleDAO() as canaleDAO:
-                canale = canaleDAO.get(channel_id)
 
-            if not canale:
-                raise ValueError()
+            with SessionLocal() as session:
+                canale_service = CanaleService(session)
 
-            with LicenzaDAO() as licenzaDAO:
-                licenza = licenzaDAO.get(canale.codice_licenza)
-                stato = licenzaDAO.get_stato(canale.codice_licenza)
+                canale = canale_service.ottieni_canale(channel_id)
 
-            if not licenza:
-                raise ValueError()
+                if not canale:
+                    raise ValueError()
+
+                licenza = canale.licenza
+
+                if not licenza:
+                    raise ValueError()
+
+                stato_licenza = LicenzaService(session).get_stato(licenza)
 
             text = (
                 f"📄 <b>Informazioni Licenza</b>\n\n"
@@ -417,7 +440,7 @@ async def admin_license_info(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 f"📦 <b>Tipo:</b> {licenza.tipo.title()}\n\n"
             )
 
-            if stato:
+            if stato_licenza == StatoLicenza.ATTIVA:
                 text += (
                     f"🟢 <b>Stato:</b> Attiva\n"
                     f"📅 <b>Attivazione:</b> {licenza.data_attivazione}\n"
@@ -470,29 +493,40 @@ async def admin_delete_channel_confirm(update: Update, context: ContextTypes.DEF
 
     if await check_is_creator(query, update, context, channel_id):
 
-        try:
-            with CanaleDAO() as canaleDAO:
-                canaleDAO.delete(channel_id)
-            text = (
-                "🗑️ <b>Canale eliminato con successo</b>\n\n"
-                "ℹ️ Il canale è stato rimosso definitivamente."
-            )
-        except:
-            text = (
-                "❌ <b>Errore durante la cancellazione</b>\n\n"
-                "⚠️ Non è stato possibile eliminare il canale.\n"
-                "Riprova più tardi o verifica i permessi."
-            )
+        with SessionLocal() as session:
+            try:
+                canale_service = CanaleService(session)
 
-        keyboard = [
-            [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
-        ]
+                canale = canale_service.ottieni_canale(channel_id)
 
-        await query.edit_message_text(
-            text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode='HTML'
-        )
+                canale_service.rimuovi_canale(canale)
+
+                session.commit()
+
+                text = (
+                    "🗑️ <b>Canale eliminato con successo</b>\n\n"
+                    "ℹ️ Il canale è stato rimosso definitivamente."
+                )
+            except:
+
+                traceback.print_exc()
+                session.rollback()
+
+                text = (
+                    "❌ <b>Errore durante la cancellazione</b>\n\n"
+                    "⚠️ Non è stato possibile eliminare il canale.\n"
+                    "Riprova più tardi o verifica i permessi."
+                )
+
+            keyboard = [
+                [InlineKeyboardButton("⬅️ Home", callback_data=f'back_to_main')]
+            ]
+
+            await query.edit_message_text(
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='HTML'
+            )
 
 async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -529,6 +563,12 @@ async def admin_invite_member(update: Update, context: ContextTypes.DEFAULT_TYPE
             parse_mode='HTML'
         )
 
+def cancella_invito_se_esiste(invito_service: InvitoService, channel_id: str) -> None:
+
+    invito_canale = invito_service.ottieni_invito_per_canale(channel_id)
+    if invito_canale:
+        invito_service.cancella_invito(invito_canale)
+
 async def admin_invite_member_createlink(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     channel_id = check_channel_id(query, context)
@@ -537,15 +577,22 @@ async def admin_invite_member_createlink(update: Update, context: ContextTypes.D
 
         token = secrets.token_hex(4).upper()
 
-        try:
-            with InvitoDAO() as invitoDAO:
-                invito_canale = invitoDAO.get_by_canale(channel_id)
-                if invito_canale:
-                    invitoDAO.delete(invito_canale.token)
-                
-                invitoDAO.insert(token, datetime.today(), channel_id)
-        except Exception as e:
-            print(e)
+        with SessionLocal() as session:
+            try:
+                invito_service = InvitoService(session)
+
+                cancella_invito_se_esiste(invito_service, channel_id)
+
+                invito = Invito(token=token, data_creazione = datetime.today().replace(microsecond=0), canale_id = channel_id)
+
+                invito_service.crea_invito(invito)
+
+                session.commit()
+
+            except Exception as e:
+                session.rollback()
+
+                print(e)
 
         context.user_data['create_link'] = True
         context.user_data['token'] = token
@@ -560,12 +607,15 @@ async def admin_invite_member_removelink(update: Update, context: ContextTypes.D
     
         context.user_data['create_link'] = False
 
-        try:
-            with InvitoDAO() as invitoDAO:
-                invito_canale = invitoDAO.get_by_canale(channel_id)
-                if invito_canale:
-                    invitoDAO.delete(invito_canale.token)
-        except Exception as e:
-            print(e)
+        with SessionLocal() as session:
+            try:
+                invito_service = InvitoService(session)
+
+                cancella_invito_se_esiste(invito_service, channel_id)
+
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(e)
 
         await admin_invite_member(update, context)

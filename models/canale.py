@@ -40,17 +40,17 @@ class Canale(Base):
     offertaexcl_tag: Mapped[str] = mapped_column(String, nullable=False, default="Offerta Speciale:") 
 
 
-    tastiere: Mapped[list["Tastiera"]] = relationship(back_populates="canale")
+    tastiere: Mapped[list["Tastiera"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
-    gestioni: Mapped[list["Gestisce"]] = relationship(back_populates="canale")
+    gestioni: Mapped[list["Gestisce"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
-    inviti: Mapped[list["Invito"]] = relationship(back_populates="canale")
+    inviti: Mapped[list["Invito"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
-    layout: Mapped[list["Layout"]] = relationship(back_populates="canale")
+    layout: Mapped[list["Layout"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
-    layout_immagini: Mapped[list["LayoutImmagine"]] = relationship(back_populates="canale")
+    layout_immagini: Mapped[list["LayoutImmagine"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
-    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="canale")
+    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
 
     licenza: Mapped["Licenza"] = relationship(back_populates="canale")
 

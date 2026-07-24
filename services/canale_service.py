@@ -22,3 +22,7 @@ class CanaleService:
     def ottieni_canale_utente(self, telegram_id: int) -> list[Canale] | None:
 
         return self.canale_repository.get_user_channels(telegram_id)
+
+    def rimuovi_canale(self, canale: Canale) -> None:
+
+        return self.canale_repository.delete(canale)
