@@ -67,11 +67,23 @@ async def exit_channel_confirm(update: Update, context: ContextTypes.DEFAULT_TYP
 
         gestisce = gestisce_service.ottieni_gestione(user_id, channel_id)
         if gestisce and not gestisce.is_creator:
-            gestisce_service.rimuovi_gestione(gestisce)
-            text = (
-                "🚪 <b>Rimozione completata</b>\n\n"
-                "Sei stato rimosso dal canale."
-            )
+            try:
+                gestisce_service.rimuovi_gestione(gestisce)
+
+                session.commit()
+
+                text = (
+                    "🚪 <b>Rimozione completata</b>\n\n"
+                    "Sei stato rimosso dal canale."
+                )
+            except Exception:
+                session.rollback()
+
+                text = (
+                    "❌ <b>Errore nella rimozione</b>\n\n"
+                    "Non è stato possibile completare l’operazione.\n"
+                    "Riprova più tardi."
+                )
         elif gestisce.is_creator:
             text = (
                 "⚠️ <b>Operazione non consentita</b>\n\n"
