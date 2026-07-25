@@ -29,28 +29,33 @@ class ProdottoService:
 
         self.prezzo_storico_repository.create(storico)
 
-    def aggiorna_prezzo(self, asin: str, nuovo_prezzo: float, valuta: str, venditore: str):
+    def aggiorna_prezzo_prodotto(self, prodotto: Prodotto, info_prodotto: dict) -> None:
 
-        prodotto = self.prodotto_repository.get_by_asin(asin)
+        if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
+            prodotto.asin = info_prodotto["ASIN"]
+            prodotto.prezzo = info_prodotto["prezzo"]
+            prodotto.old_prezzo = info_prodotto["old_prezzo"]
+            prodotto.valuta = info_prodotto["valuta"]
+            prodotto.sconto = info_prodotto["sconto"]
+            prodotto.venditore = info_prodotto["venditore"]
+            prodotto.img_url = info_prodotto["img_url"]
+            prodotto.spedito_amazon = info_prodotto["spedito_Amazon"]
+            prodotto.offertaesclusiva = info_prodotto.get("offertaesclusiva", None)
+            prodotto.last_check = datetime.now()
+            prodotto.preorder=bool(info_prodotto["preorder"])
+            prodotto.data_preordine=info_prodotto["data_preordine"]
 
-        if not prodotto:
-            return False
+            storico = PrezzoStorico(
+                asin=prodotto.asin,
+                prezzo=prodotto.prezzo,
+                valuta=prodotto.valuta,
+                venditore=prodotto.venditore
+            )
 
-        prodotto.prezzo = nuovo_prezzo
-        prodotto.valuta = valuta
-        prodotto.venditore = venditore
-        prodotto.last_check = datetime.now()
+            self.prezzo_storico_repository.create(storico)
 
-        storico = PrezzoStorico(
-            asin=prodotto.asin,
-            prezzo=prodotto.prezzo,
-            valuta=prodotto.valuta,
-            venditore=prodotto.venditore
-        )
-
-        self.prezzo_storico_repository.create(storico)
-
-        return True
+        elif info_prodotto:
+            prodotto.last_check = datetime.now()
 
     def ottieni_prodotto(self, asin: str) -> Prodotto | None:
         return self.prodotto_repository.get_by_asin(asin)

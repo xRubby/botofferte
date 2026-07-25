@@ -11,6 +11,7 @@ from DTO.ProductConfig import ProductConfig
 from DTO.TextConfig import TextConfig
 from database.session import SessionLocal
 from models.canale import Canale
+from models.prezzo_storico import PrezzoStorico
 from models.pubblica import Pubblica
 from scraper.amazon_scraper import scraping_product
 
@@ -163,35 +164,19 @@ def check_preorder(prodotto: Prodotto) -> Prodotto:
             prodotto.data_preordine = None
     return prodotto
 
-async def check_aggiornamento_prodotto(asin: str, prodotto: Prodotto, session: Session) -> dict | None:
+async def check_aggiornamento_prodotto(asin: str, prodotto: Prodotto, prodotto_service: ProdottoService, session: Session) -> dict | None:
     if datetime.now() > prodotto.last_check + timedelta(hours=1):
         risultato = await scraping_product(asin)
         info_prodotto = creaDizionarioProdotto(risultato)
 
         try:
-            if info_prodotto and (prodotto.prezzo != info_prodotto["prezzo"]):
-                prodotto.asin = info_prodotto["ASIN"]
-                prodotto.prezzo = info_prodotto["prezzo"]
-                prodotto.old_prezzo = info_prodotto["old_prezzo"]
-                prodotto.valuta = info_prodotto["valuta"]
-                prodotto.sconto = info_prodotto["sconto"]
-                prodotto.venditore = info_prodotto["venditore"]
-                prodotto.img_url = info_prodotto["img_url"]
-                prodotto.spedito_amazon = info_prodotto["spedito_Amazon"]
-                prodotto.offertaesclusiva = info_prodotto.get("offertaesclusiva", None)
-                prodotto.last_check = datetime.now()
-                prodotto.preorder=bool(info_prodotto["preorder"]),
-                prodotto.data_preordine=info_prodotto["data_preordine"],
-
-            elif info_prodotto:
-                prodotto.last_check = datetime.now()
+            prodotto_service.aggiorna_prezzo_prodotto(prodotto, info_prodotto)
 
             session.commit()
-
         except Exception:
             session.rollback()
             traceback.print_exc()
-            raise
+            raise ValueError()
 
         return info_prodotto
 
@@ -239,7 +224,7 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
 
             return info_prodotto
 
-        info_prodotto = await check_aggiornamento_prodotto(asin, prodotto, session)
+        info_prodotto = await check_aggiornamento_prodotto(asin, prodotto, prodotto_service, session)
         if info_prodotto:
             return info_prodotto
 
