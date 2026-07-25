@@ -433,7 +433,7 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
             messaggio = message,
             link = info_prodotto["link"],
             link_short = info_prodotto["link_short"],
-            img_bytes = foto            
+            img_bytes = foto         
         )
         try:
             pubblica_service.aggiungi_link(pubblicazione)
@@ -441,7 +441,7 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
             session.commit()
         except Exception:
             session.rollback()
-            raise
+            raise ValueError("Errore nell'elaborazione dell'immagine")
     await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", reply_markup)
 
 def parse_keyboard(text):

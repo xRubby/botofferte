@@ -235,8 +235,7 @@ def componi_immagine(
         quality=90
     )
 
-    output.seek(0)
-    return output
+    return output.getvalue()
 
 def disegna_croce_centrale(
     template: Image.Image,
