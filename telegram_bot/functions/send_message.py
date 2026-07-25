@@ -238,7 +238,7 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
 
             return info_prodotto
 
-        info_prodotto = await check_aggiornamento_prodotto(asin, prodotto, prodotto_service)
+        info_prodotto = await check_aggiornamento_prodotto(asin, prodotto, session)
         if info_prodotto:
             return info_prodotto
 
@@ -268,11 +268,15 @@ async def search_and_send_offer(update: Update, ctx: ContextTypes.DEFAULT_TYPE, 
         asin = await extract_asin(keyword)
     except ValueError as ve:
         raise ValueError("ASIN non trovato") from ve
-    
-    info_prodotto = await get_prodotto_dizionario(asin)
+
+    try:
+        info_prodotto = await get_prodotto_dizionario(asin)
+        
+    except Exception:
+        raise ValueError("Errore nella ricerca del prodotto")
 
     if not info_prodotto:
-        raise ValueError("Errore nella ricerca del prodotto")
+        raise ValueError("Errore nella ricerca del prodotto. Prodotto non trovato.")
     
     info_prodotto["link"]+= f"?tag={ASSOCIATE_TAG}"
     info_prodotto["link_short"] = await shorten_url(info_prodotto["link"])
