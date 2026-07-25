@@ -49,7 +49,13 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     link = links[current_index]
     context.user_data.pop("pubblicato", None)
 
-    text = f"🔗 <b>Link {current_index + 1}</b>\n\n{link.messaggio}"
+    with SessionLocal() as session:
+        link = session.merge(link)
+
+        text_utente = f" - <i>Inserito da {link.utente.nome}</i>" if link.utente else ""
+
+
+    text = f"🔗 <b>Link {current_index + 1}</b>{text_utente}\n\n{link.messaggio}"
 
     keyboard = []
 
