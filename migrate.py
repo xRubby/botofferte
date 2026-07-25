@@ -11,7 +11,7 @@ from datetime import datetime, date
 # CONFIGURAZIONE
 # ==========================
 
-SQLITE_DB = "sqlite:///C:/Users/ruben/Desktop/botofferte/data/amazon_offers.db"
+SQLITE_DB = "sqlite:///Z:/AppData/botofferte/data/amazon_offers.db"
 
 
 sqlite_engine = create_engine(SQLITE_DB)
@@ -515,7 +515,7 @@ def migrate_prodotti():
 
                     "priorita": p.priorita,
 
-                    "offerta": clean_string(
+                    "offerta": convert_bool(
                         p.offertaesclusiva
                     )
                     }
@@ -897,83 +897,63 @@ def migrate_layout_immagini():
     print("Layout immagini OK")
 
 def migrate_prezzi_storico():
-
     print("Migrazione prezzi storico...")
+    
+    # Recupera gli ASIN validi già presenti in Postgres
+    with postgres_engine.connect() as pg:
+        asin_validi = {
+            row.asin for row in pg.execute(text("SELECT asin FROM prodotti")).fetchall()
+        }
 
     with sqlite_engine.connect() as sqlite:
+        rows = sqlite.execute(text("SELECT * FROM PrezziStorico")).fetchall()
 
-        rows = sqlite.execute(
-            text("SELECT * FROM PrezziStorico")
-        ).fetchall()
-
-
+    skipped = 0
     with postgres_engine.begin() as pg:
-
         for p in rows:
-
+            if p.asin not in asin_validi:
+                skipped += 1
+                continue
             pg.execute(
                 text("""
                 INSERT INTO prezzi_storico
-                (
-                    id,
-                    asin,
-                    prezzo,
-                    valuta,
-                    venditore,
-                    rilevato
-                )
-
+                (id, asin, prezzo, valuta, venditore, rilevato)
                 VALUES
-                (
-                    :id,
-                    :asin,
-                    :prezzo,
-                    :valuta,
-                    :venditore,
-                    :rilevato
-                )
-
+                (:id, :asin, :prezzo, :valuta, :venditore, :rilevato)
                 ON CONFLICT DO NOTHING
                 """),
-
                 {
-
-                "id": p.id,
-
-                "asin": p.asin,
-
-                "prezzo": convert_float(
-                    p.prezzo
-                ),
-
-                "valuta": p.valuta,
-
-                "venditore": p.venditore,
-
-                "rilevato": convert_datetime(
-                    p.rilevato
-                )
-
+                    "id": p.id,
+                    "asin": p.asin,
+                    "prezzo": convert_float(p.prezzo),
+                    "valuta": p.valuta,
+                    "venditore": p.venditore,
+                    "rilevato": convert_datetime(p.rilevato),
                 }
             )
-
-
-    print("Prezzi storico OK")
+    print(f"Prezzi storico OK ({skipped} righe orfane saltate)")
 
 def migrate_pubblica():
-
     print("Migrazione pubblicazioni...")
 
+    # Recupera le chiavi valide già presenti in Postgres
+    with postgres_engine.connect() as pg:
+        asin_validi = {
+            row.asin for row in pg.execute(text("SELECT asin FROM prodotti")).fetchall()
+        }
+        canali_validi = {
+            row.canale_id for row in pg.execute(text("SELECT canale_id FROM canali")).fetchall()
+        }
+
     with sqlite_engine.connect() as sqlite:
+        rows = sqlite.execute(text("SELECT * FROM Pubblica")).fetchall()
 
-        rows = sqlite.execute(
-            text("SELECT * FROM Pubblica")
-        ).fetchall()
-
-
+    skipped = 0
     with postgres_engine.begin() as pg:
-
         for p in rows:
+            if p.asin_prodotti not in asin_validi or p.id_canale not in canali_validi:
+                skipped += 1
+                continue
 
             pg.execute(
                 text("""
@@ -989,7 +969,6 @@ def migrate_pubblica():
                     is_pubblicato,
                     data_pubblicazione
                 )
-
                 VALUES
                 (
                     :id,
@@ -1002,41 +981,21 @@ def migrate_pubblica():
                     :pub,
                     :data
                 )
-
                 ON CONFLICT DO NOTHING
                 """),
-
                 {
-
-                "id": p.id,
-
-                "canale": p.id_canale,
-
-                "asin": p.asin_prodotti,
-
-                "msg": p.messaggio,
-
-                "link": p.link,
-
-                "short": clean_string(
-                    p.link_short
-                ),
-
-                "img": p.img_bytes,
-
-                "pub": convert_bool(
-                    p.isPubblicato
-                ),
-
-                "data": convert_datetime(
-                    p.data_pubblicazione
-                )
-
+                    "id": p.id,
+                    "canale": p.id_canale,
+                    "asin": p.asin_prodotti,
+                    "msg": p.messaggio,
+                    "link": p.link,
+                    "short": clean_string(p.link_short),
+                    "img": p.img_bytes,
+                    "pub": convert_bool(p.isPubblicato),
+                    "data": convert_datetime(p.data_pubblicazione),
                 }
             )
-
-
-    print("Pubblica OK")
+    print(f"Pubblica OK ({skipped} righe orfane saltate)")
 
 
 # ==========================
