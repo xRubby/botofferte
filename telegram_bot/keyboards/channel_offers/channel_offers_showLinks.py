@@ -112,6 +112,8 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         link = pubblica_service.ottieni_link_da_id_canale(link_id, channel_id)
         pubblicato = pubblica_service.ottieni_link_pubblicato_ultime_24h(channel_id, link.asin_prodotti)
+        if not pubblicato:
+            link_confronto, pubblicato_stesso_prezzo = pubblica_service.confronta_prezzo_ultimo_pubblicato(link)
 
     BACK_BTN = InlineKeyboardMarkup([[
                     InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
@@ -132,40 +134,56 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.user_data["links"] = links
         return
     
-    if pubblicato and not context.user_data.get("pubblicato", None):
-        context.user_data["pubblicato"] = True
+    if not context.user_data.get("pubblicato", None):
+        prosegui = True
 
-        await query.answer(
+        if pubblicato:
+            await query.answer(
+                text=(
+                    "⚠️ Questo prodotto è già stato pubblicato nelle ultime 24 ore.\n\n"
+                    "Premi di nuovo per confermare la pubblicazione."
+                ),
+                show_alert=True
+            )
+        elif link_confronto and pubblicato_stesso_prezzo:
+            data_formattata = link_confronto.data_pubblicazione.strftime("%d/%m/%Y alle %H:%M")
+
+            await query.answer(
             text=(
-                "⚠️ Questo prodotto è già stato pubblicato nelle ultime 24 ore.\n\n"
+                f"⚠️ Questo prodotto è già stato pubblicato allo stesso prezzo in data {data_formattata}.\n\n"
                 "Premi di nuovo per confermare la pubblicazione."
             ),
-            show_alert=True
-        )
+                show_alert=True
+            )
+        else:
+            prosegui = False
 
-        keyboard = query.message.reply_markup.inline_keyboard
-        new_keyboard = []
+        if prosegui:
+            context.user_data["pubblicato"] = True
 
-        for row in keyboard:
-            new_row = []
+            keyboard = query.message.reply_markup.inline_keyboard
+            new_keyboard = []
 
-            for btn in row:
-                if btn.callback_data and f"channeloffers_publishlink_{link_id}" in btn.callback_data:
-                    new_row.append(
-                        InlineKeyboardButton(
-                            "⚠️ Pubblica messaggio",
-                            callback_data=btn.callback_data
+            for row in keyboard:
+                new_row = []
+
+                for btn in row:
+                    if btn.callback_data and f"channeloffers_publishlink_{link_id}" in btn.callback_data:
+                        new_row.append(
+                            InlineKeyboardButton(
+                                "⚠️ Pubblica messaggio",
+                                callback_data=btn.callback_data
+                            )
                         )
-                    )
-                else:
-                    new_row.append(btn)
+                    else:
+                        new_row.append(btn)
 
-            new_keyboard.append(new_row)
+                new_keyboard.append(new_row)
 
-        await query.edit_message_reply_markup(
-            reply_markup=InlineKeyboardMarkup(new_keyboard)
-        )
-        return
+            await query.edit_message_reply_markup(
+                reply_markup=InlineKeyboardMarkup(new_keyboard)
+            )
+            return
     
     await query.answer()
     context.user_data.pop("pubblicato", None)

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from models.canale import Canale
     from models.prodotto import Prodotto
     from models.utente import Utente
+    from models.prezzo_storico import PrezzoStorico
 
 
 class Pubblica(Base):
@@ -27,7 +28,10 @@ class Pubblica(Base):
     asin_prodotti: Mapped[str] = mapped_column(String, ForeignKey("prodotti.asin", ondelete="CASCADE"), nullable=False)
 
 
-    id_utente: Mapped[int] = mapped_column(BigInteger, ForeignKey("utenti.telegram_id", ondelete="SET NULL"), nullable=True)
+    id_utente: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("utenti.telegram_id", ondelete="SET NULL"), nullable=True)
+
+
+    prezzo_storico_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("prezzi_storico.id", ondelete="SET NULL"), nullable=True)
 
 
     messaggio: Mapped[str] = mapped_column(String, nullable=False)
@@ -53,3 +57,5 @@ class Pubblica(Base):
     prodotto: Mapped["Prodotto"] = relationship(back_populates="pubblicazioni")
 
     utente: Mapped["Utente | None"] = relationship(back_populates="pubblicazioni")
+
+    storico_prezzo: Mapped["PrezzoStorico | None"] = relationship(back_populates="pubblicazioni")

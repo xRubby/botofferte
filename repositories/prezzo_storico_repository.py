@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from models.prezzo_storico import PrezzoStorico
 
 
-class PrezziStoricoRepository:
+class PrezzoStoricoRepository:
 
     def __init__(self, session: Session):
         self.session = session

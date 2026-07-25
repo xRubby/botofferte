@@ -53,6 +53,13 @@ class PubblicaRepository:
 
         return self.session.scalars(stmt).first()
 
+    def get_ultimo_pubblicato_da_canale_e_asin(self, id_canale: str, asin: str):
+
+        stmt = (select(Pubblica).where(Pubblica.id_canale == id_canale, Pubblica.asin_prodotti == asin, Pubblica.is_pubblicato.is_(True)).order_by(Pubblica.data_pubblicazione.desc()).limit(1))
+
+        return self.session.scalars(stmt).first()
+    
+
 
     def create(self, pubblicazione: Pubblica) -> Pubblica:
 

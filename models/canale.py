@@ -40,17 +40,17 @@ class Canale(Base):
     offertaexcl_tag: Mapped[str] = mapped_column(String, nullable=False, default="Offerta Speciale:") 
 
 
-    tastiere: Mapped[list["Tastiera"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    tastiere: Mapped[list["Tastiera"]] = relationship(back_populates="canale", passive_deletes=True,)
 
-    gestioni: Mapped[list["Gestisce"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    gestioni: Mapped[list["Gestisce"]] = relationship(back_populates="canale", passive_deletes=True,)
 
-    inviti: Mapped[list["Invito"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    inviti: Mapped[list["Invito"]] = relationship(back_populates="canale", passive_deletes=True,)
 
-    layout: Mapped[list["Layout"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    layout: Mapped[list["Layout"]] = relationship(back_populates="canale", passive_deletes=True,)
 
-    layout_immagini: Mapped[list["LayoutImmagine"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    layout_immagini: Mapped[list["LayoutImmagine"]] = relationship(back_populates="canale", passive_deletes=True,)
 
-    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="canale", cascade="all, delete-orphan")
+    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="canale", passive_deletes=True,)
 
     licenza: Mapped["Licenza"] = relationship(back_populates="canale")
 

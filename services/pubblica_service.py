@@ -34,6 +34,22 @@ class PubblicaService:
 
         return self.pubblica_repository.get_pubblicato_ultime_24h(canale_id, asin)
 
+    def ottieni_ultimo_pubblicato_da_canale_e_asin(self, canale_id: str, asin: str) -> Pubblica | None:
+
+        return self.pubblica_repository.get_ultimo_pubblicato_da_canale_e_asin(canale_id, asin)
+
+    def confronta_prezzo_ultimo_pubblicato(self, link: Pubblica) -> tuple[Pubblica | None, bool]:
+
+        if not link or not link.storico_prezzo:
+            return None, False
+
+        link_per_confronto = self.ottieni_ultimo_pubblicato_da_canale_e_asin(link.id_canale, link.asin_prodotti)
+
+        if not link_per_confronto or not link_per_confronto.storico_prezzo:
+            return None, False
+
+        return link_per_confronto, link_per_confronto.storico_prezzo.prezzo == link.storico_prezzo.prezzo
+
 
     def aggiungi_link(self, link: Pubblica) -> Pubblica:
 

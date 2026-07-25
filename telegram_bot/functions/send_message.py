@@ -18,6 +18,7 @@ from services.canale_service import CanaleService
 from services.gestisce_service import GestisceService
 from services.layout_immagine_service import LayoutImmagineService
 from services.layout_service import LayoutService
+from services.prezzo_storico_service import PrezzoStoricoService
 from services.prodotto_service import ProdottoService
 
 from models.prodotto import Prodotto
@@ -430,15 +431,19 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
 
     with SessionLocal() as session:
         pubblica_service = PubblicaService(session)
+        prezzo_storico_service = PrezzoStoricoService(session)
+
+        storico_prezzo = prezzo_storico_service.ottieni_ultimo_prezzo_storico(info_prodotto["ASIN"])
 
         pubblicazione = Pubblica(
             id_canale = channel_id,
             asin_prodotti = info_prodotto["ASIN"],
+            prezzo_storico_id = storico_prezzo.id,
             messaggio = message,
             link = info_prodotto["link"],
             link_short = info_prodotto["link_short"],
             img_bytes = foto,
-            id_utente = user_id  
+            id_utente = user_id 
         )
         try:
             pubblica_service.aggiungi_link(pubblicazione)

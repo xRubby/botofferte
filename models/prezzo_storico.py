@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.prodotto import Prodotto
+    from models.pubblica import Pubblica
 
 
 class PrezzoStorico(Base):
@@ -35,3 +36,5 @@ class PrezzoStorico(Base):
 
 
     prodotto: Mapped["Prodotto"] = relationship(back_populates="storico_prezzi")
+
+    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="storico_prezzo")

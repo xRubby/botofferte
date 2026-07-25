@@ -2,7 +2,7 @@ from datetime import datetime
 
 from models.prodotto import Prodotto
 from models.prezzo_storico import PrezzoStorico
-from repositories.prezzo_storico_repository import PrezziStoricoRepository
+from repositories.prezzo_storico_repository import PrezzoStoricoRepository
 from repositories.prodotto_repository import ProdottoRepository
 
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ class ProdottoService:
     def __init__(self, session: Session):
         self.session = session
         self.prodotto_repository = ProdottoRepository(session)
-        self.prezzo_storico_repository = PrezziStoricoRepository(session)
+        self.prezzo_storico_repository = PrezzoStoricoRepository(session)
 
 
     def aggiungi_prodotto(self, prodotto: Prodotto):
