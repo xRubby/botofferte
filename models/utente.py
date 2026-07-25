@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.gestisce import Gestisce
+    from models.pubblica import Pubblica
 
 
 class Utente(Base):
@@ -20,3 +21,5 @@ class Utente(Base):
 
 
     gestioni: Mapped[list["Gestisce"]] = relationship(back_populates="utente")
+
+    pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="utente")

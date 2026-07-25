@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import String, Integer, Boolean, DateTime, LargeBinary, ForeignKey
+from sqlalchemy import BigInteger, String, Integer, Boolean, DateTime, LargeBinary, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from models.canale import Canale
     from models.prodotto import Prodotto
+    from models.utente import Utente
 
 
 class Pubblica(Base):
@@ -24,6 +25,9 @@ class Pubblica(Base):
 
 
     asin_prodotti: Mapped[str] = mapped_column(String, ForeignKey("prodotti.asin", ondelete="CASCADE"), nullable=False)
+
+
+    id_utente: Mapped[int] = mapped_column(BigInteger, ForeignKey("utenti.telegram_id", ondelete="SET NULL"), nullable=True)
 
 
     messaggio: Mapped[str] = mapped_column(String, nullable=False)
@@ -47,3 +51,5 @@ class Pubblica(Base):
     canale: Mapped["Canale"] = relationship(back_populates="pubblicazioni")
 
     prodotto: Mapped["Prodotto"] = relationship(back_populates="pubblicazioni")
+
+    utente: Mapped["Utente | None"] = relationship(back_populates="pubblicazioni")

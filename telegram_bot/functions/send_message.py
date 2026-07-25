@@ -234,7 +234,7 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
             except Exception:
                 session.rollback()
                 traceback.print_exc()
-                raise
+                raise ValueError()
 
             return info_prodotto
 
@@ -437,7 +437,8 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
             messaggio = message,
             link = info_prodotto["link"],
             link_short = info_prodotto["link_short"],
-            img_bytes = foto         
+            img_bytes = foto,
+            id_utente = user_id  
         )
         try:
             pubblica_service.aggiungi_link(pubblicazione)
