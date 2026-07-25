@@ -1,6 +1,7 @@
 from datetime import datetime, date
+from decimal import Decimal
 
-from sqlalchemy import String, Float, Boolean, Date, DateTime, Integer, func
+from sqlalchemy import Numeric, String, Boolean, Date, DateTime, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -20,9 +21,9 @@ class Prodotto(Base):
 
     titolo: Mapped[str] = mapped_column(String, nullable=False)
 
-    prezzo: Mapped[float] = mapped_column(Float, nullable=False)
+    prezzo: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    old_prezzo: Mapped[float] = mapped_column(Float, nullable=False)
+    old_prezzo: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
     valuta: Mapped[str] = mapped_column(String, nullable=False)
 

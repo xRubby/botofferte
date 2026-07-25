@@ -1,6 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import String, Float, DateTime, ForeignKey, Integer, func
+from sqlalchemy import Numeric, String, DateTime, ForeignKey, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -23,7 +24,7 @@ class PrezzoStorico(Base):
     asin: Mapped[str] = mapped_column(String, ForeignKey("prodotti.asin", ondelete="CASCADE"), nullable=False)
 
 
-    prezzo: Mapped[float] = mapped_column(Float, nullable=False)
+    prezzo: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
 
     valuta: Mapped[str] = mapped_column(String, nullable=False)
