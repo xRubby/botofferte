@@ -40,7 +40,7 @@ class ProdottoService:
             prodotto.venditore = info_prodotto["venditore"]
             prodotto.img_url = info_prodotto["img_url"]
             prodotto.spedito_amazon = info_prodotto["spedito_Amazon"]
-            prodotto.offertaesclusiva = info_prodotto.get("offertaesclusiva", None)
+            prodotto.offertaesclusiva = info_prodotto["offertaexcl"]
             prodotto.last_check = datetime.now()
             prodotto.preorder=bool(info_prodotto["preorder"])
             prodotto.data_preordine=info_prodotto["data_preordine"]
