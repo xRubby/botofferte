@@ -1,21 +1,24 @@
 from sqlalchemy import create_engine, text
 from datetime import datetime
 
-from database.connection import engine
-
 from sqlalchemy import create_engine, text
 from datetime import datetime, date
 
+from dotenv import load_dotenv
+import os
 
 # ==========================
 # CONFIGURAZIONE
 # ==========================
 
+load_dotenv()
+
 SQLITE_DB = "sqlite:///Z:/AppData/botofferte/data/amazon_offers.db"
+POSTGRE_DB = os.getenv("DATABASE_URL_MIGRATION")
 
 
 sqlite_engine = create_engine(SQLITE_DB)
-postgres_engine = engine
+postgres_engine = create_engine(POSTGRE_DB)
 
 
 # ==========================
