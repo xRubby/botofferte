@@ -11,6 +11,9 @@ async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     channel_id = check_channel_id(query, context)
 
+    #Se esco dal pannello admin imposto la variabile a False così da aggiornare il valore
+    context.user_data['isCreator'] = False
+
     #Cancella messaggio preview di Lista Link
     await delete_preview_message(
         chat_id=query.message.chat_id,
