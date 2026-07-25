@@ -1000,6 +1000,31 @@ def migrate_pubblica():
             )
     print(f"Pubblica OK ({skipped} righe orfane saltate)")
 
+def fix_sequences():
+    print("Risincronizzazione sequence...")
+
+    tabelle = [
+        ("prezzi_storico", "id"),
+        ("layout_immagini", "immagine_id"),
+        ("layout", "layout_id"),
+        ("pubblica", "id"),
+        ("tastiere", "tastiera_id"),
+    ]
+
+    with postgres_engine.begin() as pg:
+        for tabella, colonna in tabelle:
+            pg.execute(
+                text(f"""
+                    SELECT setval(
+                        pg_get_serial_sequence('{tabella}', '{colonna}'),
+                        COALESCE((SELECT MAX({colonna}) FROM {tabella}), 1),
+                        true
+                    )
+                """)
+            )
+
+    print("Sequence sincronizzate")
+
 
 # ==========================
 # AVVIO
@@ -1028,5 +1053,6 @@ if __name__ == "__main__":
 
     migrate_pubblica()
 
+    fix_sequences()
 
     print("\nMIGRAZIONE COMPLETATA")
