@@ -3,7 +3,6 @@ import traceback
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, error
 from telegram.ext import ContextTypes
 
-from database.DAO.PubblicaDAO import PubblicaDAO
 from database.session import SessionLocal
 from services.pubblica_service import PubblicaService
 from telegram_bot.functions.send_message import publish_offer
