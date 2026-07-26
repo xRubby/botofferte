@@ -332,31 +332,31 @@ async def update_step(context, chat_id, message_id, text, reply_markup = None):
 async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int): 
     channel_id = ctx.user_data.get("channel_id", None)
 
-    reply_markup = InlineKeyboardMarkup([
+    keyboard = [
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_info_{channel_id}")]
-    ])
+    ]
 
     if not channel_id:
-        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_GENERICO, reply_markup)
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_GENERICO, InlineKeyboardMarkup(keyboard))
 
         raise ValueError("Errore nel ritrovamento dell'id del canale")
 
     if not keyword:
-        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, InlineKeyboardMarkup(keyboard))
 
         raise ValueError("Errore nella keyword mandata")
     
     try:
         asin = await extract_asin(keyword)
     except ValueError as ve:
-        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, InlineKeyboardMarkup(keyboard))
 
         raise ValueError("ASIN non trovato") from ve
     
     info_prodotto = await get_prodotto_dizionario(asin)
 
     if not info_prodotto:
-        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, reply_markup)
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, InlineKeyboardMarkup(keyboard))
 
         raise ValueError("Errore nella ricerca del prodotto")
     
@@ -437,7 +437,11 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
         except Exception:
             session.rollback()
             raise ValueError("Errore nell'elaborazione dell'immagine")
-    await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", reply_markup)
+        
+
+    keyboard.insert(0, [InlineKeyboardButton("🔗 Lista Link", callback_data=f"channeloffers_link_0_{channel_id}")])
+        
+    await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", InlineKeyboardMarkup(keyboard))
 
 def parse_keyboard(text):
     result = []
