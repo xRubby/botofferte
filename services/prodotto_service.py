@@ -7,6 +7,8 @@ from repositories.prodotto_repository import ProdottoRepository
 
 from sqlalchemy.orm import Session
 
+from utils.formattazione_data import converti_data_preordine_per_db
+
 
 class ProdottoService:
 
@@ -42,8 +44,8 @@ class ProdottoService:
             prodotto.spedito_amazon = info_prodotto["spedito_Amazon"]
             prodotto.offertaesclusiva = info_prodotto["offertaexcl"]
             prodotto.last_check = datetime.now()
-            prodotto.preorder=bool(info_prodotto["preorder"])
-            prodotto.data_preordine=info_prodotto["data_preordine"]
+            prodotto.preorder = bool(info_prodotto["preorder"]) 
+            prodotto.data_preordine = converti_data_preordine_per_db(info_prodotto["data_preordine"])
 
             storico = PrezzoStorico(
                 asin=prodotto.asin,

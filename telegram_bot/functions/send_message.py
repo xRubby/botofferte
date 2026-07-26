@@ -353,7 +353,13 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
 
         raise ValueError("ASIN non trovato") from ve
     
-    info_prodotto = await get_prodotto_dizionario(asin)
+    try:
+        info_prodotto = await get_prodotto_dizionario(asin)
+        
+    except Exception:
+        await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_GENERICO, InlineKeyboardMarkup(keyboard))
+
+        raise ValueError("Errore nella ricerca del prodotto")
 
     if not info_prodotto:
         await update_step(ctx, chat_id, msg_id, TEXT_ERRORE_VALORE, InlineKeyboardMarkup(keyboard))
