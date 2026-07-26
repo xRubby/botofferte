@@ -1,3 +1,4 @@
+from decimal import ROUND_HALF_UP, Decimal
 import random
 import re
 import asyncio
@@ -202,8 +203,8 @@ async def scraping_product(asin: str) -> dict | None:
             return {
                 "ASIN": asin,
                 "titolo": title,
-                "prezzo": price_val,
-                "old_prezzo": old_price_val,
+                "prezzo": Decimal(str(price_val)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP),
+                "old_prezzo": Decimal(str(old_price_val)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP),
                 "valuta": currency,
                 "sconto": round(discount),
                 "venditore": venditore,
@@ -225,7 +226,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0G26ZHPS8"]
+    asins = ["B0D3LW2LYB"]
 
     results = await asyncio.gather(
         scraping_product(asins[0])
