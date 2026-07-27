@@ -177,3 +177,5 @@ test.py
 *.db-wal
 
 .DS_Store
+
+telegram-miniapp/
