@@ -93,7 +93,8 @@ def creaDizionarioProdotto(risultato: dict, tag: str = None) -> dict | None:
             "condizione_commento": risultato["condizione_descrizione"],
             "preorder": bool(risultato["preordine"]),
             "isPrime": bool(risultato["spedito_Amazon"]),
-            "offertaexcl": bool(risultato["offertaesclusiva"])
+            "offertaexcl": bool(risultato["offertaesclusiva"]),
+            "categorie": risultato["categorie"]
             }
         
         if tag:
@@ -193,29 +194,8 @@ async def get_prodotto_dizionario(asin: str) -> dict | None:
             risultato = await scraping_product(asin)
             info_prodotto = creaDizionarioProdotto(risultato)
 
-            prodotto = Prodotto(
-                asin=info_prodotto["ASIN"],
-                titolo=info_prodotto["titolo"],
-                prezzo=info_prodotto["prezzo"],
-                old_prezzo=info_prodotto["old_prezzo"],
-                valuta=info_prodotto["valuta"],
-                sconto=info_prodotto["sconto"],
-                venditore=info_prodotto["venditore"],
-                spedito_amazon=info_prodotto["spedito_Amazon"],
-                link=info_prodotto["link"],
-                img_url=info_prodotto["img_url"],
-                brand=info_prodotto["brand"],
-                preorder=bool(info_prodotto["preorder"]),
-                data_preordine=converti_data_preordine_per_db(info_prodotto["data_preordine"]),
-                is_prime=bool(info_prodotto["isPrime"]),
-                is_warehouse=info_prodotto["isWarehouse"],
-                condizione=info_prodotto["condizione"],
-                condizione_descrizione=info_prodotto["condizione_commento"],
-                offertaesclusiva=info_prodotto["offertaexcl"]
-            )
-
             try:
-                prodotto_service.aggiungi_prodotto(prodotto)
+                prodotto_service.aggiungi_prodotto(info_prodotto)
                 session.commit()
             except Exception:
                 session.rollback()

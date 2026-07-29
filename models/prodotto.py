@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 
-from sqlalchemy import Numeric, String, Boolean, Date, DateTime, Integer, func
+from sqlalchemy import ForeignKey, Numeric, String, Boolean, Date, DateTime, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from models.prezzo_storico import PrezzoStorico
     from models.pubblica import Pubblica
+    from models.categoria import Categoria
 
 
 class Prodotto(Base):
@@ -57,7 +58,15 @@ class Prodotto(Base):
 
     offertaesclusiva: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    categoria_id: Mapped[int | None] = mapped_column(ForeignKey("categorie.id", ondelete="SET NULL"), default=None, nullable=True)
+
+    root_categoria_id: Mapped[int | None] = mapped_column(ForeignKey("categorie.id", ondelete="SET NULL"), default=None, nullable=True)
+
 
     storico_prezzi: Mapped[list["PrezzoStorico"]] = relationship(back_populates="prodotto", passive_deletes=True,)
 
     pubblicazioni: Mapped[list["Pubblica"]] = relationship(back_populates="prodotto", passive_deletes=True,)
+
+    categoria: Mapped["Categoria | None"] = relationship("Categoria", foreign_keys=[categoria_id], back_populates="prodotti")
+
+    root_categoria: Mapped["Categoria | None"] = relationship("Categoria", foreign_keys=[root_categoria_id], back_populates="root_prodotti")

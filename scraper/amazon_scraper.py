@@ -200,6 +200,22 @@ async def scraping_product(asin: str) -> dict | None:
             if offertaesclusiva_span:
                 offertaesclusiva = True
 
+            # -- CATEGORIA --
+            categorie = []
+            offertaesclusiva_div = soup.find("div", id="wayfinding-breadcrumbs_feature_div")
+
+            if offertaesclusiva_div:
+                for link in offertaesclusiva_div.select("ul li a"):
+                    nome = link.get_text(strip=True)
+                    href = link.get("href", "")
+
+                    match = re.search(r"node=(\d+)", href)
+                    if nome:
+                        categorie.append({
+                            "nome": nome,
+                            "amazon_id": match.group(1) if match else None
+                        })
+
             return {
                 "ASIN": asin,
                 "titolo": title,
@@ -219,6 +235,7 @@ async def scraping_product(asin: str) -> dict | None:
                 "condizione": None,
                 "condizione_descrizione": None,
                 "offertaesclusiva": offertaesclusiva,
+                "categorie": categorie
             }
 
         except httpx.RequestError:
@@ -226,11 +243,9 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0D3LW2LYB"]
+    asins = ["B0D73LL1T3"]
 
-    results = await asyncio.gather(
-        scraping_product(asins[0])
-    )
+    results = await asyncio.gather(scraping_product(asins[0]))
 
     print(results)
 

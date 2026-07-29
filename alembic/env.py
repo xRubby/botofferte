@@ -39,6 +39,7 @@ from models.prodotto import Prodotto
 from models.pubblica import Pubblica
 from models.tastiera import Tastiera
 from models.utente import Utente
+from models.categoria import Categoria
 
 target_metadata = Base.metadata
 
