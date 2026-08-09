@@ -9,6 +9,7 @@ from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import acti
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import activate_keyboard, confirm_delete_keyboard, delete_keyboard, edit_keyboard, edit_keyboards, keyboard_menu, show_keyboards
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
 from telegram_bot.keyboards.channel_offers.channel_offers_main import channeloffers_main, conv_add_channel
+from telegram_bot.keyboards.channel_offers.channel_offers_publishedlink import channel_publishedlink_menu, channel_staleprodotti
 from telegram_bot.keyboards.channel_offers.channel_offers_settings import channel_settings_menu, exit_channel, exit_channel_confirm
 from telegram_bot.keyboards.main_menu import cmd_start, handler_menu_principale
 from telegram_bot.keyboards.search_product.search_product_menu import conv_cerca_prodotto
@@ -117,6 +118,9 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(confirm_delete_keyboard, pattern=r'^channeloffers_confirmdeletekeyboard_-?\d+_\d+$'))
 
     application.add_handler(CallbackQueryHandler(delete_preview, pattern="^delete_preview$"))
+
+    application.add_handler(CallbackQueryHandler(channel_publishedlink_menu, pattern=r"^channeloffers_publishedlink_-?\d+"))
+    application.add_handler(CallbackQueryHandler(channel_staleprodotti, pattern=r"^channeloffers_stale_\d+_-?\d+$"))
 
     
 

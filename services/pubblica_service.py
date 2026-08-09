@@ -50,6 +50,10 @@ class PubblicaService:
 
         return link_per_confronto, link_per_confronto.storico_prezzo.prezzo == link.storico_prezzo.prezzo
 
+    def ottieni_prodotti_non_pubblicati_da_tanto_tempo(self, id_canale: str, page: int = 0, page_size: int = 10) -> tuple[list[Pubblica], int]:
+
+        return self.pubblica_repository.get_non_pubblicati_da_tanto_tempo(id_canale, page, page_size)
+
 
     def aggiungi_link(self, link: Pubblica) -> Pubblica:
 

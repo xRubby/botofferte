@@ -134,3 +134,4 @@ celerybeat.pid
 *.sage.py
 /site
 test.py
+frontend/

@@ -34,8 +34,8 @@ async def channel_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
         [InlineKeyboardButton("➕ Inserisci Link", callback_data=f'channeloffers_addlink_{channel_id}')],
-        [InlineKeyboardButton("🔗 Lista Link", callback_data=f'channeloffers_link_0_{channel_id}'), InlineKeyboardButton("🌟 Affiliazione", callback_data=f'channeloffers_affiliateid_{channel_id}')],
-        [InlineKeyboardButton("📈 Statistiche (WIP)", callback_data=f'none'), InlineKeyboardButton("⚙️ Impostazioni", callback_data=f'channeloffers_settings_{channel_id}')],
+        [InlineKeyboardButton("🔗 Lista Link", callback_data=f'channeloffers_link_0_{channel_id}'), InlineKeyboardButton("📢 Link Pubblicati", callback_data=f'channeloffers_publishedlink_{channel_id}')],
+        [InlineKeyboardButton("🌟 Affiliazione", callback_data=f'channeloffers_affiliateid_{channel_id}'), InlineKeyboardButton("⚙️ Impostazioni", callback_data=f'channeloffers_settings_{channel_id}')],
         [InlineKeyboardButton("🎨 Layout", callback_data=f'channeloffers_layout_{channel_id}'), InlineKeyboardButton("👨‍💼 Pannello Admin", callback_data=f'channeloffers_adminpanel_{channel_id}')],
         [InlineKeyboardButton("⬅️ Indietro", callback_data='channeloffers_main')]
     ]
