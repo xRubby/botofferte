@@ -1,3 +1,5 @@
+import math
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update
 from telegram.ext import ContextTypes
 
@@ -48,19 +50,33 @@ async def channel_staleprodotti(update: Update, context: ContextTypes.DEFAULT_TY
 
         pubblicazioni, totale = pubblica_service.ottieni_prodotti_non_pubblicati_da_tanto_tempo(channel_id, pagina, pagina_size)
 
-        totale_pagine = int((totale / pagina_size) + 1)
+        totale_pagine = math.ceil(totale / pagina_size)
 
-        text = f"⏰ <b>Da ripubblicare</b>  •  <i>Pagina {pagina + 1}/{totale_pagine}</i>\n\n"
+        text = "⏰ <b>Da ripubblicare</b>"
 
-        for pubblicazione in pubblicazioni:
-            prodotto = pubblicazione.prodotto
+        if totale == 0:
+            text += "\n\nNessun link da ripubblicare."
 
-            text += (
-                f"📦 <b>{prodotto.titolo}</b>\n"
-                f"<code>{prodotto.asin}</code>  •  "
-                f"🕒 {pubblicazione.data_pubblicazione}\n"
-                f"🔗 <a href=\"{prodotto.link}\">Link Prodotto</a>\n\n"
-            )
+        else:
+            text += f" • <i>Pagina {pagina + 1}/{totale_pagine}</i>\n\n"
+
+            for pubblicazione in pubblicazioni:
+                prodotto = pubblicazione.prodotto
+
+                text += (
+                    f"📦 <b>{prodotto.titolo}</b>\n"
+                    f"🔖 <code>{prodotto.asin}</code>\n"
+                    f"🕒 <i>Pubblicato il:</i> {pubblicazione.data_pubblicazione}\n"
+                )
+
+                if pubblicazione.storico_prezzo is not None:
+                    text += (
+                        f"💰 <b>Prezzo alla pubblicazione:</b> "
+                        f"{pubblicazione.storico_prezzo.prezzo}"
+                        f"{pubblicazione.storico_prezzo.valuta}\n"
+                    )
+
+                text += f"🔗 <a href=\"{prodotto.link}\">Vai al prodotto</a>\n\n"
 
     keyboard = [
     ]
