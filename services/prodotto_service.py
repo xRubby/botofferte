@@ -95,5 +95,19 @@ class ProdottoService:
         elif info_prodotto:
             prodotto.last_check = datetime.now()
 
+    def aggiorna_preordine_prodotto(self, prodotto: Prodotto, info_prodotto: dict) -> None:
+
+        if prodotto is None:
+            return
+
+        if info_prodotto is None:
+            return
+
+        data_preordine = converti_data_preordine_per_db(info_prodotto["data_preordine"])
+
+        if prodotto.data_preordine != data_preordine:
+            prodotto.preorder = bool(info_prodotto["preorder"]) 
+            prodotto.data_preordine = data_preordine
+
     def ottieni_prodotto(self, asin: str) -> Prodotto | None:
         return self.prodotto_repository.get_by_asin(asin)

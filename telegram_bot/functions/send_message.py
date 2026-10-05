@@ -172,6 +172,7 @@ async def check_aggiornamento_prodotto(asin: str, prodotto: Prodotto, prodotto_s
 
         try:
             prodotto_service.aggiorna_prezzo_prodotto(prodotto, info_prodotto)
+            prodotto_service.aggiorna_preordine_prodotto(prodotto, info_prodotto)
 
             session.commit()
         except Exception:

@@ -243,7 +243,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0D73LL1T3"]
+    asins = ["B0H3PG717X"]
 
     results = await asyncio.gather(scraping_product(asins[0]))
 
