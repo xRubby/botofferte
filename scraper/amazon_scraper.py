@@ -216,6 +216,16 @@ async def scraping_product(asin: str) -> dict | None:
                             "amazon_id": match.group(1) if match else None
                         })
 
+            # -- STELLE RECENSIONI --
+
+            rating = Decimal("0")
+            rating_span = soup.find("span", id="acrPopover")
+            if rating_span:
+                try:
+                    rating = Decimal(rating_span.find("span", class_="a-size-small a-color-base").get_text().replace(",", "."))
+                except Exception:
+                    rating = Decimal("0")
+
             return {
                 "ASIN": asin,
                 "titolo": title,
@@ -235,7 +245,8 @@ async def scraping_product(asin: str) -> dict | None:
                 "condizione": None,
                 "condizione_descrizione": None,
                 "offertaesclusiva": offertaesclusiva,
-                "categorie": categorie
+                "categorie": categorie,
+                "rating": rating,
             }
 
         except httpx.RequestError:
@@ -243,7 +254,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0H3PG717X"]
+    asins = ["B0G4GJP9BC"]
 
     results = await asyncio.gather(scraping_product(asins[0]))
 
