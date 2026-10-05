@@ -80,8 +80,12 @@ def parse_price(price_str: str) -> float:
 # ─────────────────────────────────────────────
 # SCRAPING ASYNC
 # ─────────────────────────────────────────────
-async def scraping_product(asin: str) -> dict | None:
+async def scraping_product(asin: str, is_warehouse: bool = False) -> dict | None:
     url = f"https://www.amazon.it/dp/{asin}"
+
+    if is_warehouse:
+        url+= "?m=A1HO9729ND375Y"
+
     client = await get_client()
     await warmup_client(client)
 
@@ -138,15 +142,22 @@ async def scraping_product(asin: str) -> dict | None:
 
             # ── Venditore ──────────────────────────
             venditore = ""
-            venditore_div = soup.find("div", id="merchantInfoFeature_feature_div")
 
-            if venditore_div:
-                span = (
-                    venditore_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
-                    or venditore_div.find("span", class_="a-size-small offer-display-feature-text-message")
-                )
-                if span:
-                    venditore = span.text.strip()
+            if is_warehouse:
+                venditore_warehouse_div = soup.find("a", id="sellerProfileTriggerId")
+                if venditore_warehouse_div:
+                    venditore = venditore_warehouse_div.get_text()
+
+            else:
+                venditore_div = soup.find("div", id="merchantInfoFeature_feature_div")
+
+                if venditore_div:
+                    span = (
+                        venditore_div.find("span", class_="a-size-small a-color-tertiary offer-display-feature-text-message")
+                        or venditore_div.find("span", class_="a-size-small offer-display-feature-text-message")
+                    )
+                    if span:
+                        venditore = span.text.strip()
 
             if not venditore:
                 return None
@@ -217,7 +228,6 @@ async def scraping_product(asin: str) -> dict | None:
                         })
 
             # -- STELLE RECENSIONI --
-
             rating = Decimal("0")
             rating_span = soup.find("span", id="acrPopover")
             if rating_span:
@@ -236,6 +246,23 @@ async def scraping_product(asin: str) -> dict | None:
                     nome = autore.find("a").get_text(strip=True)
                     autori.append(nome)
 
+            # -- WAREHOUSE --
+            condizione = None
+            condizione_descrizione = None
+
+            if is_warehouse:
+                try:
+                    for span in soup.select("span.a-size-mini"):
+                        testo = span.get_text(" ", strip=True)
+
+                        if testo.startswith("Condizione:"):
+                            condizione = testo.replace("Condizione:", "", 1).strip()
+
+                        elif testo.startswith("Commento:"):
+                            condizione_descrizione = testo.replace("Commento:", "", 1).strip()
+                except Exception:
+                    return None
+
             return {
                 "ASIN": asin,
                 "titolo": title,
@@ -251,9 +278,9 @@ async def scraping_product(asin: str) -> dict | None:
                 "preordine": preorder,
                 "data_preordine": data_preordine if data_preordine else None,
                 "isPrime": spedito_amazon,
-                "isWarehouse": False,
-                "condizione": None,
-                "condizione_descrizione": None,
+                "isWarehouse": is_warehouse,
+                "condizione": condizione,
+                "condizione_descrizione": condizione_descrizione,
                 "offertaesclusiva": offertaesclusiva,
                 "categorie": categorie,
                 "rating": rating,
@@ -265,7 +292,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["8828761652"]
+    asins = ["B0DXN1YWZZ"]
 
     results = await asyncio.gather(scraping_product(asins[0]))
 
