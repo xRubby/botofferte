@@ -226,6 +226,16 @@ async def scraping_product(asin: str) -> dict | None:
                 except Exception:
                     rating = Decimal("0")
 
+            # -- AUTORI LIBRO --
+            autori = []
+
+            autori_div = soup.find("div", id="bylineInfo")
+
+            if autori_div:
+                for autore in autori_div.select("span.author.notFaded"):
+                    nome = autore.find("a").get_text(strip=True)
+                    autori.append(nome)
+
             return {
                 "ASIN": asin,
                 "titolo": title,
@@ -247,6 +257,7 @@ async def scraping_product(asin: str) -> dict | None:
                 "offertaesclusiva": offertaesclusiva,
                 "categorie": categorie,
                 "rating": rating,
+                "autori": autori
             }
 
         except httpx.RequestError:
@@ -254,7 +265,7 @@ async def scraping_product(asin: str) -> dict | None:
 
 
 async def main():
-    asins = ["B0G4GJP9BC"]
+    asins = ["8828761652"]
 
     results = await asyncio.gather(scraping_product(asins[0]))
 
