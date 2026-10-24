@@ -1,12 +1,16 @@
+import html
 import traceback
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, error
-from telegram.ext import ContextTypes
+from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
 from database.session import SessionLocal
 from services.pubblica_service import PubblicaService
 from telegram_bot.functions.send_message import publish_offer
 from utils.channel_offers_utils import check_channel_id, delete_preview_message
+
+
+ATTESA_NUOVO_MESSAGGIO = range(1)
 
 
 
@@ -70,7 +74,7 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard.extend( [
         [InlineKeyboardButton("📢 Pubblica messaggio", callback_data=f'channeloffers_publishlink_{link.id}_{channel_id}')],
-        [InlineKeyboardButton("🗑️ Rimuovi link", callback_data=f'channeloffers_removelink_{link.id}_{channel_id}')]
+        [InlineKeyboardButton("✏️ Modifica", callback_data=f'channeloffers_editlink_{link.id}_{channel_id}'), InlineKeyboardButton("🗑️ Rimuovi", callback_data=f'channeloffers_removelink_{link.id}_{channel_id}')]
     ])
 
     
@@ -99,6 +103,8 @@ async def insert_link_entry(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         context.user_data["preview_message_id"] = preview_msg.message_id
+
+    return ConversationHandler.END
 
 async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -236,6 +242,104 @@ async def publish_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
         context.user_data["links"] = links
 
+async def edit_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    channel_id = check_channel_id(query, context)
+    link_id = int(query.data.split("_")[-2])
+
+    await delete_preview_message(
+        chat_id=query.message.chat_id,
+        context=context
+    )
+
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+        link = pubblica_service.ottieni_link_da_id_canale(link_id, channel_id)
+
+        if not link:
+            await query.edit_message_text(
+                text=("🔍 <b>Link non trovato</b>\n\n"
+                    "Il link che stai cercando di modificare non esiste o è già stato eliminato."),
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+                ]]),
+                parse_mode='HTML'
+            )
+
+            links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
+            context.user_data["links"] = links
+            return
+
+    text = (
+        "✏️ <b>Modifica il tuo messaggio</b>\n\n"
+        "📋 Tocca il messaggio qui sotto per copiarlo "
+        "e poterlo modificare o inviare direttamente in chat.\n\n"
+        f"<code>{html.escape(link.messaggio)}</code>\n\n"
+    )
+
+    msg = await query.edit_message_text(
+        text=text,
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+        ]]),
+        parse_mode='HTML'
+    )
+
+    context.user_data["edit_message_id"] = msg.id
+    context.user_data["link_id"] = link_id
+    context.user_data["channel_id"] = channel_id
+
+    return ATTESA_NUOVO_MESSAGGIO
+
+
+async def receive_edit_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    msg_id = context.user_data.get("edit_message_id")
+    link_id = context.user_data.get("link_id")
+    channel_id = context.user_data.get("channel_id")
+    new_msg = update.message.text_html
+
+    new_msg = html.unescape(new_msg)
+
+    await update.message.delete()
+
+    with SessionLocal() as session:
+        pubblica_service = PubblicaService(session)
+        link = pubblica_service.ottieni_link_da_id_canale(link_id, channel_id)
+
+        links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
+        context.user_data["links"] = links
+
+        if not link:
+            await context.bot.edit_message_text(
+                chat_id=update.effective_chat.id,
+                message_id=msg_id,
+                text=("🔍 <b>Link non trovato</b>\n\n"
+                    "Il link che stai cercando di modificare non esiste o è già stato eliminato."),
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+                ]]),
+                parse_mode='HTML'
+            )
+            return
+
+        link.messaggio = new_msg
+        session.commit()
+
+        await context.bot.edit_message_text(
+            chat_id=update.effective_chat.id,
+            message_id=msg_id,
+            text = "✅ <b>Messaggio aggiornato con successo!</b>",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_link_0_{channel_id}')
+            ]]),
+            parse_mode='HTML'
+        )
+
+        return ConversationHandler.END
+
 async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -284,3 +388,23 @@ async def remove_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pubblica_service = PubblicaService(session)
         links = pubblica_service.ottieni_link_non_pubblicati_per_canale(channel_id)
         context.user_data["links"] = links
+
+
+# ── ConversationHandler ───────────────────────────────────────────────────────
+
+conv_edit_link = ConversationHandler(
+    entry_points=[
+        CallbackQueryHandler(edit_message, pattern=r"channeloffers_editlink_\d+_.+$")
+    ],
+    states={
+        ATTESA_NUOVO_MESSAGGIO: [
+            MessageHandler(filters.ALL & ~filters.COMMAND, receive_edit_message),
+            CallbackQueryHandler(insert_link_entry, pattern=r"^channeloffers_link_\d+_-?\d+$"),
+        ]
+    },
+    fallbacks=[
+        CallbackQueryHandler(insert_link_entry, pattern=r"^channeloffers_link_\d+_-?\d+$")
+    ],
+    per_message=False,
+    per_chat=True,
+)

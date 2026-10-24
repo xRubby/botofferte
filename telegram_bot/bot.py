@@ -17,7 +17,7 @@ from telegram_bot.keyboards.settings.settings_menu import settings_menu
 from telegram_bot.keyboards.settings.admin_settings import admin_menu, attiva_licenza_ok, disattiva_licenza_confirm, disattiva_licenza_ok, conv_genera_licenza, visualizza_licenze, dettagli_licenza
 from telegram_bot.keyboards.channel_offers.channels_offers_info import channel_info
 from telegram_bot.keyboards.channel_offers.channel_offers_addLink import conv_insert_link
-from telegram_bot.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link
+from telegram_bot.keyboards.channel_offers.channel_offers_showLinks import insert_link_entry, publish_link, remove_link, conv_edit_link
 from telegram_bot.keyboards.channel_offers.channel_offers_affiliateID import conv_insert_affiliateID
 from telegram_bot.keyboards.channel_offers.channel_offers_layout import activate_layout, confirm_delete_layout, conv_layout, delete_layout, edit_layout, edit_layouts, layout_menu, show_layouts, conv_edit_messaggio_layout
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import conv_keyboard, conv_edit_messaggio_keyboard
@@ -52,6 +52,7 @@ def start_telegram_bot():
     application.add_handler(conv_set_size)
     application.add_handler(conv_keyboard)
     application.add_handler(conv_edit_messaggio_keyboard)
+    application.add_handler(conv_edit_link)
     
     application.add_handler(CommandHandler('start', cmd_start))
 
