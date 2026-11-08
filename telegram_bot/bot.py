@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from dotenv import load_dotenv
 
+from functions.worker_prezzi import worker_aggiorna_prezzi
 from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_manage_members, admin_member_info, admin_panel, admin_remove_member, admin_remove_member_confirm, conv_edit_admin_affiliateid
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import activate_attr_img, activate_immagine, confirm_delete_immagine, delete_immagine, edit_immagine, edit_immagini, immagine_menu, conv_add_immagine, layoutimg_attr_menu, layoutimg_prodotto_menu, show_immagini, conv_set_pos, conv_set_size
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import activate_keyboard, confirm_delete_keyboard, delete_keyboard, edit_keyboard, edit_keyboards, keyboard_menu, show_keyboards
@@ -123,7 +124,12 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(channel_publishedlink_menu, pattern=r"^channeloffers_publishedlink_-?\d+"))
     application.add_handler(CallbackQueryHandler(channel_staleprodotti, pattern=r"^channeloffers_stale_\d+_-?\d+$"))
 
-    
+    application.job_queue.run_repeating(
+        worker_aggiorna_prezzi,
+        interval=600,      # ogni 10 minuti
+        first=30,
+        job_kwargs={"max_instances": 1},
+    )
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 

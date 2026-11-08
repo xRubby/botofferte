@@ -62,6 +62,10 @@ class Prodotto(Base):
 
     root_categoria_id: Mapped[int | None] = mapped_column(ForeignKey("categorie.id", ondelete="SET NULL"), default=None, nullable=True)
 
+    intervallo_minuti: Mapped[int] = mapped_column(Integer, default=360, server_default="360", nullable=False)
+
+    next_check_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
 
     storico_prezzi: Mapped[list["PrezzoStorico"]] = relationship(back_populates="prodotto", passive_deletes=True,)
 
