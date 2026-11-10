@@ -4,6 +4,7 @@ import html
 import math
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, LinkPreviewOptions, Update
+import telegram
 from telegram.ext import CallbackQueryHandler, ContextTypes, ConversationHandler, MessageHandler, filters
 
 from database.session import SessionLocal
@@ -29,6 +30,8 @@ async def autopost_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
             attivo = canale.autopost_attivo
             intervallo = canale.autopost_intervallo_min
             in_coda = PubblicaService(session).conta_link_autopost(channel_id)
+            prossimo_invio_data = canale.autopost_prossimo_invio.date()
+            prossimo_invio_ora = canale.autopost_prossimo_invio.time().strftime("%H:%M:%S")
 
     if not canale:
         await query.edit_message_text(
@@ -41,18 +44,25 @@ async def autopost_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
     stato = "🟢 Attivo" if attivo else "🔴 Non attivo"
 
     text = (
-        "🤖 <b>Autopost</b>\n\n"
+        "⚡ <b>AutoPost</b>\n\n"
         "I link nella coda vengono pubblicati automaticamente nel canale, uno alla volta.\n\n"
         f"⚙️ <b>Stato:</b> {stato}\n"
         f"⏱️ <b>Intervallo:</b> ogni {intervallo} min\n"
         f"📦 <b>Link in coda:</b> {in_coda}"
     )
 
+    if attivo:
+        text+= f"\n<b>Prossimo invio:</b> {prossimo_invio_data} alle ore {prossimo_invio_ora}"
+
     keyboard = [
-        [InlineKeyboardButton("🔴 Disattiva autopost" if attivo else "🟢 Attiva autopost", callback_data=f'channeloffers_autoposttoggle_{channel_id}')],
+        [InlineKeyboardButton("🔴 Disattiva AutoPost" if attivo else "🟢 Attiva AutoPost", callback_data=f'channeloffers_autoposttoggle_{channel_id}')],
         [
             InlineKeyboardButton("➕ Aggiungi link", callback_data=f'channeloffers_autopostaddlink_{channel_id}'),
             InlineKeyboardButton("📋 Visualizza coda", callback_data=f'channeloffers_autopostqueue_0_{channel_id}')
+        ],
+        [
+            InlineKeyboardButton("⚙️ Impostazioni", callback_data=f'none'),
+            InlineKeyboardButton("🔄 Aggiorna", callback_data=f'channeloffers_autopostrefresh_{channel_id}')
         ],
         [InlineKeyboardButton("⬅️ Indietro", callback_data=f'channeloffers_info_{channel_id}')]
     ]
@@ -62,6 +72,15 @@ async def autopost_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE)
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
+async def autopost_aggiorna_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    try:
+        await autopost_main_menu(update, context)
+    except telegram.error.BadRequest as e:
+        if "Message is not modified" in str(e):
+            return
+        raise
 
 async def autopost_toggle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -78,11 +97,11 @@ async def autopost_toggle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             if canale.autopost_attivo:
                 canale.autopost_attivo = False
-                testo = "🔴 Autopost disattivato!"
+                testo = "🔴 AutoPost disattivato!"
             else:
                 canale.autopost_attivo = True
                 canale.autopost_prossimo_invio = datetime.now() + timedelta(minutes=canale.autopost_intervallo_min)
-                testo = "🟢 Autopost attivato!"
+                testo = "🟢 AutoPost attivato!"
 
             session.commit()
         except Exception:
@@ -107,7 +126,7 @@ async def autopost_queue(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         totale_pagine = max(1, math.ceil(totale / QUEUE_PAGE_SIZE))
 
-        text = "📋 <b>Coda autopost</b>"
+        text = "📋 <b>Coda AutoPost</b>"
 
         if totale == 0:
             text += "\n\nLa coda è vuota.\n\n➕ Aggiungi un link per iniziare."
@@ -163,7 +182,7 @@ async def autopost_add_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = await query.edit_message_text(
         text=(
-            "🤖 <b>Aggiungi link alla coda autopost</b>\n\n"
+            "🤖 <b>Aggiungi link alla coda AutoPost</b>\n\n"
             "Incolla il link del prodotto Amazon da inserire nella coda 👇"
         ),
         parse_mode="HTML",

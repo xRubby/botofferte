@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from functions.worker_autopost import autopost_tick
 from functions.worker_prezzi import worker_aggiorna_prezzi
 from telegram_bot.keyboards.channel_offers.channel_offers_adminpanel import admin_delete_channel, admin_delete_channel_confirm, admin_invite_member, admin_invite_member_createlink, admin_invite_member_removelink, admin_license_info, admin_manage_members, admin_member_info, admin_panel, admin_remove_member, admin_remove_member_confirm, conv_edit_admin_affiliateid
-from telegram_bot.keyboards.channel_offers.channel_offers_autopost import autopost_main_menu, autopost_queue, autopost_toggle, conv_autopost_add_link
+from telegram_bot.keyboards.channel_offers.channel_offers_autopost import autopost_aggiorna_menu, autopost_main_menu, autopost_queue, autopost_toggle, conv_autopost_add_link
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_img import activate_attr_img, activate_immagine, confirm_delete_immagine, delete_immagine, edit_immagine, edit_immagini, immagine_menu, conv_add_immagine, layoutimg_attr_menu, layoutimg_prodotto_menu, show_immagini, conv_set_pos, conv_set_size
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_keyboard import activate_keyboard, confirm_delete_keyboard, delete_keyboard, edit_keyboard, edit_keyboards, keyboard_menu, show_keyboards
 from telegram_bot.keyboards.channel_offers.channel_offers_layout_tags import edit_tags, edit_tags_spedito, conv_edit_tag, conv_edit_tag_spedito
@@ -130,6 +130,7 @@ def start_telegram_bot():
     application.add_handler(CallbackQueryHandler(autopost_main_menu, pattern=r'^channeloffers_autopost_(-?\d+)$'))
     application.add_handler(CallbackQueryHandler(autopost_toggle, pattern=r"^channeloffers_autoposttoggle_-?\d+$"))
     application.add_handler(CallbackQueryHandler(autopost_queue, pattern=r"^channeloffers_autopostqueue_\d+_-?\d+$"))
+    application.add_handler(CallbackQueryHandler(autopost_aggiorna_menu, pattern=r'^channeloffers_autopostrefresh_(-?\d+)$'))
 
     application.job_queue.run_repeating(
         worker_aggiorna_prezzi,
