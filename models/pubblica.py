@@ -50,6 +50,9 @@ class Pubblica(Base):
 
 
     data_pubblicazione: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    
+
+    for_autopost: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
     canale: Mapped["Canale"] = relationship(back_populates="pubblicazioni")

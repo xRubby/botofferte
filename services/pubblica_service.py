@@ -55,6 +55,18 @@ class PubblicaService:
         return self.pubblica_repository.get_non_pubblicati_da_tanto_tempo(id_canale, page, page_size)
 
 
+    def conta_link_autopost(self, id_canale: str) -> int:
+
+        return self.pubblica_repository.count_autopost_in_coda(id_canale)
+
+    def ottieni_lista_link_autopost(self, canale_id: str, page: int, page_size: int) -> tuple[list[Pubblica], int]:
+
+        return self.pubblica_repository.get_autopost_in_coda(canale_id, page, page_size)
+
+    def ottieni_prossimo_da_pubblicare(self, canale_id: str) -> Pubblica:
+
+        return self.pubblica_repository.get_prossimo_pubblica_autopost(canale_id)
+
     def aggiungi_link(self, link: Pubblica) -> Pubblica:
 
         return self.pubblica_repository.create(link)

@@ -1,8 +1,9 @@
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from models.canale import Canale
 from models.gestisce import Gestisce
+from models.pubblica import Pubblica
 
 
 class CanaleRepository:
@@ -49,3 +50,12 @@ class CanaleRepository:
     def delete(self, canale: Canale) -> None:
 
         self.session.delete(canale)
+
+
+    def get_autopost_scaduti(self) -> list[Canale]:
+        stmt = select(Canale).where(
+            Canale.autopost_attivo.is_(True),
+            or_(Canale.autopost_prossimo_invio.is_(None),
+                Canale.autopost_prossimo_invio <= func.now()),
+        )
+        return list(self.session.scalars(stmt))

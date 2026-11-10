@@ -310,11 +310,13 @@ async def update_step(context, chat_id, message_id, text, reply_markup = None):
         reply_markup=reply_markup
     )
 
-async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int): 
+async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, chat_id: int, msg_id: int, for_autopost: bool = False): 
     channel_id = ctx.user_data.get("channel_id", None)
 
+    back_callback = f"channeloffers_autopost_{channel_id}" if for_autopost else f"channeloffers_info_{channel_id}"
+
     keyboard = [
-        [InlineKeyboardButton("⬅️ Indietro", callback_data=f"channeloffers_info_{channel_id}")]
+        [InlineKeyboardButton("⬅️ Indietro", callback_data=back_callback)]
     ]
 
     if not channel_id:
@@ -415,7 +417,8 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
             link = info_prodotto["link"],
             link_short = info_prodotto["link_short"],
             img_bytes = foto,
-            id_utente = user_id 
+            id_utente = user_id,
+            for_autopost = for_autopost,
         )
         try:
             pubblica_service.aggiungi_link(pubblicazione)
@@ -425,10 +428,15 @@ async def search_offer(user_id, ctx: ContextTypes.DEFAULT_TYPE, keyword: str, ch
             session.rollback()
             raise ValueError("Errore nell'elaborazione dell'immagine")
         
+    if for_autopost:
+            keyboard.insert(0, [InlineKeyboardButton("📋 Visualizza coda", callback_data=f"channeloffers_autopostqueue_0_{channel_id}")])
+            testo_finale = "✅ <b>Operazione completata</b>\n\n🤖 Il link è stato aggiunto alla coda autopost."
+    else:
+        keyboard.insert(0, [InlineKeyboardButton("🔗 Lista Link", callback_data=f"channeloffers_link_0_{channel_id}")])
+        testo_finale = "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista."
 
-    keyboard.insert(0, [InlineKeyboardButton("🔗 Lista Link", callback_data=f"channeloffers_link_0_{channel_id}")])
         
-    await update_step(ctx, chat_id, msg_id, "✅ <b>Operazione completata</b>\n\n🔗 Il link è stato aggiunto correttamente nella lista.", InlineKeyboardMarkup(keyboard))
+    await update_step(ctx, chat_id, msg_id, testo_finale, InlineKeyboardMarkup(keyboard))
 
 def parse_keyboard(text):
     result = []

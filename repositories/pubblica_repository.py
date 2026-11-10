@@ -26,7 +26,7 @@ class PubblicaRepository:
     
     def get_channel_link_non_pubblicati(self, id_canale: str) -> list[Pubblica]:
 
-        stmt = (select(Pubblica).where(Pubblica.id_canale == id_canale, Pubblica.is_pubblicato.is_(False)).order_by(Pubblica.id.asc()))
+        stmt = (select(Pubblica).where(Pubblica.id_canale == id_canale, Pubblica.is_pubblicato.is_(False), Pubblica.for_autopost.is_(False)).order_by(Pubblica.id.asc()))
 
         return list(self.session.scalars(stmt))
 
@@ -76,6 +76,30 @@ class PubblicaRepository:
 
         return items, totale
 
+
+    def get_prossimo_pubblica_autopost(self, id_canale: str) -> Pubblica | None:
+        stmt = (select(Pubblica)
+                .where(Pubblica.id_canale == id_canale,
+                    Pubblica.is_pubblicato.is_(False),
+                    Pubblica.for_autopost.is_(True))
+                .order_by(Pubblica.id.asc()).limit(1))
+        return self.session.scalars(stmt).first()
+
+
+    def count_autopost_in_coda(self, id_canale: str) -> int:
+
+        stmt = (select(func.count()).select_from(Pubblica)
+                .where(Pubblica.id_canale == id_canale, Pubblica.is_pubblicato.is_(False), Pubblica.for_autopost.is_(True)))
+
+        return self.session.scalar(stmt) or 0
+
+    def get_autopost_in_coda(self, id_canale: str, page: int, page_size: int) -> tuple[list[Pubblica], int]:
+
+        stmt = (select(Pubblica)
+                .where(Pubblica.id_canale == id_canale, Pubblica.is_pubblicato.is_(False), Pubblica.for_autopost.is_(True))
+                .order_by(Pubblica.id.asc()).offset(page * page_size).limit(page_size))
+
+        return list(self.session.scalars(stmt)), self.count_autopost_in_coda(id_canale)
 
 
     def create(self, pubblicazione: Pubblica) -> Pubblica:

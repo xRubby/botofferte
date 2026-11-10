@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
@@ -38,6 +40,12 @@ class Canale(Base):
     prime_tag: Mapped[str] = mapped_column(String, nullable=False, default="Spedizione gratuita con Amazon Prime")  
     
     offertaexcl_tag: Mapped[str] = mapped_column(String, nullable=False, default="Offerta Speciale:") 
+
+    autopost_attivo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    
+    autopost_intervallo_min: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    
+    autopost_prossimo_invio: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
     tastiere: Mapped[list["Tastiera"]] = relationship(back_populates="canale", passive_deletes=True,)

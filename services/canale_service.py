@@ -26,3 +26,6 @@ class CanaleService:
     def rimuovi_canale(self, canale: Canale) -> None:
 
         return self.canale_repository.delete(canale)
+
+    def ottieni_canali_autopost_scaduti(self,) -> list[Canale]:
+        return self.canale_repository.get_autopost_scaduti()
